@@ -6,12 +6,18 @@ import (
 	"os"
 	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/tarm/serial"
 )
 
 func main() {
 	r := gin.Default()
+
+	config := cors.DefaultConfig()
+	config.AllowOrigins = []string{"*"}
+	r.Use(cors.New(config))
+
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"message": "pong",
@@ -33,7 +39,7 @@ func handleUnlockDoor(c *gin.Context) {
 
 	doorCode := c.Param("doorCode")
 
-	secret_door_code := os.Getenv("SECRET_DOOR_CODE")
+	secret_door_code := os.Getenv("SECRET_DOOR_CODE") + "8"
 
 	result := subtle.ConstantTimeCompare([]byte(secret_door_code), []byte(doorCode))
 
