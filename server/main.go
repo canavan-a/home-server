@@ -142,7 +142,7 @@ func SerialSendRec(input string) (output string, err error) {
 	}
 	defer s.Close()
 
-	command := []byte("g")
+	command := []byte(input)
 	_, err = s.Write(command)
 	if err != nil {
 		return
