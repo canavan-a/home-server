@@ -295,7 +295,7 @@ func PingIp(ip string) (err error) {
 		return
 	}
 
-	pinger.SetPrivileged(false) // possibly windows only
+	pinger.SetPrivileged(true) // possibly windows only
 
 	pinger.Count = 2
 	pinger.Interval = time.Second
