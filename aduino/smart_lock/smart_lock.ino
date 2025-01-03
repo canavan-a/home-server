@@ -103,6 +103,13 @@ void loop() {
       }
 
       digitalWrite(Y_ENABLE_PIN, HIGH);
+    } else if (command == 's'){  // status command
+      if (directionToggle) {
+        Serial.println("L"); // locked
+      } else {
+        Serial.println("O"); // neither or open
+      }
+      
     }
   }
 }
