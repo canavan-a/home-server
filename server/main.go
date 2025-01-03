@@ -2,8 +2,10 @@ package main
 
 import (
 	"crypto/subtle"
+	"fmt"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -26,7 +28,7 @@ func main() {
 
 	api := r.Group("/api")
 	{
-		api.GET("/toggle/:doorCode", handleUnlockDoor)
+		api.POST("/toggle/:doorCode", handleUnlockDoor)
 	}
 
 	r.NoRoute(func(c *gin.Context) {
@@ -41,9 +43,13 @@ func handleUnlockDoor(c *gin.Context) {
 
 	secret_door_code := os.Getenv("SECRET_DOOR_CODE") + "8"
 
+	fmt.Println("supplied:", doorCode)
+
+	fmt.Println("actual:", secret_door_code)
+
 	result := subtle.ConstantTimeCompare([]byte(secret_door_code), []byte(doorCode))
 
-	if result != 0 {
+	if result == 0 {
 		c.JSON(400, gin.H{"response": "incorrect code"})
 		return
 	}
@@ -58,13 +64,17 @@ func handleUnlockDoor(c *gin.Context) {
 	c.JSON(200, gin.H{"response": "toggled"})
 }
 
-func UnlockDoor() (err error) {
-	c := &serial.Config{
-		Name:        "/dev/ttyACM0",
-		Baud:        9600,
-		ReadTimeout: time.Second,
-	}
+var c = &serial.Config{
+	Name:        "/dev/ttyACM0",
+	Baud:        9600,
+	ReadTimeout: time.Second,
+}
 
+var serialMutex sync.Mutex
+
+func UnlockDoor() (err error) {
+	serialMutex.Lock()
+	defer serialMutex.Unlock()
 	s, err := serial.OpenPort(c)
 	if err != nil {
 		return err
