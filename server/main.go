@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -155,7 +156,7 @@ func SerialSendRec(input string) (output string, err error) {
 		return
 	}
 
-	return line, nil
+	return strings.Split(line, "")[0], nil
 
 }
 
