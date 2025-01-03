@@ -24,6 +24,9 @@ var (
 	NewtworkActorActive = true
 )
 
+// run on linux
+//sudo setcap cap_net_raw+ep ./{binary name}
+
 func main() {
 	r := gin.Default()
 	err := godotenv.Load()

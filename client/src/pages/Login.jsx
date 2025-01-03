@@ -33,7 +33,7 @@ export const Login = () => {
       .post("https://aidan.house/api/test_auth_key", { doorCode: password })
       .then((response) => {
         console.log(response);
-        localStorage.setItem(password);
+        localStorage.setItem("pw", password);
         setLoggedIn(true);
       })
       .catch((err) => {
