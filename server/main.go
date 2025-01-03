@@ -10,11 +10,16 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	"github.com/tarm/serial"
 )
 
 func main() {
 	r := gin.Default()
+	err := godotenv.Load()
+	if err != nil {
+		panic("Error loading .env file")
+	}
 
 	config := cors.DefaultConfig()
 	config.AllowOrigins = []string{"*"}
