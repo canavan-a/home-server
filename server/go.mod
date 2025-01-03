@@ -5,6 +5,13 @@ go 1.23.2
 require github.com/gin-gonic/gin v1.10.0
 
 require (
+	github.com/go-ping/ping v1.2.0 // indirect
+	github.com/google/uuid v1.6.0 // indirect
+	github.com/prometheus-community/pro-bing v0.5.0 // indirect
+	golang.org/x/sync v0.10.0 // indirect
+)
+
+require (
 	github.com/bytedance/sonic v1.12.6 // indirect
 	github.com/bytedance/sonic/loader v0.2.1 // indirect
 	github.com/cloudwego/base64x v0.1.4 // indirect
