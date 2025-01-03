@@ -31,9 +31,6 @@ func main() {
 		api.POST("/toggle/:doorCode", handleUnlockDoor)
 	}
 
-	r.NoRoute(func(c *gin.Context) {
-		c.JSON(400, gin.H{"response": "error no route"})
-	})
 	r.Run(":5000")
 }
 
@@ -41,7 +38,7 @@ func handleUnlockDoor(c *gin.Context) {
 
 	doorCode := c.Param("doorCode")
 
-	secret_door_code := os.Getenv("SECRET_DOOR_CODE") + "8"
+	secret_door_code := os.Getenv("SECRET_DOOR_CODE")
 
 	fmt.Println("supplied:", doorCode)
 
