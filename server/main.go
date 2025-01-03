@@ -264,7 +264,7 @@ func runNetworkActor() {
 					// detect change
 					if addressMap[currentIp] == "online" {
 						fmt.Println("change detected now offline")
-						doUnlock()
+						doLock()
 						addressMap[currentIp] = "offline"
 					} else {
 						fmt.Println(err)
@@ -275,7 +275,7 @@ func runNetworkActor() {
 					// we are online
 					if addressMap[currentIp] == "offline" {
 						fmt.Println("change detected now online")
-						doLock()
+						doUnlock()
 						addressMap[currentIp] = "online"
 					} else {
 						fmt.Println("no change but online")
@@ -298,8 +298,8 @@ func PingIp(ip string) (err error) {
 
 	pinger.SetPrivileged(true) // possibly windows only
 
-	pinger.Count = 2
-	pinger.Interval = time.Second
+	pinger.Count = 3
+	pinger.Interval = time.Second / 2
 	pinger.Timeout = time.Second
 
 	// Run the pinger
