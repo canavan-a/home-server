@@ -266,6 +266,7 @@ func runNetworkActor() {
 						doUnlock()
 						addressMap[currentIp] = "offline"
 					} else {
+						fmt.Println(err)
 						fmt.Println("no change but offline")
 					}
 
@@ -294,7 +295,7 @@ func PingIp(ip string) (err error) {
 		return
 	}
 
-	pinger.SetPrivileged(true) // possibly windows only
+	pinger.SetPrivileged(false) // possibly windows only
 
 	pinger.Count = 2
 	pinger.Interval = time.Second
