@@ -32,7 +32,7 @@ func main() {
 	}
 
 	r.NoRoute(func(c *gin.Context) {
-		c.JSON(200, gin.H{"response": "ok"})
+		c.JSON(400, gin.H{"response": "error no route"})
 	})
 	r.Run(":5000")
 }

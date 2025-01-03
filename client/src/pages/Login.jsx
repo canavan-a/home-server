@@ -8,7 +8,7 @@ export const Login = () => {
 
   const doOpen = () => {
     axios
-      .get("https://aidan.house/api/toggle/" + password)
+      .post("https://aidan.house/api/toggle/" + password)
       .then((response) => {
         console.log(response);
       })
