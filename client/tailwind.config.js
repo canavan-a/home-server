@@ -15,6 +15,7 @@ export default {
       "valentine",
       "lemonade",
       "nord",
+      "synthwave",
     ],
   },
 };
