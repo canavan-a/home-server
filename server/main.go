@@ -5,7 +5,6 @@ import (
 	"crypto/subtle"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -16,7 +15,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/joho/godotenv"
-	"github.com/pion/webrtc/v4"
 	probing "github.com/prometheus-community/pro-bing"
 	"github.com/tarm/serial"
 )
@@ -353,88 +351,5 @@ var Upgrader = websocket.Upgrader{
 }
 
 func HandleWebRTC(c *gin.Context) {
-	conn, err := Upgrader.Upgrade(c.Writer, c.Request, nil)
-	if err != nil {
-		c.JSON(400, "error")
-		return
-	}
-	defer conn.Close()
-
-	peerConnection, err := webrtc.NewPeerConnection(webrtc.Configuration{})
-	if err != nil {
-		return
-	}
-	defer peerConnection.Close()
-
-	dataChannel, err := peerConnection.CreateDataChannel("example", nil)
-	if err != nil {
-		return
-	}
-
-	dataChannel.OnOpen(func() {
-		log.Println("DataChannel opened!")
-		dataChannel.SendText("Hello from server!")
-	})
-
-	dataChannel.OnMessage(func(msg webrtc.DataChannelMessage) {
-		log.Printf("Message from client: %s\n", string(msg.Data))
-	})
-
-	// Handle ICE candidates
-	peerConnection.OnICECandidate(func(candidate *webrtc.ICECandidate) {
-		if candidate != nil {
-			// Send ICE candidate to the client
-			conn.WriteJSON(candidate.ToJSON())
-		}
-	})
-	// Read messages from the WebSocket
-	for {
-		var message map[string]interface{}
-		err := conn.ReadJSON(&message)
-		if err != nil {
-			log.Println("WebSocket read error:", err)
-			break
-		}
-
-		// Handle SDP offer/answer and ICE candidates
-		switch message["type"] {
-		case "offer":
-			// Set the remote description from the client's SDP offer
-			offer := webrtc.SessionDescription{
-				Type: webrtc.SDPTypeOffer,
-				SDP:  message["sdp"].(string),
-			}
-			err = peerConnection.SetRemoteDescription(offer)
-			if err != nil {
-				log.Println("Failed to set remote description:", err)
-				return
-			}
-
-			// Create an SDP answer
-			answer, err := peerConnection.CreateAnswer(nil)
-			if err != nil {
-				log.Println("Failed to create answer:", err)
-				return
-			}
-			err = peerConnection.SetLocalDescription(answer)
-			if err != nil {
-				log.Println("Failed to set local description:", err)
-				return
-			}
-
-			// Send the SDP answer back to the client
-			conn.WriteJSON(answer)
-		case "candidate":
-			// Add the client's ICE candidate
-			candidate := webrtc.ICECandidateInit{
-				Candidate: message["candidate"].(string),
-			}
-			err = peerConnection.AddICECandidate(candidate)
-			if err != nil {
-				log.Println("Failed to add ICE candidate:", err)
-				return
-			}
-		}
-	}
-
+	c.JSON(200, "done")
 }
