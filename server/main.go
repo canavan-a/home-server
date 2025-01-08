@@ -332,7 +332,6 @@ func HandleStopNetworkActor(c *gin.Context) {
 	AddressMutex.Lock()
 	NewtworkActorActive = false
 	AddressMutex.Unlock()
-	go runNetworkActor()
 	c.JSON(200, "network actor stopped")
 }
 

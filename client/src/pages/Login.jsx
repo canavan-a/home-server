@@ -76,7 +76,7 @@ export const Login = () => {
   }, [getStatus]);
 
   const openSettings = () => {
-    alert("settings active");
+    navigate("/settings");
   };
 
   return (
