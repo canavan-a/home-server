@@ -5,6 +5,7 @@ import (
 	"crypto/subtle"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -63,7 +64,8 @@ func main() {
 			networkActor.POST("/stop", HandleStopNetworkActor)
 			networkActor.POST("/status", HandleStatusNetworkActor)
 		}
-		api.GET("/rtc", HandleWebRTC)
+		api.GET("/conn", handleConnServer)
+		api.POST("/stream", handleStreamInput)
 	}
 
 	// r.GET("/na", testNetworkActor)
@@ -349,6 +351,78 @@ var Upgrader = websocket.Upgrader{
 	},
 }
 
-func HandleWebRTC(c *gin.Context) {
-	c.JSON(200, "done")
+var (
+	Mutex   = sync.Mutex{}
+	Clients = make(map[*websocket.Conn]bool)
+)
+
+func handleStreamInput(c *gin.Context) {
+	fmt.Println("Receiving FFmpeg WebM stream")
+
+	// Read the stream from the request body
+	defer c.Request.Body.Close()
+
+	buffer := make([]byte, 1024*64) // Use a buffer large enough for WebM data chunks
+	for {
+		n, err := c.Request.Body.Read(buffer)
+		if n > 0 {
+			Mutex.Lock()
+			// Send the binary data to all WebSocket clients
+			for client := range Clients {
+				if Clients[client] {
+					err := client.WriteMessage(websocket.BinaryMessage, buffer[:n])
+					if err != nil {
+						fmt.Println("Error writing to WebSocket client:", err)
+						client.Close()
+						delete(Clients, client)
+					}
+				}
+			}
+			Mutex.Unlock()
+		}
+
+		if err != nil {
+			if err != io.EOF {
+				fmt.Println("Error reading FFmpeg stream:", err)
+			}
+			break
+		}
+	}
+}
+
+func handleConnServer(c *gin.Context) {
+
+	fmt.Println("connected to ws")
+
+	conn, err := Upgrader.Upgrade(c.Writer, c.Request, nil)
+	if err != nil {
+		return
+	}
+	defer conn.Close()
+
+	Mutex.Lock()
+	Clients[conn] = true
+	Mutex.Unlock()
+
+	defer func() {
+		Mutex.Lock()
+		Clients[conn] = false
+		Mutex.Unlock()
+	}()
+
+	for {
+		msgType, msg, err := conn.ReadMessage()
+		if err != nil {
+			break
+		}
+		fmt.Println(msg)
+		Mutex.Lock()
+		for client := range Clients {
+			if Clients[client] && client != conn {
+				client.WriteMessage(msgType, msg)
+			}
+		}
+		Mutex.Unlock()
+	}
+
 }
