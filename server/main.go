@@ -64,6 +64,16 @@ func main() {
 			networkActor.POST("/stop", HandleStopNetworkActor)
 			networkActor.POST("/status", HandleStatusNetworkActor)
 		}
+
+		onetime := api.Group("onetime")
+		{
+			onetime.POST("/generate", MiddlewareAuthenticate, HandleGenerateOnetimeCode)
+			onetime.POST("/clear", MiddlewareAuthenticate, HandleClearOnetimeCode)
+			onetime.POST("/list", MiddlewareAuthenticate, HandleListOnetimeCodes)
+			onetime.POST("/use", handleUseOnetimeCode)
+
+		}
+
 		api.GET("/conn", handleConnServer)
 		api.POST("/stream", handleStreamInput)
 	}
@@ -72,6 +82,82 @@ func main() {
 	go runNetworkActor()
 
 	r.Run(":5000")
+}
+
+var (
+	OnetimeMutex sync.Mutex
+	OnetimeCodes []string
+)
+
+func HandleGenerateOnetimeCode(c *gin.Context) {
+	code := c.Query("code")
+	if code == "" {
+		c.JSON(400, "no code supplied")
+		return
+	}
+	OnetimeMutex.Lock()
+	defer OnetimeMutex.Unlock()
+
+	OnetimeCodes = append(OnetimeCodes, code)
+
+	c.JSON(200, "added")
+}
+
+func HandleClearOnetimeCode(c *gin.Context) {
+	OnetimeMutex.Lock()
+	defer OnetimeMutex.Unlock()
+
+	OnetimeCodes = []string{}
+
+	c.JSON(200, "cleared")
+}
+
+func HandleListOnetimeCodes(c *gin.Context) {
+	if OnetimeCodes != nil {
+		c.JSON(200, OnetimeCodes)
+		return
+	} else {
+		c.JSON(200, []any{})
+		return
+	}
+}
+
+func handleUseOnetimeCode(c *gin.Context) {
+	code := c.Query("code")
+	if code == "" {
+		c.JSON(400, "no code supplied")
+		return
+	}
+	OnetimeMutex.Lock()
+	defer OnetimeMutex.Unlock()
+
+	codesCopy := []string{}
+
+	var found bool
+
+	for _, c := range OnetimeCodes {
+		if c == code {
+			found = true
+		} else {
+			codesCopy = append(codesCopy, c)
+		}
+	}
+
+	if !found {
+		c.JSON(400, "invalid code")
+		return
+	}
+
+	err := ToggleDoor()
+	if err != nil {
+		c.JSON(400, "could not toggle door")
+		return
+	}
+
+	OnetimeCodes = codesCopy
+
+	c.JSON(200, "done")
+
 }
 
 func MiddlewareAuthenticate(c *gin.Context) {
@@ -421,4 +507,13 @@ func handleConnServer(c *gin.Context) {
 		Mutex.Unlock()
 	}
 
+}
+
+// nmap -sn 192.168.1.0/24 | grep "Nmap scan report for"
+func handleScanNetworkAddresses(c *gin.Context) {
+
+}
+
+func ScanNetwork() (addresses []string, err error) {
+	return
 }
