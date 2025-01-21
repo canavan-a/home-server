@@ -180,42 +180,38 @@ func handleGetStatus(c *gin.Context) {
 
 func handleAddAddress(c *gin.Context) {
 
-	payload := struct {
-		Address string `json:"address"`
-	}{}
-
-	err := c.BindJSON(&payload)
-	if err != nil {
-		c.JSON(400, gin.H{"response": "issue parsing json"})
+	address := c.Query("address")
+	if address == "" {
+		c.JSON(400, gin.H{"response": "no address found"})
 		return
 	}
 
 	AddressMutex.Lock()
 	defer AddressMutex.Unlock()
 
-	Addresses = append(Addresses, payload.Address)
+	Addresses = append(Addresses, address)
 
 	c.JSON(200, "added address")
 
 }
 
 func handleRemoveAddress(c *gin.Context) {
-	payload := struct {
-		Address string `json:"address"`
-	}{}
-
-	err := c.BindJSON(&payload)
-	if err != nil {
-		c.JSON(400, gin.H{"response": "issue parsing json"})
+	address := c.Query("address")
+	if address == "" {
+		c.JSON(400, gin.H{"response": "no address found"})
 		return
 	}
 
 	AddressMutex.Lock()
 	defer AddressMutex.Unlock()
+	if address == "192.168.1.154" {
+		c.JSON(200, "cant remove aidan's address")
+		return
+	}
 
 	var newAddresses []string
 	for _, a := range Addresses {
-		if a != payload.Address {
+		if a != address {
 			newAddresses = append(newAddresses, a)
 		}
 	}

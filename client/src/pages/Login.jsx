@@ -53,7 +53,7 @@ export const Login = () => {
         setDoorStatus(response.data.status);
       })
       .catch((err) => {
-        alert("could not get status");
+        // alert("could not get status");
       });
   };
 
