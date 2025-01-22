@@ -175,7 +175,9 @@ export const IpMan = () => {
                 </button>
               </div>
             </div>
-            {getIpOpen && <GetIpPanel password={password} />}
+            {getIpOpen && (
+              <GetIpPanel password={password} setInputFunction={setNewIp} />
+            )}
           </div>
         </div>
       </div>
@@ -184,7 +186,7 @@ export const IpMan = () => {
 };
 
 const GetIpPanel = (props) => {
-  const { password } = props;
+  const { password, setInputFunction } = props;
   const [one, setOne] = useState([]);
   const [two, setTwo] = useState([]);
 
@@ -193,27 +195,68 @@ const GetIpPanel = (props) => {
   useEffect(() => {
     setOne([]);
     setTwo([]);
+    fetchIpList(setOne);
   }, []);
 
   const fetchIpList = (setFunction) => {
+    setIsLoading(true);
     axios
       .post(`https://aidan.house/api/netscan`, {
         doorCode: password,
       })
       .then((response) => {
-        console.log(response);
+        setFunction(response.data);
       })
       .catch((err) => {
         console.log(err);
+      })
+      .finally(() => {
+        setIsLoading(false);
       });
+  };
+
+  useEffect(() => {
+    if (one && two) {
+      console.log(one);
+      console.log(two);
+      const diff = getDifference(one, two);
+      console.log(diff);
+      if (diff.length == 1) {
+        setInputFunction(diff);
+      }
+    }
+  }, [one, two]);
+
+  const getDifference = (arr1, arr2) => {
+    const difference1 = arr1.filter((item) => !arr2.includes(item));
+
+    const difference2 = arr2.filter((item) => !arr1.includes(item));
+
+    return [...difference1, ...difference2];
   };
 
   return (
     <div className="flex mt-2">
+      <div className="w-full"></div>
       <button
-        onClick={() => fetchIpList("test")}
+        onClick={() => fetchIpList(setTwo)}
         className="btn btn-md btn-primary"
-      ></button>
+        disabled={isLoading}
+      >
+        {isLoading ? (
+          <>
+            <span className="loading loading-spinner loading-md"></span>
+            scannning network
+          </>
+        ) : (
+          <>
+            {two.length == 0
+              ? "disconnect or connect to wifi then click"
+              : "done"}
+          </>
+        )}
+      </button>
+      <div className="w-full"></div>
     </div>
   );
 };

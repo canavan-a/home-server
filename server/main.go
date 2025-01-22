@@ -281,6 +281,13 @@ func handleAddAddress(c *gin.Context) {
 	AddressMutex.Lock()
 	defer AddressMutex.Unlock()
 
+	for _, addy := range Addresses {
+		if addy == address {
+			c.JSON(200, "added address")
+			return
+		}
+	}
+
 	Addresses = append(Addresses, address)
 
 	c.JSON(200, "added address")
