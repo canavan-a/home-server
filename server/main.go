@@ -400,9 +400,9 @@ func PingIp(ip string) (err error) {
 
 	pinger.SetPrivileged(true) // possibly windows only
 
-	pinger.Count = 3
-	pinger.Interval = time.Second / 2
-	pinger.Timeout = time.Second
+	pinger.Count = 10
+	pinger.Interval = time.Second / 10
+	pinger.Timeout = time.Second / 5
 
 	// Run the pinger
 	err = pinger.Run()
