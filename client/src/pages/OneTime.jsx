@@ -84,7 +84,7 @@ export const OneTime = () => {
                 className="input input-sm input-bordered w-full"
                 value={otp}
                 onChange={(e) => {
-                  setOtp(e.target.value.trim());
+                  setOtp(e.target.value.trim().toLowerCase());
                 }}
               ></input>
               <button
