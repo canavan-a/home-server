@@ -38,31 +38,9 @@ const registerServiceWorker = () => {
   }
 };
 
+document.addEventListener("visibilitychange", registerServiceWorker);
+
 function App() {
-  useEffect(() => {
-    // Register the service worker once on load
-    registerServiceWorker();
-
-    // Listen for visibility change
-    const visibilityChangeHandler = () => {
-      if (document.visibilityState === "visible") {
-        // Only check for updates if the service worker is already registered
-        if (navigator.serviceWorker.controller) {
-          navigator.serviceWorker.controller.postMessage({
-            action: "check-update",
-          });
-        }
-      }
-    };
-
-    document.addEventListener("visibilitychange", visibilityChangeHandler);
-
-    // Cleanup listener when the component is unmounted
-    return () => {
-      document.removeEventListener("visibilitychange", visibilityChangeHandler);
-    };
-  }, []);
-
   return (
     <div>
       <Router>
