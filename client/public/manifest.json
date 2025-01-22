@@ -2,9 +2,9 @@
   "name": "Aidan.House",
   "short_name": "Aidan.House",
   "start_url": ".",
-  "display": "minimal-ui",
-  "background_color": "#000000",
-  "theme_color": "#000000",
+  "display": "fullscreen",
+  "background_color": "#FFFFFF",
+  "theme_color": "#FFFFFF",
   "icons": [
     {
       "src": "icons/icon-48x48.png",
