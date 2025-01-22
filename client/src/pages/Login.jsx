@@ -42,7 +42,7 @@ export const Login = () => {
         setLoggedIn(true);
       })
       .catch((err) => {
-        alert("could not authenticate");
+        doOtp();
       });
   };
 
@@ -78,6 +78,19 @@ export const Login = () => {
 
   const openSettings = () => {
     navigate("/settings");
+  };
+
+  const doOtp = (code) => {
+    axios
+      .post(`https://aidan.house/api/onetime/use?code=${password}`)
+      .then((response) => {
+        alert("door opened");
+        setPassword("");
+      })
+      .catch((err) => {
+        // alert("could not get status");
+        alert("invalid code");
+      });
   };
 
   return (
@@ -150,7 +163,7 @@ export const Login = () => {
                   onChange={(e) => {
                     setPassword(e.target.value.trim().toLowerCase());
                   }}
-                  placeholder="Password"
+                  placeholder="enter code"
                   className="input input-md input-bordered w-full"
                 />
                 <button
@@ -158,7 +171,7 @@ export const Login = () => {
                   disabled={password === ""}
                   className="btn btn-md btn-glass w-full"
                 >
-                  Log In
+                  Enter
                 </button>
               </>
             )}

@@ -19,7 +19,6 @@ export const IpMan = () => {
         doorCode: password,
       })
       .then((response) => {
-        console.log(response.data.running);
         setNetworkActorActive(response.data.running);
       })
       .catch((err) => {
@@ -63,7 +62,6 @@ export const IpMan = () => {
   };
 
   const changeIp = (e) => {
-    console.log(e.target.value);
     setNewIp(e.target.value.replace(/\s/g, ""));
   };
 
@@ -94,6 +92,23 @@ export const IpMan = () => {
       });
   };
 
+  useEffect(() => {
+    if ("connection" in navigator) {
+      const connection =
+        navigator.connection ||
+        navigator.mozConnection ||
+        navigator.webkitConnection;
+      console.log("Effective Type:", connection.effectiveType); // e.g., 'wifi', '4g', 'ethernet'
+      console.log("Downlink (Mbps):", connection.downlink); // e.g., 10
+      console.log("RTT (ms):", connection.rtt); // e.g., 50
+      console.log("Save Data Mode:", connection.saveData); // e.g., false
+    } else {
+      console.log("Network Information API is not supported on this browser.");
+    }
+  }, []);
+
+  const [getIpOpen, setGetIpOpen] = useState(false);
+
   return (
     <>
       <div className="w-full h-screen flex items-center justify-center">
@@ -112,7 +127,7 @@ export const IpMan = () => {
           <div className="grid gap-4">
             {addresses.map((value) => {
               return (
-                <div className="text-center border-2 flex p-2">
+                <div key={value} className="text-center border-2 flex p-2">
                   <button
                     className="btn btn-xs btn-error relative left-0"
                     onClick={() => {
@@ -137,7 +152,7 @@ export const IpMan = () => {
                 add
               </button>
             </div>
-            <div className={`mt-10 text-center `}>
+            <div className={`mt-4 text-center `}>
               <button
                 onClick={toggleNetworkActorStatus}
                 className={`btn btn-lg w-full ${
@@ -148,9 +163,57 @@ export const IpMan = () => {
                 {!networkActorActive ? "activate" : "deactivate"}{" "}
               </button>
             </div>
+            <div className="flex mt-2">
+              <div className="w-full">
+                <button
+                  onClick={() => {
+                    setGetIpOpen((prev) => !prev);
+                  }}
+                  className="btn btn-md  w-full"
+                >
+                  get my ip address
+                </button>
+              </div>
+            </div>
+            {getIpOpen && <GetIpPanel password={password} />}
           </div>
         </div>
       </div>
     </>
+  );
+};
+
+const GetIpPanel = (props) => {
+  const { password } = props;
+  const [one, setOne] = useState([]);
+  const [two, setTwo] = useState([]);
+
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    setOne([]);
+    setTwo([]);
+  }, []);
+
+  const fetchIpList = (setFunction) => {
+    axios
+      .post(`https://aidan.house/api/netscan`, {
+        doorCode: password,
+      })
+      .then((response) => {
+        console.log(response);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
+
+  return (
+    <div className="flex mt-2">
+      <button
+        onClick={() => fetchIpList("test")}
+        className="btn btn-md btn-primary"
+      ></button>
+    </div>
   );
 };

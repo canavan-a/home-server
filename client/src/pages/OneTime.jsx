@@ -1,12 +1,60 @@
 import { faArrowLeft, faX } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { useState } from "react";
+import axios from "axios";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export const OneTime = () => {
   const navigate = useNavigate();
   const [codes, setCodes] = useState([]);
+  const [otp, setOtp] = useState("");
+  const [password, setPassword] = useState(null);
 
+  const addOtp = () => {
+    axios
+      .post(`https://aidan.house/api/onetime/generate?code=${otp}`, {
+        doorCode: password,
+      })
+      .then((res) => {
+        listOtp();
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
+
+  const listOtp = () => {
+    axios
+      .post(`https://aidan.house/api/onetime/list`, {
+        doorCode: password,
+      })
+      .then((res) => {
+        setCodes(res.data);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
+
+  const clearOtp = () => {
+    axios
+      .post(`https://aidan.house/api/onetime/clear`, {
+        doorCode: password,
+      })
+      .then((res) => {
+        listOtp();
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
+
+  useEffect(() => {
+    setPassword(localStorage.getItem("pw"));
+    if (password != null) {
+      listOtp();
+    }
+  }, [password]);
   return (
     <>
       <div className="w-full h-screen flex items-center justify-center">
@@ -32,11 +80,28 @@ export const OneTime = () => {
               );
             })}
             <div className="text-center flex p-2">
-              <input className="input input-sm input-bordered w-full"></input>
-              <button className="btn btn-sm btn-success ml-2"> add otp</button>
+              <input
+                className="input input-sm input-bordered w-full"
+                value={otp}
+                onChange={(e) => {
+                  setOtp(e.target.value.trim());
+                }}
+              ></input>
+              <button
+                onClick={() => {
+                  addOtp();
+                  setOtp("");
+                }}
+                className="btn btn-sm btn-success ml-2"
+              >
+                {" "}
+                add otp
+              </button>
             </div>
             <div className={`mt-10 text-center `}>
-              <button className={`btn btn-lg w-full `}>clear otp codes</button>
+              <button onClick={clearOtp} className={`btn btn-lg w-full `}>
+                clear otp codes
+              </button>
             </div>
           </div>
         </div>

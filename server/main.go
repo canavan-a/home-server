@@ -76,6 +76,7 @@ func main() {
 
 		}
 
+		//MiddlewareAuthenticate
 		api.POST("/netscan", MiddlewareAuthenticate, handleScanNetworkAddresses)
 
 		api.GET("/conn", handleConnServer)
@@ -83,7 +84,7 @@ func main() {
 	}
 
 	// r.GET("/na", testNetworkActor)
-	go runNetworkActor()
+	// go runNetworkActor()
 	// ScanNetwork()
 
 	r.Run(":5000")
