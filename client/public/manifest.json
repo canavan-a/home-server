@@ -2,7 +2,7 @@
   "name": "Aidan.House",
   "short_name": "Aidan.House",
   "start_url": ".",
-  "display": "fullscreen",
+  "display": "standalone",
   "background_color": "#FFFFFF",
   "theme_color": "#FFFFFF",
   "icons": [
