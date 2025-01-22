@@ -40,13 +40,18 @@ const registerServiceWorker = () => {
 
 function App() {
   useEffect(() => {
-    // Initial registration
+    // Register the service worker once on load
     registerServiceWorker();
 
-    // Listen for visibility change and re-register
+    // Listen for visibility change
     const visibilityChangeHandler = () => {
       if (document.visibilityState === "visible") {
-        registerServiceWorker(); // Re-register on visibility change
+        // Only check for updates if the service worker is already registered
+        if (navigator.serviceWorker.controller) {
+          navigator.serviceWorker.controller.postMessage({
+            action: "check-update",
+          });
+        }
       }
     };
 

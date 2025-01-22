@@ -1,4 +1,4 @@
-// do something monkey biner
+// change
 self.addEventListener("install", (event) => {
   self.skipWaiting(); // Force immediate activation
 });
