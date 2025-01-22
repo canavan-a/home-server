@@ -2,12 +2,14 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"crypto/subtle"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"strings"
 	"sync"
 	"time"
@@ -65,7 +67,7 @@ func main() {
 			networkActor.POST("/status", HandleStatusNetworkActor)
 		}
 
-		onetime := api.Group("onetime")
+		onetime := api.Group("/onetime")
 		{
 			onetime.POST("/generate", MiddlewareAuthenticate, HandleGenerateOnetimeCode)
 			onetime.POST("/clear", MiddlewareAuthenticate, HandleClearOnetimeCode)
@@ -74,12 +76,15 @@ func main() {
 
 		}
 
+		api.POST("/netscan", MiddlewareAuthenticate, handleScanNetworkAddresses)
+
 		api.GET("/conn", handleConnServer)
 		api.POST("/stream", handleStreamInput)
 	}
 
 	// r.GET("/na", testNetworkActor)
 	go runNetworkActor()
+	// ScanNetwork()
 
 	r.Run(":5000")
 }
@@ -511,9 +516,36 @@ func handleConnServer(c *gin.Context) {
 
 // nmap -sn 192.168.1.0/24 | grep "Nmap scan report for"
 func handleScanNetworkAddresses(c *gin.Context) {
-
+	addresses, err := ScanNetwork()
+	if err != nil {
+		c.JSON(400, "could not nmap")
+		return
+	}
+	if len(addresses) == 0 {
+		c.JSON(200, []string{})
+		return
+	}
+	c.JSON(200, addresses)
 }
 
 func ScanNetwork() (addresses []string, err error) {
+	cmd := exec.Command("nmap", "-sn", "192.168.1.0/24")
+	output, err := cmd.Output()
+	if err != nil {
+		return
+	}
+
+	scanner := bufio.NewScanner(strings.NewReader(string(output)))
+
+	for scanner.Scan() {
+		row := scanner.Text()
+
+		if bytes.Contains([]byte(row), []byte("Nmap scan report for ")) {
+			sliced := bytes.Split(bytes.Split([]byte(row), []byte("("))[1], []byte(")"))[0]
+
+			addresses = append(addresses, string(sliced))
+		}
+	}
+
 	return
 }

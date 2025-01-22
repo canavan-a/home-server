@@ -1,5 +1,5 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faX } from "@fortawesome/free-solid-svg-icons";
+import { faArrowLeft, faX } from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -99,11 +99,12 @@ export const IpMan = () => {
       <div className="w-full h-screen flex items-center justify-center">
         <div className="absolute top-4 right-4 flex ">
           <button
-            className="btn btn-sm btn-glass mr-2"
+            className="btn btn-glass mr-2"
             onClick={() => {
               navigate("/settings");
             }}
           >
+            <FontAwesomeIcon icon={faArrowLeft} />
             back
           </button>
         </div>
