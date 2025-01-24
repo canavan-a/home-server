@@ -115,7 +115,7 @@ export const Login = () => {
                   onClick={doOpen}
                   className=" text-center w-full flex flex-col items-center justify-center space-y-4"
                 >
-                  {doorStatus == "L" ? (
+                  {doorStatus == "O" ? (
                     <>
                       <svg
                         width="200"
@@ -134,7 +134,7 @@ export const Login = () => {
                     </>
                   ) : (
                     <>
-                      {doorStatus == "O" ? (
+                      {doorStatus == "L" ? (
                         <svg
                           width="200px"
                           height="200px"
