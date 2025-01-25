@@ -4,6 +4,7 @@ import { Login } from "./pages/Login";
 import { Settings } from "./pages/Settings";
 import { IpMan } from "./pages/IpMan";
 import { OneTime } from "./pages/OneTime";
+import { Camera } from "./pages/Camera";
 
 const registerServiceWorker = () => {
   if ("serviceWorker" in navigator) {
@@ -46,6 +47,7 @@ function App() {
       <Router>
         <Routes>
           <Route path="/settings" element={<Settings />} />
+          <Route path="/camera" element={<Camera />} />
           <Route path="/onetimecode" element={<OneTime />} />
           <Route path="/ipman" element={<IpMan />} />
           <Route path="/*" element={<Login />} />

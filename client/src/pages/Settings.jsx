@@ -39,6 +39,14 @@ export const Settings = () => {
               One Time Code
             </button>
             <button
+              className="btn btn-secondary w-full"
+              onClick={() => {
+                navigate("/camera");
+              }}
+            >
+              Camera
+            </button>
+            <button
               className="btn btn-glass w-full"
               onClick={() => navigate("/")}
             >

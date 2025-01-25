@@ -75,6 +75,10 @@ func main() {
 			onetime.POST("/use", handleUseOnetimeCode)
 
 		}
+		camera := api.Group("/camera", MiddlewareAuthenticate)
+		{
+			camera.POST("/move", HandleCameraControl)
+		}
 
 		//MiddlewareAuthenticate
 		api.POST("/netscan", MiddlewareAuthenticate, handleScanNetworkAddresses)
@@ -257,6 +261,25 @@ func SerialSendRec(input string) (output string, err error) {
 
 	return strings.Split(line, "")[0], nil
 
+}
+
+func SerialSend(input string) (err error) {
+	serialMutex.Lock()
+	defer serialMutex.Unlock()
+
+	s, err := serial.OpenPort(c)
+	if err != nil {
+		return
+	}
+	defer s.Close()
+
+	command := []byte(input)
+	_, err = s.Write(command)
+	if err != nil {
+		return
+	}
+
+	return
 }
 
 func handleGetStatus(c *gin.Context) {
@@ -556,4 +579,27 @@ func ScanNetwork() (addresses []string, err error) {
 	}
 
 	return
+}
+
+func HandleCameraControl(c *gin.Context) {
+	direction := c.Query("direction")
+	if direction == "" {
+		c.JSON(400, "no dir supplied")
+		return
+	}
+
+	if direction == "l" || direction == "r" {
+	} else {
+		c.JSON(400, "bad dir supplied")
+		return
+	}
+
+	err := SerialSend(direction)
+	if err != nil {
+		c.JSON(400, "bad conn")
+		return
+	}
+
+	c.JSON(200, "sent direction")
+
 }
