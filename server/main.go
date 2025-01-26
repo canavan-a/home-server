@@ -221,6 +221,8 @@ func MiddlewareAuthenticateGET(c *gin.Context) {
 
 	result := subtle.ConstantTimeCompare([]byte(secret_door_code), []byte(token))
 
+	fmt.Println("comapring door code")
+
 	if result == 0 {
 		c.JSON(400, gin.H{"response": "incorrect code"})
 		return
@@ -660,11 +662,14 @@ var (
 )
 
 func handleRelayServer(c *gin.Context) {
+	fmt.Println("upgrading")
 	conn, err := Upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		return
 	}
 	defer conn.Close()
+
+	fmt.Println("upgraded")
 
 	id, err := uuid.NewUUID()
 	if err != nil {
