@@ -4,9 +4,12 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/subtle"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
@@ -16,8 +19,11 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/joho/godotenv"
+	"github.com/pion/rtp"
+	"github.com/pion/webrtc/v4"
 	probing "github.com/prometheus-community/pro-bing"
 	"github.com/tarm/serial"
 )
@@ -37,6 +43,12 @@ func main() {
 	if err != nil {
 		panic("Error loading .env file")
 	}
+
+	go func() {
+		fmt.Println("starting video stream")
+		err := StreamReader("video", "0.0.0.0", 5005)
+		panic(err)
+	}()
 
 	config := cors.DefaultConfig()
 	config.AllowOrigins = []string{"*"}
@@ -78,6 +90,7 @@ func main() {
 		camera := api.Group("/camera", MiddlewareAuthenticate)
 		{
 			camera.POST("/move", HandleCameraControl)
+			camera.GET("/relay", handleRelayServer)
 		}
 
 		//MiddlewareAuthenticate
@@ -171,6 +184,15 @@ func handleUseOnetimeCode(c *gin.Context) {
 }
 
 func MiddlewareAuthenticate(c *gin.Context) {
+	if c.Request.Method == "GET" {
+		MiddlewareAuthenticateGET(c)
+	} else {
+		MiddlewareAuthenticatePOST(c)
+	}
+}
+
+func MiddlewareAuthenticatePOST(c *gin.Context) {
+
 	payload := struct {
 		DoorCode string `json:"doorCode"`
 	}{}
@@ -184,6 +206,20 @@ func MiddlewareAuthenticate(c *gin.Context) {
 	secret_door_code := os.Getenv("SECRET_DOOR_CODE")
 
 	result := subtle.ConstantTimeCompare([]byte(secret_door_code), []byte(payload.DoorCode))
+
+	if result == 0 {
+		c.JSON(400, gin.H{"response": "incorrect code"})
+		return
+	}
+	c.Next()
+}
+func MiddlewareAuthenticateGET(c *gin.Context) {
+
+	token := c.Query("doorCode")
+
+	secret_door_code := os.Getenv("SECRET_DOOR_CODE")
+
+	result := subtle.ConstantTimeCompare([]byte(secret_door_code), []byte(token))
 
 	if result == 0 {
 		c.JSON(400, gin.H{"response": "incorrect code"})
@@ -601,5 +637,307 @@ func HandleCameraControl(c *gin.Context) {
 	}
 
 	c.JSON(200, "sent direction")
+
+}
+
+// webRTC stuff
+
+// relay server
+var (
+	RtcMutex   = sync.Mutex{}
+	RtcClients = make(map[string]*Connection)
+)
+
+type Connection struct {
+	WebsocketConn *websocket.Conn
+	WebrtcConn    *webrtc.PeerConnection
+}
+
+var (
+	AudioMediaMap = make(map[string]RTPMediaStreamer)
+	VideoMediaMap = make(map[string]RTPMediaStreamer)
+	MediaMutex    = sync.Mutex{}
+)
+
+func handleRelayServer(c *gin.Context) {
+	conn, err := Upgrader.Upgrade(c.Writer, c.Request, nil)
+	if err != nil {
+		return
+	}
+	defer conn.Close()
+
+	id, err := uuid.NewUUID()
+	if err != nil {
+		return
+	}
+	clientId := id.String()
+
+	RtcMutex.Lock()
+	myC := Connection{
+		WebsocketConn: conn,
+		WebrtcConn:    &webrtc.PeerConnection{},
+	}
+	RtcClients[clientId] = &myC
+	RtcMutex.Unlock()
+
+	defer func() {
+		RtcMutex.Lock()
+		delete(RtcClients, clientId)
+		RtcMutex.Unlock()
+	}()
+
+	for {
+		msgType, msg, err := conn.ReadMessage()
+		if err != nil {
+			break
+		}
+
+		if msgType == websocket.TextMessage {
+			var offer struct {
+				Type          string `json:"type"`
+				Sdp           string `json:"sdp,omitempty"`
+				Candidate     string `json:"candidate,omitempty"`
+				SdpMid        string `json:"sdpMid,omitempty"`
+				SdpMLineIndex uint16 `json:"sdpMLineIndex,omitempty"`
+			}
+			err := json.Unmarshal(msg, &offer)
+			if err != nil {
+				fmt.Println("Error unmarshaling message:", err)
+				continue
+			}
+			if offer.Type == "offer" {
+				// Create a WebRTC offer object
+				webrtcOffer := webrtc.SessionDescription{
+					SDP:  offer.Sdp,
+					Type: webrtc.SDPTypeOffer,
+				}
+
+				// Initialize PeerConnection (if not already done)\
+				rid, err := uuid.NewUUID()
+				if err != nil {
+					return
+				}
+				rtcId := rid.String()
+				defer func() {
+					MediaMutex.Lock()
+					delete(AudioMediaMap, rtcId)
+					delete(VideoMediaMap, rtcId)
+					MediaMutex.Unlock()
+				}()
+
+				peerConnection, err := initPeerConnection(clientId, webrtcOffer, rtcId)
+				if err != nil {
+					fmt.Println("Error initializing PeerConnection:", err)
+					continue
+				}
+
+				RtcMutex.Lock()
+				RtcClients[clientId].WebrtcConn = peerConnection
+				RtcMutex.Unlock()
+
+				// Process the offer (e.g., set it on a PeerConnection)
+				fmt.Println("Received WebRTC offer:", webrtcOffer.SDP)
+			} else if offer.Type == "candidate" {
+				candidate := webrtc.ICECandidateInit{
+					Candidate:     offer.Candidate,
+					SDPMid:        &offer.SdpMid,
+					SDPMLineIndex: &offer.SdpMLineIndex,
+				}
+				RtcMutex.Lock()
+				err := RtcClients[clientId].WebrtcConn.AddICECandidate(candidate)
+				RtcMutex.Unlock()
+				if err != nil {
+					fmt.Println("Error adding ice candidate:", err)
+					continue
+				}
+			} else {
+				fmt.Println("Received unsupported message type")
+			}
+
+		}
+
+	}
+
+}
+
+func initPeerConnection(clientId string, offer webrtc.SessionDescription, rtcId string) (*webrtc.PeerConnection, error) {
+	configuration := webrtc.Configuration{
+		ICEServers: []webrtc.ICEServer{
+			{
+				URLs: []string{"stun:stun.l.google.com:19302"}, // Google's public STUN server
+			},
+		},
+	}
+
+	peerConnection, err := webrtc.NewPeerConnection(configuration)
+	if err != nil {
+		return nil, err
+	}
+
+	err = peerConnection.SetRemoteDescription(offer)
+	if err != nil {
+		return nil, err
+	}
+
+	peerConnection.OnICECandidate(func(c *webrtc.ICECandidate) {
+		// defer candidatesGathered.Done()
+		if c == nil {
+			return
+		}
+
+		candidateMessage := c.ToJSON() // This will serialize the ICECandidate
+
+		RtcMutex.Lock()
+
+		// Send the candidate as a WebSocket message to the client
+		err := RtcClients[clientId].WebsocketConn.WriteJSON(candidateMessage)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// Unlock the mutex after sending the candidate
+		RtcMutex.Unlock()
+
+	})
+
+	videoTrack, err := webrtc.NewTrackLocalStaticRTP(
+		webrtc.RTPCodecCapability{
+			MimeType:    "video/H264",
+			ClockRate:   90000,                                          // Standard for H264
+			Channels:    1,                                              // Single channel for video
+			SDPFmtpLine: "profile-level-id=42e01f;packetization-mode=1", // Common SDP parameters for H264
+			RTCPFeedback: []webrtc.RTCPFeedback{
+				{Type: "nack"},
+				{Type: "nack", Parameter: "pli"},
+			}}, "video", "rtcVideoStream")
+	if err != nil {
+		return nil, err
+	}
+
+	audioTrack, err := webrtc.NewTrackLocalStaticRTP(webrtc.RTPCodecCapability{
+		MimeType:    "audio/opus",
+		ClockRate:   48000, // Standard for G.722
+		Channels:    1,     // G.722 is mono (1 channel)
+		SDPFmtpLine: "ptime=0",
+	}, "audio", "rtcAudioStream")
+	if err != nil {
+		return nil, err
+	}
+
+	videoStreamer := CreateMediaStreamer(5005, "0.0.0.0", videoTrack)
+
+	audioStreamer := CreateMediaStreamer(5006, "0.0.0.0", audioTrack)
+
+	MediaMutex.Lock()
+	VideoMediaMap[rtcId] = videoStreamer
+	AudioMediaMap[rtcId] = audioStreamer
+	MediaMutex.Unlock()
+
+	_, err = peerConnection.AddTrack(videoTrack)
+	if err != nil {
+		return nil, err
+	}
+	_, err = peerConnection.AddTrack(audioTrack)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create an offer first to set remote description (you may need to adjust this depending on your setup)
+	_, err = peerConnection.CreateOffer(nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var myAnswerOption webrtc.AnswerOptions
+	mySDP, err := peerConnection.CreateAnswer(&myAnswerOption)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("answer sdp IS: ", mySDP)
+
+	err = peerConnection.SetLocalDescription(mySDP)
+	if err != nil {
+		return nil, err
+	}
+
+	RtcMutex.Lock()
+	err = RtcClients[clientId].WebsocketConn.WriteJSON(mySDP)
+	RtcMutex.Unlock()
+	if err != nil {
+		return nil, err
+	}
+
+	return peerConnection, nil
+
+}
+
+type RTPMediaStreamer struct {
+	Port        uint16
+	Hostname    string
+	MimeType    string
+	WebRTCTrack *webrtc.TrackLocalStaticRTP
+}
+
+func CreateMediaStreamer(Port uint16, Hostname string, WebRTCTrack *webrtc.TrackLocalStaticRTP) RTPMediaStreamer {
+	return RTPMediaStreamer{
+		Port: Port, Hostname: Hostname, WebRTCTrack: WebRTCTrack,
+	}
+}
+
+func StreamReader(streamerType string, hostname string, port uint16) error {
+	var streamMap *map[string]RTPMediaStreamer
+	switch streamerType {
+	case "video":
+		streamMap = &VideoMediaMap
+	case "audio":
+		streamMap = &AudioMediaMap
+	default:
+		return errors.New("invalid streamerType")
+	}
+	address := fmt.Sprintf("%s:%d", hostname, port)
+	fmt.Println("starting UDP stream on: " + address)
+
+	udpAddr, err := net.ResolveUDPAddr("udp", address)
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+
+	conn, err := net.ListenUDP("udp", udpAddr)
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+	defer conn.Close()
+
+	buf := make([]byte, 1500)
+
+	for {
+		n, _, err := conn.ReadFromUDP(buf)
+		if err != nil {
+			log.Printf("Error reading from UDP: %v", err)
+			continue
+		}
+
+		var packet rtp.Packet
+
+		err = packet.Unmarshal(buf[:n])
+		if err != nil {
+			log.Printf("Error parsing packet")
+			continue
+		}
+
+		MediaMutex.Lock()
+
+		for _, mStreamer := range *streamMap {
+			err = mStreamer.WebRTCTrack.WriteRTP(&packet)
+			if err != nil {
+				log.Printf("Error adding pcket to track")
+				continue
+			}
+		}
+		MediaMutex.Unlock()
+
+	}
 
 }
