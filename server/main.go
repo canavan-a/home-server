@@ -185,6 +185,7 @@ func handleUseOnetimeCode(c *gin.Context) {
 
 func MiddlewareAuthenticate(c *gin.Context) {
 	if c.Request.Method == "GET" {
+		fmt.Println("GET request")
 		MiddlewareAuthenticateGET(c)
 	} else {
 		MiddlewareAuthenticatePOST(c)
@@ -665,6 +666,7 @@ func handleRelayServer(c *gin.Context) {
 	fmt.Println("upgrading")
 	conn, err := Upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
+		fmt.Println(err)
 		return
 	}
 	defer conn.Close()
