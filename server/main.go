@@ -820,31 +820,13 @@ func initPeerConnection(clientId string, offer webrtc.SessionDescription, rtcId 
 	if err != nil {
 		return nil, err
 	}
-
-	audioTrack, err := webrtc.NewTrackLocalStaticRTP(webrtc.RTPCodecCapability{
-		MimeType:    "audio/opus",
-		ClockRate:   48000, // Standard for G.722
-		Channels:    1,     // G.722 is mono (1 channel)
-		SDPFmtpLine: "ptime=0",
-	}, "audio", "rtcAudioStream")
-	if err != nil {
-		return nil, err
-	}
-
 	videoStreamer := CreateMediaStreamer(5005, "0.0.0.0", videoTrack)
-
-	audioStreamer := CreateMediaStreamer(5006, "0.0.0.0", audioTrack)
 
 	MediaMutex.Lock()
 	VideoMediaMap[rtcId] = videoStreamer
-	AudioMediaMap[rtcId] = audioStreamer
 	MediaMutex.Unlock()
 
 	_, err = peerConnection.AddTrack(videoTrack)
-	if err != nil {
-		return nil, err
-	}
-	_, err = peerConnection.AddTrack(audioTrack)
 	if err != nil {
 		return nil, err
 	}
