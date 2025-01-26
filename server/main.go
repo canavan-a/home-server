@@ -743,7 +743,7 @@ func handleRelayServer(c *gin.Context) {
 				RtcMutex.Unlock()
 
 				// Process the offer (e.g., set it on a PeerConnection)
-				fmt.Println("Received WebRTC offer:", webrtcOffer.SDP)
+				// fmt.Println("Received WebRTC offer:", webrtcOffer.SDP)
 			} else if offer.Type == "candidate" {
 				candidate := webrtc.ICECandidateInit{
 					Candidate:     offer.Candidate,
@@ -795,6 +795,8 @@ func initPeerConnection(clientId string, offer webrtc.SessionDescription, rtcId 
 		candidateMessage := c.ToJSON() // This will serialize the ICECandidate
 
 		RtcMutex.Lock()
+		fmt.Println("ICE CANDIDATE FOUND!!!")
+		fmt.Println(candidateMessage)
 
 		// Send the candidate as a WebSocket message to the client
 		err := RtcClients[clientId].WebsocketConn.WriteJSON(candidateMessage)
@@ -842,7 +844,7 @@ func initPeerConnection(clientId string, offer webrtc.SessionDescription, rtcId 
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("answer sdp IS: ", mySDP)
+	// fmt.Println("answer sdp IS: ", mySDP)
 
 	err = peerConnection.SetLocalDescription(mySDP)
 	if err != nil {
