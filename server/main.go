@@ -934,6 +934,8 @@ func StreamReader(streamerType string, hostname string, port uint16) error {
 			continue
 		}
 
+		fmt.Println(packet.Payload)
+
 		MediaMutex.Lock()
 
 		for _, mStreamer := range *streamMap {
