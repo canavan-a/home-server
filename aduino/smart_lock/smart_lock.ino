@@ -94,7 +94,12 @@ void loop() {
       } else{
         stepperCamera.setSpeed(-3000);
       }
-      stepperCamera.runSpeed();
+
+      unsigned long startTime = millis();
+
+      while(millis() - startTime <500){
+          stepperCamera.runSpeed();
+      }
 
       delay(500);
 
