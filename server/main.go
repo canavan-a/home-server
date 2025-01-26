@@ -352,14 +352,14 @@ func handleListAddresses(c *gin.Context) {
 
 func doLock() {
 	status, _ := SerialSendRec("s")
-	if status != "L" {
+	if status != "O" {
 		ToggleDoor()
 	}
 }
 
 func doUnlock() {
 	status, _ := SerialSendRec("s")
-	if status != "O" {
+	if status != "L" {
 		ToggleDoor()
 	}
 }

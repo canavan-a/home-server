@@ -86,22 +86,19 @@ void loop() {
 
       digitalWrite(X_ENABLE_PIN, HIGH);  // Disable the motor to reduce humming
     } else if (command == 'l' || command == 'r') {
+      // enable stepper
       digitalWrite(Y_ENABLE_PIN, LOW);
 
-      // Set the target position relative to the current position
-
       if (command == 'l'){
-        stepperCamera.move(500);  // Move `n` steps
+        stepperCamera.setSpeed(3000);
       } else{
-        stepperCamera.move(-500);
+        stepperCamera.setSpeed(-3000);
       }
-      
+      stepperCamera.runSpeed();
 
-      // Run the motor until it completes the movement
-      while (stepperCamera.distanceToGo() != 0) {
-        stepperCamera.run();
-      }
+      delay(100);
 
+      // disable stepper
       digitalWrite(Y_ENABLE_PIN, HIGH);
     } else if (command == 's'){  // status command
       if (directionToggle) {
