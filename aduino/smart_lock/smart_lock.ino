@@ -96,7 +96,7 @@ void loop() {
       }
       stepperCamera.runSpeed();
 
-      delay(100);
+      delay(500);
 
       // disable stepper
       digitalWrite(Y_ENABLE_PIN, HIGH);
