@@ -90,9 +90,9 @@ void loop() {
       digitalWrite(Y_ENABLE_PIN, LOW);
 
       if (command == 'l'){
-        stepperCamera.setSpeed(3000);
+        stepperCamera.setSpeed(500);
       } else{
-        stepperCamera.setSpeed(-3000);
+        stepperCamera.setSpeed(-500);
       }
 
       unsigned long startTime = millis();
