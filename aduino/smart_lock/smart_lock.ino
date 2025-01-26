@@ -97,7 +97,7 @@ void loop() {
 
       unsigned long startTime = millis();
 
-      while(millis() - startTime <500){
+      while(millis() - startTime <50){
           stepperCamera.runSpeed();
       }
 
