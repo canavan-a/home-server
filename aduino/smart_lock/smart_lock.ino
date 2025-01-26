@@ -86,6 +86,7 @@ void loop() {
 
       digitalWrite(X_ENABLE_PIN, HIGH);  // Disable the motor to reduce humming
     } else if (command == 'l' || command == 'r') {
+
       // enable stepper
       digitalWrite(Y_ENABLE_PIN, LOW);
 
@@ -97,7 +98,7 @@ void loop() {
 
       unsigned long startTime = millis();
 
-      while(millis() - startTime <50){
+      while(millis() - startTime <150){
           stepperCamera.runSpeed();
       }
 
