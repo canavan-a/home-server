@@ -167,7 +167,7 @@ export const Camera = () => {
             back
           </button>
         </div>
-        <div className="w-[calc(100%-2rem)] h-[calc(100%-2rem)] flex items-center justify-center m-10 bg-black">
+        <div className="w-[calc(100%-7rem)] h-[calc(100%-25rem)] flex items-center justify-center mt-5 mx-5 mb-2 bg-black">
           <video
             ref={videoRef}
             autoPlay
