@@ -816,14 +816,14 @@ func initPeerConnection(clientId string, offer webrtc.SessionDescription, rtcId 
 
 	videoTrack, err := webrtc.NewTrackLocalStaticRTP(
 		webrtc.RTPCodecCapability{
-			MimeType:    "video/H264",
-			ClockRate:   90000,                                          // Standard for H264
-			Channels:    1,                                              // Single channel for video
-			SDPFmtpLine: "profile-level-id=42e00a;packetization-mode=0", // Common SDP parameters for H264
+			MimeType:  "video/VP8", // Use VP8 instead of H.264
+			ClockRate: 90000,       // Standard for VP8
+			Channels:  1,           // Single channel for video
 			RTCPFeedback: []webrtc.RTCPFeedback{
 				{Type: "nack"},
 				{Type: "nack", Parameter: "pli"},
-			}}, "video", "rtcVideoStream")
+			}},
+		"video", "rtcVideoStream")
 	if err != nil {
 		return nil, err
 	}
