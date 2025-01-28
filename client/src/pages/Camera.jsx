@@ -167,7 +167,7 @@ export const Camera = () => {
             back
           </button>
         </div>
-        <div className="w-[calc(100%-15rem)] h-[calc(100%-15rem)] flex items-center justify-center m-10 bg-black">
+        <div className="w-[calc(100%-2rem)] h-[calc(100%-2rem)] flex items-center justify-center m-10 bg-black">
           <video
             ref={videoRef}
             autoPlay
@@ -178,7 +178,7 @@ export const Camera = () => {
         <div className="w-full flex">
           <div className="flex-grow"></div>
           <button
-            className="btn btn-lg w-60"
+            className="btn btn-md"
             onClick={() => {
               moveCamera("r");
             }}
@@ -187,7 +187,7 @@ export const Camera = () => {
           </button>
           <div className="w-60"></div>
           <button
-            className="btn btn-lg w-60 "
+            className="btn btn-md "
             onClick={() => {
               moveCamera("l");
             }}
