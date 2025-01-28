@@ -121,14 +121,15 @@ export const Camera = () => {
         };
 
         pc.ontrack = (event) => {
+          alert("got track");
           const stream = event.streams[0]; // Get the first MediaStream
           console.log("Received stream:", stream);
 
           // Attach the stream to an audio or video element
           if (stream.getVideoTracks().length > 0) {
+            alert("added track");
             videoRef.current.srcObject = stream;
           }
-          const videoTrack = stream.getVideoTracks()[0];
         };
       };
       signalingServer.onopen = () => {
@@ -175,7 +176,7 @@ export const Camera = () => {
     };
 
     checkAutoplaySupport();
-  }, []);
+  }, [videoRef]);
 
   return (
     <>
