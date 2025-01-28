@@ -194,6 +194,7 @@ export const Camera = () => {
             loop={true}
             muted={true}
             playsInline={true}
+            onClick={startVideoStream}
             className="w-full h-full object-contain"
           />
         </div>
