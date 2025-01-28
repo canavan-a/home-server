@@ -40,25 +40,21 @@ export const Camera = () => {
   useEffect(() => {
     let signalingServer;
     let interval;
+
+    const doPing = () => {
+      console.log("pinging");
+      const ping = JSON.stringify({ type: "ping" });
+      signalingServer.send(ping);
+    };
+
     if (password) {
       console.log("PASSWORD", password);
       signalingServer = new WebSocket(
         `wss:/aidan.house/api/camera/relay?doorCode=${password}`
       );
 
-      signalingServer.onopen = () => {
-        console.log("ws open");
-        interval = setInterval(() => {
-          doPing();
-        }, 1000);
-      };
       signalingServer.onclose = () => {
         navigate("/settings");
-      };
-
-      const doPing = () => {
-        const ping = JSON.stringify({ type: "ping" });
-        signalingServer.send(ping);
       };
 
       const servers = {
@@ -132,6 +128,9 @@ export const Camera = () => {
       };
       signalingServer.onopen = () => {
         console.log("starting");
+        interval = setInterval(() => {
+          doPing();
+        }, 8000);
         start();
       };
     } else {
@@ -152,7 +151,6 @@ export const Camera = () => {
     if (videoRef.current) {
       // Start the video playback after user clicks the button
       alert("starting stream");
-      videoRef.current.muted = false;
 
       videoRef.current
         .play()
@@ -192,12 +190,10 @@ export const Camera = () => {
         <div className="absolute inset-0">
           <video
             ref={videoRef}
-            autoPlay={false}
+            autoPlay={true}
             loop={true}
             muted={true}
             playsInline={true}
-            controls={true}
-            onClick={startVideoStream}
             className="w-full h-full object-contain"
           />
         </div>
@@ -213,7 +209,10 @@ export const Camera = () => {
             >
               <FontAwesomeIcon icon={faArrowLeft} />
             </button>
-            <button onClick={startVideoStream} className="btn btn-md mx-2">
+            <button
+              onClick={() => startVideoStream()}
+              className="btn btn-md mx-2"
+            >
               <FontAwesomeIcon icon={faPlay} />
             </button>
             <button
