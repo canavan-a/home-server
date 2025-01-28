@@ -175,8 +175,9 @@ export const Camera = () => {
           <video
             ref={videoRef}
             autoPlay
+            muted
             playsInline
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain"
           />
         </div>
 
