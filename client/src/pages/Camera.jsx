@@ -149,6 +149,14 @@ export const Camera = () => {
   }, [password]);
   const startVideoStream = () => {
     if (videoRef.current) {
+      console.log(RTCRtpReceiver.getCapabilities("video").codecs);
+
+      alert(
+        RTCRtpReceiver.getCapabilities("video").codecs.map(
+          (value) => value.mimeType
+        )
+      );
+
       // Start the video playback after user clicks the button
       alert("starting stream");
 
