@@ -152,6 +152,8 @@ export const Camera = () => {
     if (videoRef.current) {
       // Start the video playback after user clicks the button
       alert("starting stream");
+      videoRef.current.muted = false;
+
       videoRef.current
         .play()
         .then(() => {
@@ -194,6 +196,7 @@ export const Camera = () => {
             loop={true}
             muted={true}
             playsInline={true}
+            controls={true}
             onClick={startVideoStream}
             className="w-full h-full object-contain"
           />
