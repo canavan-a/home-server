@@ -123,6 +123,23 @@ export const Camera = () => {
           // Attach the stream to an audio or video element
           if (stream.getVideoTracks().length > 0) {
             videoRef.current.srcObject = stream;
+
+            const tx = stream.getVideoTracks()[0];
+            tx.onmute = () => {
+              alert("Video track has been muted.");
+            };
+
+            tx.onunmute = () => {
+              alert("Video track is unmuted.");
+            };
+
+            tx.onended = () => {
+              alert("Video track has ended.");
+            };
+
+            tx.onerror = (error) => {
+              alert("Error in video track:", error);
+            };
           }
         };
       };
@@ -149,7 +166,7 @@ export const Camera = () => {
   }, [password]);
   const startVideoStream = () => {
     if (videoRef.current) {
-      console.log(RTCRtpReceiver.getCapabilities("video").codecs);
+      // console.log(RTCRtpReceiver.getCapabilities("video").codecs);
 
       alert(
         RTCRtpReceiver.getCapabilities("video").codecs.map(
