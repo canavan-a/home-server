@@ -819,7 +819,7 @@ func initPeerConnection(clientId string, offer webrtc.SessionDescription, rtcId 
 			MimeType:    "video/H264",
 			ClockRate:   90000,                                          // Standard for H264
 			Channels:    1,                                              // Single channel for video
-			SDPFmtpLine: "profile-level-id=42e01f;packetization-mode=1", // Common SDP parameters for H264
+			SDPFmtpLine: "profile-level-id=42e00a;packetization-mode=0", // Common SDP parameters for H264
 			RTCPFeedback: []webrtc.RTCPFeedback{
 				{Type: "nack"},
 				{Type: "nack", Parameter: "pli"},
