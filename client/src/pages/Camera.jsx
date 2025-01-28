@@ -3,6 +3,7 @@ import {
   faArrowRight,
   faChevronLeft,
   faChevronRight,
+  faPlay,
   faRightFromBracket,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -128,12 +129,6 @@ export const Camera = () => {
             videoRef.current.srcObject = stream;
           }
           const videoTrack = stream.getVideoTracks()[0];
-          videoTrack.onmute = () => {
-            console.log("Video track muted try unmute");
-            videoTrack.enabled = true; // Try unmuting
-          };
-          videoTrack.onunmute = () => console.log("Video track unmuted");
-          videoTrack.onended = () => console.log("Video track ended");
         };
       };
       signalingServer.onopen = () => {
@@ -148,11 +143,39 @@ export const Camera = () => {
       if (signalingServer) {
         signalingServer.close();
       }
+
       if (interval) {
         clearInterval(interval);
       }
     };
   }, [password]);
+  const handleUserInteraction = () => {
+    videoRef.current.play();
+  };
+
+  const [canAutoplay, setCanAutoplay] = useState(false);
+
+  useEffect(() => {
+    const checkAutoplaySupport = async () => {
+      if (videoRef.current) {
+        try {
+          // Attempt to play the video
+          await videoRef.current.play();
+          console.log("Autoplay is supported and enabled.");
+          setCanAutoplay(true);
+          alert("Autoplay is supported and enabled.");
+        } catch (error) {
+          console.error("Autoplay is not supported or blocked:", error);
+          setCanAutoplay(false);
+          alert(
+            "Autoplay is not supported or blocked. Please interact with the page to play the video."
+          );
+        }
+      }
+    };
+
+    checkAutoplaySupport();
+  }, []);
 
   return (
     <>
@@ -174,9 +197,10 @@ export const Camera = () => {
         <div className="absolute inset-0">
           <video
             ref={videoRef}
-            autoPlay
-            muted
-            playsInline
+            autoPlay={true}
+            loop={true}
+            muted={true}
+            playsInline={true}
             className="w-full h-full object-contain"
           />
         </div>
@@ -185,20 +209,30 @@ export const Camera = () => {
         <div className="absolute bottom-4 left-0 w-full flex items-center justify-center">
           <div className="flex">
             <button
-              className="btn btn-md mr-4"
+              className="btn btn-md"
               onClick={() => {
                 moveCamera("r");
               }}
             >
-              <FontAwesomeIcon icon={faArrowLeft} /> left
+              <FontAwesomeIcon icon={faArrowLeft} />
             </button>
+            {canAutoplay ? (
+              <div className="mx-2"></div>
+            ) : (
+              <button
+                onClick={handleUserInteraction}
+                className="btn btn-md mx-2"
+              >
+                <FontAwesomeIcon icon={faPlay} />
+              </button>
+            )}
             <button
               className="btn btn-md"
               onClick={() => {
                 moveCamera("l");
               }}
             >
-              right <FontAwesomeIcon icon={faArrowRight} />
+              <FontAwesomeIcon icon={faArrowRight} />
             </button>
           </div>
         </div>
