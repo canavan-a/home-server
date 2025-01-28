@@ -1,5 +1,6 @@
 import {
   faArrowLeft,
+  faArrowRight,
   faChevronLeft,
   faChevronRight,
   faRightFromBracket,
@@ -155,8 +156,9 @@ export const Camera = () => {
 
   return (
     <>
-      <div className="w-full h-screen flex flex-col items-center justify-center">
-        <div className="absolute top-4 right-4 flex ">
+      <div className="relative w-full h-screen">
+        {/* Back button */}
+        <div className="absolute top-4 right-4 flex z-10">
           <button
             className="btn btn-glass mr-2"
             onClick={() => {
@@ -167,35 +169,37 @@ export const Camera = () => {
             back
           </button>
         </div>
-        <div className="w-[calc(100%-7rem)] h-[calc(100%-25rem)] flex items-center justify-center mt-5 mx-5 mb-2 bg-black">
+
+        {/* Video background */}
+        <div className="absolute inset-0">
           <video
             ref={videoRef}
             autoPlay
             playsInline
-            className="w-full h-full object-contain"
+            className="w-full h-full object-cover"
           />
         </div>
-        <div className="w-full flex">
-          <div className="flex-grow"></div>
-          <button
-            className="btn btn-md"
-            onClick={() => {
-              moveCamera("r");
-            }}
-          >
-            left
-          </button>
-          <div className="w-60"></div>
-          <button
-            className="btn btn-md "
-            onClick={() => {
-              moveCamera("l");
-            }}
-          >
-            right
-          </button>
 
-          <div className="flex-grow"></div>
+        {/* Bottom buttons */}
+        <div className="absolute bottom-4 left-0 w-full flex items-center justify-center">
+          <div className="flex">
+            <button
+              className="btn btn-md mr-4"
+              onClick={() => {
+                moveCamera("r");
+              }}
+            >
+              <FontAwesomeIcon icon={faArrowLeft} /> left
+            </button>
+            <button
+              className="btn btn-md"
+              onClick={() => {
+                moveCamera("l");
+              }}
+            >
+              right <FontAwesomeIcon icon={faArrowRight} />
+            </button>
+          </div>
         </div>
       </div>
     </>
