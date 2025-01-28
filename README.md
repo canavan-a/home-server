@@ -20,4 +20,4 @@ aidan.home
 
 ### command to start video rtp server
 
-`ffmpeg -f v4l2 -framerate 30 -i /dev/video0 -vcodec h264_v4l2m2m -pix_fmt yuv420p -s 640x360 -rtbufsize 64M -use_wallclock_as_timestamps 1 -f rtp -sdp_file video.sdp rtp://127.0.0.1:5005`
+`ffmpeg -f v4l2 -i /dev/video0 -vf "drawtext=text='%{localtime}':x=10:y=10:fontcolor=white:fontsize=16:box=1:boxcolor=black@0.5" -r 15 -c:v libx264 -preset fast -tune zerolatency -maxrate 800k -bufsize 1600k -g 30 -keyint_min 30 -f rtp -flush_packets 0 rtp://localhost:5005`

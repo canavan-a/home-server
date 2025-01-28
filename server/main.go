@@ -201,6 +201,7 @@ func MiddlewareAuthenticatePOST(c *gin.Context) {
 	err := c.BindJSON(&payload)
 	if err != nil {
 		c.JSON(400, gin.H{"response": "unable to parse JSON"})
+		c.Abort()
 		return
 	}
 
@@ -210,6 +211,7 @@ func MiddlewareAuthenticatePOST(c *gin.Context) {
 
 	if result == 0 {
 		c.JSON(400, gin.H{"response": "incorrect code"})
+		c.Abort()
 		return
 	}
 	c.Next()
@@ -226,6 +228,7 @@ func MiddlewareAuthenticateGET(c *gin.Context) {
 
 	if result == 0 {
 		c.JSON(400, gin.H{"response": "incorrect code"})
+		c.Abort()
 		return
 	}
 	c.Next()
@@ -757,6 +760,8 @@ func handleRelayServer(c *gin.Context) {
 					fmt.Println("Error adding ice candidate:", err)
 					continue
 				}
+			} else if offer.Type == "ping" {
+				conn.WriteMessage(websocket.TextMessage, []byte("pong"))
 			} else {
 				fmt.Println("Received unsupported message type")
 			}
