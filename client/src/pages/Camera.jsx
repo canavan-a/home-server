@@ -121,13 +121,11 @@ export const Camera = () => {
         };
 
         pc.ontrack = (event) => {
-          alert("got track");
           const stream = event.streams[0]; // Get the first MediaStream
           console.log("Received stream:", stream);
 
           // Attach the stream to an audio or video element
           if (stream.getVideoTracks().length > 0) {
-            alert("added track");
             videoRef.current.srcObject = stream;
           }
         };
@@ -150,33 +148,27 @@ export const Camera = () => {
       }
     };
   }, [password]);
-  const handleUserInteraction = () => {
-    videoRef.current.play();
-  };
+  const startVideoStream = () => {
+    if (videoRef.current) {
+      // Start the video playback after user clicks the button
+      alert("starting stream");
+      videoRef.current
+        .play()
+        .then(() => {
+          alert("stream started");
 
-  const [canAutoplay, setCanAutoplay] = useState(false);
-
-  useEffect(() => {
-    const checkAutoplaySupport = async () => {
-      if (videoRef.current) {
-        try {
-          // Attempt to play the video
-          await videoRef.current.play();
-          console.log("Autoplay is supported and enabled.");
-          setCanAutoplay(true);
-          alert("Autoplay is supported and enabled.");
-        } catch (error) {
-          console.error("Autoplay is not supported or blocked:", error);
-          setCanAutoplay(false);
+          console.log("Video started successfully.");
+        })
+        .catch((error) => {
+          console.error("Failed to start video:", error);
           alert(
-            "Autoplay is not supported or blocked. Please interact with the page to play the video."
+            "Autoplay is blocked by your browser. Please interact with the page to play the video."
           );
-        }
-      }
-    };
-
-    checkAutoplaySupport();
-  }, [videoRef]);
+        });
+    } else {
+      alert("no video ref");
+    }
+  };
 
   return (
     <>
@@ -198,7 +190,7 @@ export const Camera = () => {
         <div className="absolute inset-0">
           <video
             ref={videoRef}
-            autoPlay={true}
+            autoPlay={false}
             loop={true}
             muted={true}
             playsInline={true}
@@ -217,16 +209,9 @@ export const Camera = () => {
             >
               <FontAwesomeIcon icon={faArrowLeft} />
             </button>
-            {canAutoplay ? (
-              <div className="mx-2"></div>
-            ) : (
-              <button
-                onClick={handleUserInteraction}
-                className="btn btn-md mx-2"
-              >
-                <FontAwesomeIcon icon={faPlay} />
-              </button>
-            )}
+            <button onClick={startVideoStream} className="btn btn-md mx-2">
+              <FontAwesomeIcon icon={faPlay} />
+            </button>
             <button
               className="btn btn-md"
               onClick={() => {
