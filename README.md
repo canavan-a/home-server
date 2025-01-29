@@ -24,4 +24,4 @@ aidan.home
 
 ### VP8
 
-`ffmpeg -f v4l2 -i /dev/video0 -vf "drawtext=text='%{localtime}':x=10:y=10:fontcolor=white:fontsize=16:box=1:boxcolor=black@0.5" -r 15 -c:v vp8 -quality good -cpu-used 0 -b:v 800k -f rtp -flush_packets 0 rtp://localhost:5005`
+`ffmpeg -f v4l2 -framerate 30 -fflags nobuffer -flags low_delay -i /dev/video0 -c:v vp8 -b:v 200k -g 15 -an -s 480x360 -filter:v "drawtext=text='%{localtime}':x=10:y=10:fontcolor=white:fontsize=14:box=1:boxcolor=black@0.5" -preset ultrafast -f rtp rtp://127.0.0.1:5005`
