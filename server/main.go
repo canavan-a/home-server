@@ -92,6 +92,10 @@ func main() {
 			camera.POST("/move", HandleCameraControl)
 			camera.GET("/relay", handleRelayServer)
 		}
+		rtc := api.Group("/rtc") //MiddlewareAuthenticate
+		{
+			rtc.GET("/stunturn", handleCloudflareStunTurn)
+		}
 
 		//MiddlewareAuthenticate
 		api.POST("/netscan", MiddlewareAuthenticate, handleScanNetworkAddresses)
@@ -104,7 +108,94 @@ func main() {
 	// go runNetworkActor()
 	// ScanNetwork()
 
+	StartStunTurnRunner()
+
 	r.Run(":5000")
+}
+
+type IceServerResponse struct {
+	IceServers IceServers `json:"iceServers"`
+}
+
+type IceServers struct {
+	URLS       []string `json:"urls"`
+	Username   string   `json:"username"`
+	Credential string   `json:"credential"`
+}
+
+func FetchCloudflareTurnServers() (iceResponse IceServerResponse, err error) {
+	cloudflareIdToken := os.Getenv("CLOUDFLARE_TURN_TOKEN_ID")
+	cloudflareApiToken := os.Getenv("CLOUDFLARE_TURN_TOKEN_API")
+	url := fmt.Sprintf("https://rtc.live.cloudflare.com/v1/turn/keys/%s/credentials/generate", cloudflareIdToken)
+
+	// Define request body
+	data := map[string]interface{}{
+		"ttl": 86400,
+	}
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		fmt.Println("Error marshalling JSON:", err)
+		return
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		fmt.Println("Error creating request:", err)
+		return
+	}
+	req.Header.Set("Authorization", "Bearer "+cloudflareApiToken)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println("Error making request:", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("Error reading request body:", err)
+		return
+	}
+
+	err = json.Unmarshal(body, &iceResponse)
+	if err != nil {
+		fmt.Println("Error unmarshalling response:", err)
+		return
+	}
+
+	return
+}
+
+var (
+	CloudflareIceServers IceServers
+	CloudflareMutex      sync.Mutex
+)
+
+func StartStunTurnRunner() {
+
+	go func() {
+		for {
+			iceResponse, err := FetchCloudflareTurnServers()
+			if err != nil {
+				fmt.Println(err.Error())
+			} else {
+				CloudflareMutex.Lock()
+				CloudflareIceServers = iceResponse.IceServers
+				fmt.Println(CloudflareIceServers)
+				CloudflareMutex.Unlock()
+			}
+
+			time.Sleep(time.Minute * 30)
+		}
+	}()
+
+}
+
+func handleCloudflareStunTurn(c *gin.Context) {
+	c.JSON(200, CloudflareIceServers)
 }
 
 var (
@@ -777,6 +868,12 @@ func initPeerConnection(clientId string, offer webrtc.SessionDescription, rtcId 
 		ICEServers: []webrtc.ICEServer{
 			{
 				URLs: []string{"stun:stun.l.google.com:19302"}, // Google's public STUN server
+			},
+			{
+				URLs:           CloudflareIceServers.URLS,
+				Username:       CloudflareIceServers.Username,
+				Credential:     CloudflareIceServers.Credential,
+				CredentialType: webrtc.ICECredentialTypePassword,
 			},
 		},
 	}
