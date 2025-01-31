@@ -92,7 +92,7 @@ func main() {
 			camera.POST("/move", HandleCameraControl)
 			camera.GET("/relay", handleRelayServer)
 		}
-		rtc := api.Group("/rtc") //MiddlewareAuthenticate
+		rtc := api.Group("/rtc", MiddlewareAuthenticate)
 		{
 			rtc.GET("/stunturn", handleCloudflareStunTurn)
 		}
