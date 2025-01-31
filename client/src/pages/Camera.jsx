@@ -57,16 +57,23 @@ export const Camera = () => {
         navigate("/settings");
       };
 
-      const servers = {
-        iceServers: [
-          {
-            urls: [...STUN_SERVERS],
-          },
-        ],
-      };
-      const pc = new RTCPeerConnection(servers);
-
       const start = async () => {
+        const turnResponse = await axios.get(
+          `https://aidan.house/api/rtc/stunturn?doorCode=${password}`
+        );
+
+        const turnServer = turnResponse.data;
+
+        const servers = {
+          iceServers: [
+            {
+              urls: [...STUN_SERVERS],
+            },
+            { ...turnServer },
+          ],
+        };
+
+        const pc = new RTCPeerConnection(servers);
         const dataChannel = pc.createDataChannel("dummyChannel");
 
         signalingServer.onmessage = (event) => {
