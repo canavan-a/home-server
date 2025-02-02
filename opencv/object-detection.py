@@ -46,6 +46,15 @@ except Exception as e:
     print(f"Error: Unable to open pipe ({e})")
     exit(1)
 
+COCO_CLASSES = {
+    0: 'person', 1: 'bicycle', 2: 'car', 3: 'motorcycle', 4: 'airplane', 5: 'bus', 6: 'train', 
+    7: 'truck', 8: 'boat', 9: 'traffic light', 10: 'fire hydrant', 11: 'stop sign', 12: 'parking meter', 
+    13: 'bench', 14: 'bird', 15: 'cat', 16: 'dog', 17: 'horse', 18: 'sheep', 19: 'cow', 20: 'elephant', 
+    21: 'bear', 22: 'zebra', 23: 'giraffe', 24: 'backpack', 25: 'umbrella', 26: 'handbag', 27: 'tie', 
+    28: 'suitcase', 29: 'frisbee', 30: 'skis', 31: 'snowboard', 32: 'sports ball', 33: 'kite', 34: 'baseball bat',
+    # Add remaining classes as needed...
+    94: 'scissors', 95: 'teddy bear', 96: 'hair drier', 97: 'toothbrush'
+}
 
 while True:
     ret, frame = cap.read()
@@ -66,7 +75,9 @@ while True:
     for detection in output:
         class_id = int(np.argmax(detection[5:]))  # Get class ID
 
-        print(f"Detected class ID: {class_id}")
+        if class_id in COCO_CLASSES:
+            class_name = COCO_CLASSES[class_id]
+            print(f"Detected: {class_name} (Class ID: {class_id})")
 
     # Write the frame (without drawing boxes)
     pipe.write(frame.tobytes())
