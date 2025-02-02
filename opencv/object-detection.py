@@ -80,7 +80,7 @@ while True:
             boxes = batch[..., :4]  # Bounding box coordinates (x1, y1, x2, y2)
             conf = batch[..., 4]    # Confidence score
             class_scores = batch[..., 5:]  # Class scores for 80 classes
-            scores, class_ids = torch.max(torch.tensor(class_scores), dim=-1)
+            scores, class_ids = torch.max(torch.tensor(class_scores).clone().detach(), dim=-1)
 
             # Filter out predictions below confidence threshold
             mask = conf * scores > conf_thres
@@ -103,11 +103,14 @@ while True:
     # Draw bounding boxes on the frame
     img = frame  # Use the original frame (BGR format)
 
+    height, width = img.shape[:2]  # Get the original image dimensions
+
     for pred in filtered_predictions[0]:
-        x1 = int(pred[0].item())
-        y1 = int(pred[1].item())
-        x2 = int(pred[2].item())
-        y2 = int(pred[3].item())
+        # Scale the bounding boxes back to original image size
+        x1 = int(pred[0].item() * width / 416)  # Rescale x1
+        y1 = int(pred[1].item() * height / 416)  # Rescale y1
+        x2 = int(pred[2].item() * width / 416)  # Rescale x2
+        y2 = int(pred[3].item() * height / 416)  # Rescale y2
         confidence = pred[4].item()
         class_id = int(pred[5].item())
 
