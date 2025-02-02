@@ -60,7 +60,7 @@ while True:
             # Draw rectangle and label
             cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
             cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, color, 2)
-
+    print("frame processed")
     # Write processed frame to virtual camera
     pipe.write(frame.tobytes())
 
