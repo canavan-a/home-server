@@ -46,57 +46,56 @@ except Exception as e:
     print(f"Error: Unable to open pipe ({e})")
     exit(1)
 
-# Class IDs to keep: 0 for 'person', 1 for 'car'
-TARGET_CLASSES = [0, 1]
+# Assuming ort_session is initialized properly
+TARGET_CLASSES = {0: 'Person', 1: 'Car'}
+
+# Only process these class IDs
+TARGET_CLASS_IDS = [0, 1]
 
 while True:
     ret, frame = cap.read()
     if not ret:
         break
 
-    # Prepare the frame for YOLO input (resize to 640x640 and normalize)
+    # Prepare the frame for YOLO input
     input_frame = cv2.resize(frame, (416, 416))
-    input_frame = input_frame.astype(np.float32)
-    input_frame /= 255.0  # Normalize to [0, 1]
-
-    # Convert to CHW format (needed for ONNX models)
-    input_frame = np.transpose(input_frame, (2, 0, 1))
-    input_frame = np.expand_dims(input_frame, axis=0)
+    input_frame = input_frame.astype(np.float32) / 255.0  # Normalize to [0, 1]
+    input_frame = np.transpose(input_frame, (2, 0, 1))    # CHW format
+    input_frame = np.expand_dims(input_frame, axis=0)     # Add batch dimension
 
     # Run inference
     inputs = {ort_session.get_inputs()[0].name: input_frame}
     outputs = ort_session.run(None, inputs)
+    output = np.squeeze(outputs[0])  # Remove extra dimensions
 
-    output = outputs[0]  # Extract the array from the list
+    # Post-processing: Draw bounding boxes for cars and people
+    for detection in output:
+        class_id = int(np.argmax(detection[5:]))  # Get class ID
 
-    # Remove any extra dimensions (if present)
-    output = np.squeeze(output)
+        # Filter for cars and people only
+        if class_id in TARGET_CLASS_IDS:
+            class_name = TARGET_CLASSES[class_id]
 
-    # Check the output shape to understand its structure
-    print(f"Output shape: {output.shape}")
+            # Bounding box coordinates (normalized)
+            center_x, center_y, width, height = detection[:4]
+            center_x *= frame.shape[1]
+            center_y *= frame.shape[0]
+            width *= frame.shape[1]
+            height *= frame.shape[0]
 
-    # Assuming output shape: (num_detections, 6) -> [x1, y1, x2, y2, confidence, class_id]
-    # Adjust this if the output shape differs
-    boxes = output[:, :4]          # Bounding box coordinates (x1, y1, x2, y2)
-    confidences = output[:, 4]     # Confidence scores
-    class_ids = output[:, 5].astype(int)  # Class IDs (converted to int)
+            # Convert to top-left and bottom-right coordinates
+            x1 = int(center_x - width / 2)
+            y1 = int(center_y - height / 2)
+            x2 = int(center_x + width / 2)
+            y2 = int(center_y + height / 2)
 
-    start_time = time.time()
+            # Draw rectangle and label
+            color = (0, 255, 0) if class_id == 0 else (255, 0, 0)  # Green for person, blue for car
+            cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+            cv2.putText(frame, class_name, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 
+                        0.5, color, 2)
 
-    # Draw filtered bounding boxes
-    for i in range(len(boxes)):
-        if confidences[i] > 0.5:  # Confidence threshold
-            x1, y1, x2, y2 = boxes[i]
-            cls_id = class_ids[i]
-
-            if cls_id in TARGET_CLASSES:
-                label = "human" if cls_id == 0 else "car"
-                color = (0, 255, 0) if cls_id == 0 else (255, 0, 0)  # Green for person, Blue for car
-
-                # Draw rectangle and label
-                cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), color, 1)
-                cv2.putText(frame, label, (int(x1), int(y1)-5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
-        print("Draw rate: ", 1 / (time.time() - start_time))  # Write processed frame to virtual camera
+    # Write the annotated frame
     pipe.write(frame.tobytes())
 
 cap.release()
