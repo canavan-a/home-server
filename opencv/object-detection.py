@@ -73,16 +73,13 @@ while True:
     # Extract the output from the model
     output = outputs[0]  # Shape should be (1, 25200, 85), i.e., (batch_size, grid_cells, 5 + 80)
 
-    # Reshape the output for multiple grid sizes
-    output = output.reshape(1, 3, 80, 80, 85)  # For 3 grid sizes (80x80, 40x40, 20x20)
-
     # Apply non-maxima suppression to filter predictions
     def non_max_suppression(output, conf_thres=0.5, iou_thres=0.4):
         predictions = []
         for batch in output:
-            boxes = batch[..., :4]
-            conf = batch[..., 4]
-            class_scores = batch[..., 5:]
+            boxes = batch[..., :4]  # Bounding box coordinates (x1, y1, x2, y2)
+            conf = batch[..., 4]    # Confidence score
+            class_scores = batch[..., 5:]  # Class scores for 80 classes
             scores, class_ids = torch.max(torch.tensor(class_scores), dim=-1)
 
             # Filter out predictions below confidence threshold
