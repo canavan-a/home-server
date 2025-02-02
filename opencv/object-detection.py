@@ -48,8 +48,6 @@ except Exception as e:
 
 # Assuming ort_session is initialized properly
 TARGET_CLASSES = {0: 'Person', 1: 'Car'}
-
-# Only process these class IDs
 TARGET_CLASS_IDS = [0, 1]
 
 while True:
@@ -59,42 +57,33 @@ while True:
 
     # Prepare the frame for YOLO input
     input_frame = cv2.resize(frame, (416, 416))
-    input_frame = input_frame.astype(np.float32) / 255.0  # Normalize to [0, 1]
-    input_frame = np.transpose(input_frame, (2, 0, 1))    # CHW format
-    input_frame = np.expand_dims(input_frame, axis=0)     # Add batch dimension
+    input_frame = input_frame.astype(np.float32) / 255.0
+    input_frame = np.transpose(input_frame, (2, 0, 1))
+    input_frame = np.expand_dims(input_frame, axis=0)
 
     # Run inference
     inputs = {ort_session.get_inputs()[0].name: input_frame}
     outputs = ort_session.run(None, inputs)
-    output = np.squeeze(outputs[0])  # Remove extra dimensions
+    output = np.squeeze(outputs[0])
 
-    # Post-processing: Draw bounding boxes for cars and people
+    detected_objects = []  # To store detected objects
+
     for detection in output:
         class_id = int(np.argmax(detection[5:]))  # Get class ID
 
         if class_id in TARGET_CLASS_IDS:
             class_name = TARGET_CLASSES[class_id]
 
-            # Bounding box coordinates (ensure scalar conversion)
-            center_x, center_y, width, height = detection[:4]
-            center_x = float(center_x) * frame.shape[1]
-            center_y = float(center_y) * frame.shape[0]
-            width = float(width) * frame.shape[1]
-            height = float(height) * frame.shape[0]
+            # Add the object and its class name to the detected objects list
+            detected_objects.append(class_name)
 
-            # Convert to top-left and bottom-right coordinates
-            x1 = int(center_x - width / 2)
-            y1 = int(center_y - height / 2)
-            x2 = int(center_x + width / 2)
-            y2 = int(center_y + height / 2)
+    # Print out the detected objects in the current frame
+    if detected_objects:
+        print("Detected objects:", detected_objects)
+    else:
+        print("No objects detected in this frame.")
 
-            # Draw rectangle and label
-            color = (0, 255, 0) if class_id == 0 else (255, 0, 0)  # Green for person, blue for car
-            cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
-            cv2.putText(frame, class_name, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 
-                        0.5, color, 2)
-
-    # Write the annotated frame
+    # Write the frame (without drawing boxes)
     pipe.write(frame.tobytes())
 
 
