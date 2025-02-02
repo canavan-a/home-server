@@ -1,0 +1,64 @@
+import cv2
+from ultralytics import YOLO
+
+# Load YOLO model
+model = YOLO("yolov8n.pt") 
+
+# Open physical webcam (video0)
+cap = cv2.VideoCapture("/dev/video0")
+
+# Open virtual webcam (video10)
+frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+fps = int(cap.get(cv2.CAP_PROP_FPS)) or 30  # Default to 30 FPS if 0
+
+
+# Must create virtual camrea to write to on device
+# sudo modprobe v4l2loopback devices=1 video_nr=30 card_label="Virtual Camera" exclusive_caps=1
+
+out = cv2.VideoWriter(
+    '/dev/video30',
+    cv2.VideoWriter_fourcc(*'MJPG'),
+    fps,
+    (frame_width, frame_height)
+)
+
+# Class IDs to keep: 0 for 'person', 2 for 'car'
+TARGET_CLASSES = [0, 2]
+
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        break
+
+    # Run YOLO inference on the frame
+    results = model(frame)
+
+    # Get detections from the first result
+    detections = results[0].boxes
+
+    # Draw filtered bounding boxes
+    for box in detections:
+        cls_id = int(box.cls[0])  # Class ID
+        conf = box.conf[0]        # Confidence
+        x1, y1, x2, y2 = map(int, box.xyxy[0])  # Bounding box coordinates
+
+        if cls_id in TARGET_CLASSES:
+            label = "human" if model.names[cls_id] == "person" else "car"
+            color = (0, 255, 0) if cls_id == 0 else (255, 0, 0)  # Green for person, Blue for car
+
+            # Draw rectangle and label
+            cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+            cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, color, 2)
+
+    # Write processed frame to virtual camera
+    out.write(frame)
+
+    # (Optional) Display locally
+    cv2.imshow("YOLO Detection (Cars & Humans Only)", frame)
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+cap.release()
+out.release()
+cv2.destroyAllWindows()
