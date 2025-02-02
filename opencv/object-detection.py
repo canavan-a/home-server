@@ -67,11 +67,19 @@ while True:
     inputs = {ort_session.get_inputs()[0].name: input_frame}
     outputs = ort_session.run(None, inputs)
 
-    print(outputs)
-    # Extract detections (assuming the output format is similar to YOLOv5)
-    boxes = outputs[0]  # Bounding boxes
-    confidences = outputs[1]  # Confidence scores
-    class_ids = outputs[2]  # Class IDs
+    output = outputs[0]  # Extract the array from the list
+
+    # Remove any extra dimensions (if present)
+    output = np.squeeze(output)
+
+    # Check the output shape to understand its structure
+    print(f"Output shape: {output.shape}")
+
+    # Assuming output shape: (num_detections, 6) -> [x1, y1, x2, y2, confidence, class_id]
+    # Adjust this if the output shape differs
+    boxes = output[:, :4]          # Bounding box coordinates (x1, y1, x2, y2)
+    confidences = output[:, 4]     # Confidence scores
+    class_ids = output[:, 5].astype(int)  # Class IDs (converted to int)
 
     start_time = time.time()
 
@@ -79,7 +87,7 @@ while True:
     for i in range(len(boxes)):
         if confidences[i] > 0.5:  # Confidence threshold
             x1, y1, x2, y2 = boxes[i]
-            cls_id = int(class_ids[i])
+            cls_id = class_ids[i]
 
             if cls_id in TARGET_CLASSES:
                 label = "human" if cls_id == 0 else "car"
@@ -88,8 +96,7 @@ while True:
                 # Draw rectangle and label
                 cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), color, 1)
                 cv2.putText(frame, label, (int(x1), int(y1)-5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
-
-    print("Draw rate: ", 1 / (time.time() - start_time))  # Write processed frame to virtual camera
+        print("Draw rate: ", 1 / (time.time() - start_time))  # Write processed frame to virtual camera
     pipe.write(frame.tobytes())
 
 cap.release()
