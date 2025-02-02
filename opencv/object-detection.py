@@ -4,6 +4,8 @@ import time
 import numpy as np
 import onnxruntime as ort
 import urllib.request
+import torch
+from torchvision.ops import nms
 
 # Download the ONNX model (Tiny YOLOv2) from the GitHub URL
 model_url = "https://github.com/onnx/models/raw/refs/heads/main/validated/vision/object_detection_segmentation/tiny-yolov2/model/tinyyolov2-8.onnx"
@@ -49,6 +51,10 @@ except Exception as e:
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
 
+SCORE_THRESHOLD = 0.5
+NMS_THRESHOLD = 0.4
+
+# Feed the frame feed and process each frame
 while True:
     ret, frame = cap.read()
     if not ret:
@@ -64,69 +70,56 @@ while True:
     inputs = {ort_session.get_inputs()[0].name: input_frame}
     outputs = ort_session.run(None, inputs)
 
-    # Process output
-    output = outputs[0]  # Output shape: (1, 125, 13, 13)
-    
-    # Postprocessing: Extract bounding boxes, class scores, and confidence
-    conf_threshold = 0.5  # Confidence threshold for filtering boxes
-    nms_threshold = 0.4  # Non-maxima suppression threshold
+    # Extract the output from the model
+    output = outputs[0]  # Shape should be (1, 25200, 85), i.e., (batch_size, grid_cells, 5 + 80)
 
-    grid_size = 13  # YOLO grid size (13x13)
-    num_classes = 80  # Number of classes in the Pascal VOC dataset
-    anchors = [(10, 13), (16, 30), (33, 23), (30, 61), (62, 45), (59, 119), (116, 90), (156, 198), (373, 326)]  # Anchors
+    # Reshape the output for multiple grid sizes
+    output = output.reshape(1, 3, 80, 80, 85)  # For 3 grid sizes (80x80, 40x40, 20x20)
 
-    boxes = []
-    confidences = []
-    class_ids = []
+    # Apply non-maxima suppression to filter predictions
+    def non_max_suppression(output, conf_thres=0.5, iou_thres=0.4):
+        predictions = []
+        for batch in output:
+            boxes = batch[..., :4]
+            conf = batch[..., 4]
+            class_scores = batch[..., 5:]
+            scores, class_ids = torch.max(torch.tensor(class_scores), dim=-1)
 
-    # Decode the outputs
-    for i in range(grid_size):
-        for j in range(grid_size):
-            for b in range(3):  # 3 anchors
-                box = output[0, b, i, j]
-                center_x = (sigmoid(box[0]) + j) / grid_size  # x center
-                center_y = (sigmoid(box[1]) + i) / grid_size  # y center
-                width = np.exp(box[2]) * anchors[b][0] / grid_size  # width
-                height = np.exp(box[3]) * anchors[b][1] / grid_size  # height
-                objectness = sigmoid(box[4])  # objectness score
-                class_probs = sigmoid(box[5:])  # class probabilities
+            # Filter out predictions below confidence threshold
+            mask = conf * scores > conf_thres
+            boxes = boxes[mask]
+            scores = scores[mask]
+            class_ids = class_ids[mask]
 
-                # Get the class with the highest probability
-                class_id = np.argmax(class_probs)
-                class_prob = class_probs[class_id]
+            # Apply NMS (Non-Maximum Suppression)
+            keep = nms(boxes, scores, iou_threshold=iou_thres)
 
-                # Calculate final confidence score
-                confidence = objectness * class_prob
+            # Append the final predictions
+            predictions.append(torch.stack([boxes[keep], scores[keep], class_ids[keep]], dim=1))
 
-                if confidence > conf_threshold:
-                    # Rescale box coordinates to original frame size
-                    x_min = int((center_x - width / 2) * frame.shape[1])
-                    y_min = int((center_y - height / 2) * frame.shape[0])
-                    x_max = int((center_x + width / 2) * frame.shape[1])
-                    y_max = int((center_y + height / 2) * frame.shape[0])
+        return predictions
 
-                    boxes.append([x_min, y_min, x_max, y_max])
-                    confidences.append(confidence)
-                    class_ids.append(class_id)
-
-    # Apply non-maxima suppression
-    indices = cv2.dnn.NMSBoxes(boxes, confidences, conf_threshold, nms_threshold)
+    # Run NMS on the output
+    filtered_predictions = non_max_suppression(torch.tensor(output), conf_thres=SCORE_THRESHOLD, iou_thres=NMS_THRESHOLD)
 
     # Draw bounding boxes on the frame
-    if len(indices) > 0:
-        for i in indices.flatten():
-            x_min, y_min, x_max, y_max = boxes[i]
-            cv2.rectangle(frame, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2)
-            label = f"Class: {class_ids[i]} Confidence: {confidences[i]:.2f}"
-            cv2.putText(frame, label, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+    img = frame  # Use the original frame (BGR format)
 
-    # Show the frame with bounding boxes
-    cv2.imshow("Frame", frame)
+    for pred in filtered_predictions[0]:
+        x1 = int(pred[0][0])
+        y1 = int(pred[0][1])
+        x2 = int(pred[0][2])
+        y2 = int(pred[0][3])
+        confidence = pred[1].item()
+        class_id = int(pred[2].item())
 
-    # Write the frame (optional)
-    pipe.write(frame.tobytes())
+        # Draw the bounding box
+        img = cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), thickness=2)
+        label = f"Class {class_id} Conf: {confidence:.2f}"
+        cv2.putText(img, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
 
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+    # Write the modified frame (with bounding boxes) to the pipe
+    pipe.write(img.tobytes())
+
 cap.release()
 pipe.close()
