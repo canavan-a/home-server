@@ -4,8 +4,6 @@ import time
 import numpy as np
 import onnxruntime as ort
 import urllib.request
-import torch
-from torchvision.ops import nms
 
 # Download the ONNX model (Tiny YOLOv2) from the GitHub URL
 model_url = "https://github.com/onnx/models/raw/refs/heads/main/validated/vision/object_detection_segmentation/tiny-yolov2/model/tinyyolov2-8.onnx"
@@ -69,7 +67,6 @@ except Exception as e:
     print(f"Error: Unable to open pipe ({e})")
     exit(1)
 
-
 # Feed the frame feed and process each frame
 while True:
     ret, frame = cap.read()
@@ -100,6 +97,9 @@ while True:
     outputs = ort_session.run(None, {input_name: input_frame})
     out = outputs[0][0]  # Extract the output
 
+    # Debug: Print model output shape
+    print("Model output shape:", outputs[0].shape)
+
     # Post-process the output to draw bounding boxes
     for cy in range(0, 13):
         for cx in range(0, 13):
@@ -123,12 +123,15 @@ while True:
                 classes = softmax(classes)
                 detectedClass = classes.argmax()
 
-                if 0.5 < classes[detectedClass] * confidence:
+                if 0.3 < classes[detectedClass] * confidence:  # Lower confidence threshold for debugging
                     # Scale bounding box coordinates back to original resolution
                     x = int((x - pad_x) / scale)
                     y = int((y - pad_y) / scale)
                     w = int(w / scale)
                     h = int(h / scale)
+
+                    # Debug: Print detected class and confidence
+                    print(f"Detected class: {label[detectedClass]}, Confidence: {classes[detectedClass] * confidence}")
 
                     # Draw bounding box and label on the original frame
                     color = clut[detectedClass]
@@ -138,6 +141,10 @@ while True:
     # Write the frame to the pipe (if needed)
     pipe.write(frame.tobytes())
 
+    # Break the loop if 'q' is pressed
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
 
+# Release resources
 cap.release()
 pipe.close()
