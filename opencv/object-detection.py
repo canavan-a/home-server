@@ -46,15 +46,36 @@ except Exception as e:
     print(f"Error: Unable to open pipe ({e})")
     exit(1)
 
-COCO_CLASSES = {
-    0: 'person', 1: 'bicycle', 2: 'car', 3: 'motorcycle', 4: 'airplane', 5: 'bus', 6: 'train', 
-    7: 'truck', 8: 'boat', 9: 'traffic light', 10: 'fire hydrant', 11: 'stop sign', 12: 'parking meter', 
-    13: 'bench', 14: 'bird', 15: 'cat', 16: 'dog', 17: 'horse', 18: 'sheep', 19: 'cow', 20: 'elephant', 
-    21: 'bear', 22: 'zebra', 23: 'giraffe', 24: 'backpack', 25: 'umbrella', 26: 'handbag', 27: 'tie', 
-    28: 'suitcase', 29: 'frisbee', 30: 'skis', 31: 'snowboard', 32: 'sports ball', 33: 'kite', 34: 'baseball bat',
-    # Add remaining classes as needed...
-    94: 'scissors', 95: 'teddy bear', 96: 'hair drier', 97: 'toothbrush'
-}
+# YOLOv2 Tiny specific parameters
+grid_size = 13
+num_bboxes = 5
+num_classes = 20
+anchors = [1.08, 1.19, 3.42, 4.41, 6.63, 11.38, 9.42, 5.11, 16.62, 10.52]
+
+def sigmoid(x):
+    return 1 / (1 + np.exp(-x))
+
+def softmax(x):
+    return np.exp(x) / np.sum(np.exp(x), axis=-1, keepdims=True)
+
+def parse_output(output):
+    output = output.reshape((grid_size, grid_size, num_bboxes, num_classes + 5))
+    boxes = []
+    for i in range(grid_size):
+        for j in range(grid_size):
+            for b in range(num_bboxes):
+                tx, ty, tw, th, to = output[i, j, b, :5]
+                x = (j + sigmoid(tx)) / grid_size
+                y = (i + sigmoid(ty)) / grid_size
+                w = np.exp(tw) * anchors[2 * b] / grid_size
+                h = np.exp(th) * anchors[2 * b + 1] / grid_size
+                confidence = sigmoid(to)
+                class_probs = softmax(output[i, j, b, 5:])
+                class_id = np.argmax(class_probs)
+                class_prob = class_probs[class_id]
+                if confidence * class_prob > 0.5:  # Confidence threshold
+                    boxes.append([x, y, w, h, confidence, class_id])
+    return boxes
 
 while True:
     ret, frame = cap.read()
@@ -70,17 +91,21 @@ while True:
     # Run inference
     inputs = {ort_session.get_inputs()[0].name: input_frame}
     outputs = ort_session.run(None, inputs)
-    output = np.squeeze(outputs[0])
 
-    for detection in output:
-        confidence = detection[4]  # Confidence score is typically at index 4
-        class_id = int(np.argmax(detection[5:]))  # Get class ID
+    # Parse the output
+    boxes = parse_output(outputs[0])
 
-        if confidence > 0.5 and class_id in COCO_CLASSES:  # You can adjust the confidence threshold
-            class_name = COCO_CLASSES[class_id]
-            print(f"Detected: {class_name} (Class ID: {class_id}) with Confidence: {confidence:.2f}")
+    # Draw bounding boxes on the frame
+    for box in boxes:
+        x, y, w, h, confidence, class_id = box
+        x = int(x * frame_width)
+        y = int(y * frame_height)
+        w = int(w * frame_width)
+        h = int(h * frame_height)
+        cv2.rectangle(frame, (x - w // 2, y - h // 2), (x + w // 2, y + h // 2), (0, 255, 0), 2)
+        cv2.putText(frame, f'Class {class_id}', (x - w // 2, y - h // 2 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
 
-    # Write the frame (without drawing boxes)
+    # Write the frame with bounding boxes
     pipe.write(frame.tobytes())
 
 cap.release()
