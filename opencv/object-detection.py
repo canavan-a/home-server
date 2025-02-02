@@ -73,15 +73,15 @@ while True:
     output = np.squeeze(outputs[0])
 
     for detection in output:
+        confidence = detection[4]  # Confidence score is typically at index 4
         class_id = int(np.argmax(detection[5:]))  # Get class ID
 
-        if class_id in COCO_CLASSES:
+        if confidence > 0.5 and class_id in COCO_CLASSES:  # You can adjust the confidence threshold
             class_name = COCO_CLASSES[class_id]
-            print(f"Detected: {class_name} (Class ID: {class_id})")
+            print(f"Detected: {class_name} (Class ID: {class_id}) with Confidence: {confidence:.2f}")
 
     # Write the frame (without drawing boxes)
     pipe.write(frame.tobytes())
-
 
 cap.release()
 pipe.close()
