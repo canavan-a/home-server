@@ -46,9 +46,6 @@ except Exception as e:
     print(f"Error: Unable to open pipe ({e})")
     exit(1)
 
-# Assuming ort_session is initialized properly
-TARGET_CLASSES = {0: 'Person', 1: 'Car'}
-TARGET_CLASS_IDS = [0, 1]
 
 while True:
     ret, frame = cap.read()
@@ -66,22 +63,10 @@ while True:
     outputs = ort_session.run(None, inputs)
     output = np.squeeze(outputs[0])
 
-    detected_objects = []  # To store detected objects
-
     for detection in output:
         class_id = int(np.argmax(detection[5:]))  # Get class ID
 
-        if class_id in TARGET_CLASS_IDS:
-            class_name = TARGET_CLASSES[class_id]
-
-            # Add the object and its class name to the detected objects list
-            detected_objects.append(class_name)
-
-    # Print out the detected objects in the current frame
-    if detected_objects:
-        print("Detected objects:", detected_objects)
-    else:
-        print("No objects detected in this frame.")
+        print(f"Detected class ID: {class_id}")
 
     # Write the frame (without drawing boxes)
     pipe.write(frame.tobytes())
