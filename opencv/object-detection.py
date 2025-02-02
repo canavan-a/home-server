@@ -1,5 +1,7 @@
 import cv2
 from ultralytics import YOLO
+import os
+import sys
 
 # Load YOLO model
 model = YOLO("yolov8n.pt") 
@@ -18,15 +20,18 @@ fps = int(cap.get(cv2.CAP_PROP_FPS)) or 30  # Default to 30 FPS if 0
 # Must create virtual camera to write to on device
 # sudo modprobe v4l2loopback devices=1 video_nr=30 card_label="Virtual Camera" exclusive_caps=1
 
-out = cv2.VideoWriter(
-    '/dev/video30',
-    cv2.VideoWriter_fourcc(*'MJPG'),
-    fps,
-    (frame_width, frame_height)
-)
-if not out.isOpened():
-    print("Error: Unable to open virtual webcam")
-    exit(1)
+# Create a named pipe (FIFO)
+fifo_path = '/tmp/video_pipe'
+if not os.path.exists(fifo_path):
+    os.mkfifo(fifo_path)
+
+# Open the pipe for writing
+try:
+    pipe = open(fifo_path, 'wb')
+except Exception as e:
+    print(f"Error: Unable to open the pipe ({e})")
+    sys.exit(1)
+
 
 # Class IDs to keep: 0 for 'person', 2 for 'car'
 TARGET_CLASSES = [0, 2]
@@ -57,7 +62,7 @@ while True:
             cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, color, 2)
 
     # Write processed frame to virtual camera
-    out.write(frame)
+    pipe.write(frame.tobytes())
 
 cap.release()
-out.release()
+pipe.close()
