@@ -91,8 +91,9 @@ while True:
             # Apply NMS (Non-Maximum Suppression)
             keep = nms(boxes, scores, iou_threshold=iou_thres)
 
-            # Append the final predictions
-            predictions.append(torch.stack([boxes[keep], scores[keep], class_ids[keep]], dim=1))
+            # Stack the selected predictions (boxes, scores, class_ids) along with their NMS indices
+            if len(keep) > 0:
+                predictions.append(torch.cat([boxes[keep], scores[keep].unsqueeze(1), class_ids[keep].unsqueeze(1)], dim=1))
 
         return predictions
 
@@ -103,12 +104,12 @@ while True:
     img = frame  # Use the original frame (BGR format)
 
     for pred in filtered_predictions[0]:
-        x1 = int(pred[0][0])
-        y1 = int(pred[0][1])
-        x2 = int(pred[0][2])
-        y2 = int(pred[0][3])
-        confidence = pred[1].item()
-        class_id = int(pred[2].item())
+        x1 = int(pred[0].item())
+        y1 = int(pred[1].item())
+        x2 = int(pred[2].item())
+        y2 = int(pred[3].item())
+        confidence = pred[4].item()
+        class_id = int(pred[5].item())
 
         # Draw the bounding box
         img = cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), thickness=2)
