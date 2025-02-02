@@ -46,36 +46,8 @@ except Exception as e:
     print(f"Error: Unable to open pipe ({e})")
     exit(1)
 
-# YOLOv2 Tiny specific parameters
-grid_size = 13
-num_bboxes = 5
-num_classes = 20
-anchors = [1.08, 1.19, 3.42, 4.41, 6.63, 11.38, 9.42, 5.11, 16.62, 10.52]
-
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
-
-def softmax(x):
-    return np.exp(x) / np.sum(np.exp(x), axis=-1, keepdims=True)
-
-def parse_output(output):
-    output = output.reshape((grid_size, grid_size, num_bboxes, num_classes + 5))
-    boxes = []
-    for i in range(grid_size):
-        for j in range(grid_size):
-            for b in range(num_bboxes):
-                tx, ty, tw, th, to = output[i, j, b, :5]
-                x = (j + sigmoid(tx)) / grid_size
-                y = (i + sigmoid(ty)) / grid_size
-                w = np.exp(tw) * anchors[2 * b] / grid_size
-                h = np.exp(th) * anchors[2 * b + 1] / grid_size
-                confidence = sigmoid(to)
-                class_probs = softmax(output[i, j, b, 5:])
-                class_id = np.argmax(class_probs)
-                class_prob = class_probs[class_id]
-                if confidence * class_prob > 0.5:  # Confidence threshold
-                    boxes.append([x, y, w, h, confidence, class_id])
-    return boxes
 
 while True:
     ret, frame = cap.read()
@@ -83,30 +55,78 @@ while True:
         break
 
     # Prepare the frame for YOLO input
-    input_frame = cv2.resize(frame, (416, 416))
-    input_frame = input_frame.astype(np.float32) / 255.0
-    input_frame = np.transpose(input_frame, (2, 0, 1))
-    input_frame = np.expand_dims(input_frame, axis=0)
+    input_frame = cv2.resize(frame, (416, 416))  # Resize frame to 416x416
+    input_frame = input_frame.astype(np.float32) / 255.0  # Normalize to [0, 1]
+    input_frame = np.transpose(input_frame, (2, 0, 1))  # Rearrange dimensions to (3, 416, 416)
+    input_frame = np.expand_dims(input_frame, axis=0)  # Add batch dimension (1, 3, 416, 416)
 
     # Run inference
     inputs = {ort_session.get_inputs()[0].name: input_frame}
     outputs = ort_session.run(None, inputs)
 
-    # Parse the output
-    boxes = parse_output(outputs[0])
+    # Process output
+    output = outputs[0]  # Output shape: (1, 125, 13, 13)
+    
+    # Postprocessing: Extract bounding boxes, class scores, and confidence
+    conf_threshold = 0.5  # Confidence threshold for filtering boxes
+    nms_threshold = 0.4  # Non-maxima suppression threshold
+
+    grid_size = 13  # YOLO grid size (13x13)
+    num_classes = 80  # Number of classes in the Pascal VOC dataset
+    anchors = [(10, 13), (16, 30), (33, 23), (30, 61), (62, 45), (59, 119), (116, 90), (156, 198), (373, 326)]  # Anchors
+
+    boxes = []
+    confidences = []
+    class_ids = []
+
+    # Decode the outputs
+    for i in range(grid_size):
+        for j in range(grid_size):
+            for b in range(3):  # 3 anchors
+                box = output[0, b, i, j]
+                center_x = (sigmoid(box[0]) + j) / grid_size  # x center
+                center_y = (sigmoid(box[1]) + i) / grid_size  # y center
+                width = np.exp(box[2]) * anchors[b][0] / grid_size  # width
+                height = np.exp(box[3]) * anchors[b][1] / grid_size  # height
+                objectness = sigmoid(box[4])  # objectness score
+                class_probs = sigmoid(box[5:])  # class probabilities
+
+                # Get the class with the highest probability
+                class_id = np.argmax(class_probs)
+                class_prob = class_probs[class_id]
+
+                # Calculate final confidence score
+                confidence = objectness * class_prob
+
+                if confidence > conf_threshold:
+                    # Rescale box coordinates to original frame size
+                    x_min = int((center_x - width / 2) * frame.shape[1])
+                    y_min = int((center_y - height / 2) * frame.shape[0])
+                    x_max = int((center_x + width / 2) * frame.shape[1])
+                    y_max = int((center_y + height / 2) * frame.shape[0])
+
+                    boxes.append([x_min, y_min, x_max, y_max])
+                    confidences.append(confidence)
+                    class_ids.append(class_id)
+
+    # Apply non-maxima suppression
+    indices = cv2.dnn.NMSBoxes(boxes, confidences, conf_threshold, nms_threshold)
 
     # Draw bounding boxes on the frame
-    for box in boxes:
-        x, y, w, h, confidence, class_id = box
-        x = int(x * frame_width)
-        y = int(y * frame_height)
-        w = int(w * frame_width)
-        h = int(h * frame_height)
-        cv2.rectangle(frame, (x - w // 2, y - h // 2), (x + w // 2, y + h // 2), (0, 255, 0), 2)
-        cv2.putText(frame, f'Class {class_id}', (x - w // 2, y - h // 2 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+    if len(indices) > 0:
+        for i in indices.flatten():
+            x_min, y_min, x_max, y_max = boxes[i]
+            cv2.rectangle(frame, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2)
+            label = f"Class: {class_ids[i]} Confidence: {confidences[i]:.2f}"
+            cv2.putText(frame, label, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
 
-    # Write the frame with bounding boxes
+    # Show the frame with bounding boxes
+    cv2.imshow("Frame", frame)
+
+    # Write the frame (optional)
     pipe.write(frame.tobytes())
 
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
 cap.release()
 pipe.close()
