@@ -19,6 +19,27 @@ if not os.path.exists(model_path):
 
 # Load the ONNX model using ONNX Runtime
 ort_session = ort.InferenceSession(model_path)
+input_name = ort_session.get_inputs()[0].name
+
+# Constants for YOLOv2
+numClasses = 20
+anchors = [1.08, 1.19, 3.42, 4.41, 6.63, 11.38, 9.42, 5.11, 16.62, 10.52]
+clut = [(0, 0, 0), (255, 0, 0), (255, 0, 255), (0, 0, 255), (0, 255, 0), (0, 255, 128),
+        (128, 255, 0), (128, 128, 0), (0, 128, 255), (128, 0, 128),
+        (255, 0, 128), (128, 0, 255), (255, 128, 128), (128, 255, 128), (255, 255, 0),
+        (255, 128, 128), (128, 128, 255), (255, 128, 128), (128, 255, 128)]
+label = ["aeroplane", "bicycle", "bird", "boat", "bottle",
+         "bus", "car", "cat", "chair", "cow", "diningtable",
+         "dog", "horse", "motorbike", "person", "pottedplant",
+         "sheep", "sofa", "train", "tvmonitor"]
+
+# Sigmoid and softmax functions
+def sigmoid(x, derivative=False):
+    return x * (1 - x) if derivative else 1 / (1 + np.exp(-x))
+
+def softmax(x):
+    scoreMatExp = np.exp(np.asarray(x))
+    return scoreMatExp / scoreMatExp.sum(0)
 
 fifo_path = '/tmp/video_pipe'
 
@@ -48,11 +69,6 @@ except Exception as e:
     print(f"Error: Unable to open pipe ({e})")
     exit(1)
 
-def sigmoid(x):
-    return 1 / (1 + np.exp(-x))
-
-SCORE_THRESHOLD = 0.5
-NMS_THRESHOLD = 0.4
 
 # Feed the frame feed and process each frame
 while True:
@@ -60,67 +76,68 @@ while True:
     if not ret:
         break
 
+    # Get original frame dimensions
+    original_height, original_width = frame.shape[:2]
+
+    # Resize the frame to 416x416 while maintaining aspect ratio
+    scale = min(416 / original_width, 416 / original_height)
+    new_width = int(original_width * scale)
+    new_height = int(original_height * scale)
+    resized_frame = cv2.resize(frame, (new_width, new_height))
+
+    # Pad the resized frame to make it 416x416
+    pad_x = (416 - new_width) // 2
+    pad_y = (416 - new_height) // 2
+    padded_frame = cv2.copyMakeBorder(resized_frame, pad_y, pad_y, pad_x, pad_x, cv2.BORDER_CONSTANT, value=(0, 0, 0))
+
     # Prepare the frame for YOLO input
-    input_frame = cv2.resize(frame, (416, 416))  # Resize frame to 416x416
-    input_frame = input_frame.astype(np.float32) / 255.0  # Normalize to [0, 1]
-    input_frame = np.transpose(input_frame, (2, 0, 1))  # Rearrange dimensions to (3, 416, 416)
+    input_frame = cv2.cvtColor(padded_frame, cv2.COLOR_BGR2RGB)  # Convert BGR to RGB
+    input_frame = input_frame.transpose(2, 0, 1)  # Rearrange dimensions to (3, 416, 416)
     input_frame = np.expand_dims(input_frame, axis=0)  # Add batch dimension (1, 3, 416, 416)
+    input_frame = input_frame.astype(np.float32) / 255.0  # Normalize to [0, 1]
 
     # Run inference
-    inputs = {ort_session.get_inputs()[0].name: input_frame}
-    outputs = ort_session.run(None, inputs)
+    outputs = ort_session.run(None, {input_name: input_frame})
+    out = outputs[0][0]  # Extract the output
 
-    # Extract the output from the model
-    output = outputs[0]  # Shape should be (1, 25200, 85), i.e., (batch_size, grid_cells, 5 + 80)
+    # Post-process the output to draw bounding boxes
+    for cy in range(0, 13):
+        for cx in range(0, 13):
+            for b in range(0, 5):
+                channel = b * (numClasses + 5)
+                tx = out[channel][cy][cx]
+                ty = out[channel + 1][cy][cx]
+                tw = out[channel + 2][cy][cx]
+                th = out[channel + 3][cy][cx]
+                tc = out[channel + 4][cy][cx]
 
-    # Apply non-maxima suppression to filter predictions
-    def non_max_suppression(output, conf_thres=0.5, iou_thres=0.4):
-        predictions = []
-        for batch in output:
-            boxes = batch[..., :4]  # Bounding box coordinates (x1, y1, x2, y2)
-            conf = batch[..., 4]    # Confidence score
-            class_scores = batch[..., 5:]  # Class scores for 80 classes
-            scores, class_ids = torch.max(torch.tensor(class_scores).clone().detach(), dim=-1)
+                x = (float(cx) + sigmoid(tx)) * 32
+                y = (float(cy) + sigmoid(ty)) * 32
+                w = np.exp(tw) * 32 * anchors[2 * b]
+                h = np.exp(th) * 32 * anchors[2 * b + 1]
 
-            # Filter out predictions below confidence threshold
-            mask = conf * scores > conf_thres
-            boxes = boxes[mask]
-            scores = scores[mask]
-            class_ids = class_ids[mask]
+                confidence = sigmoid(tc)
+                classes = np.zeros(numClasses)
+                for c in range(0, numClasses):
+                    classes[c] = out[channel + 5 + c][cy][cx]
+                classes = softmax(classes)
+                detectedClass = classes.argmax()
 
-            # Apply NMS (Non-Maximum Suppression)
-            keep = nms(boxes, scores, iou_threshold=iou_thres)
+                if 0.5 < classes[detectedClass] * confidence:
+                    # Scale bounding box coordinates back to original resolution
+                    x = int((x - pad_x) / scale)
+                    y = int((y - pad_y) / scale)
+                    w = int(w / scale)
+                    h = int(h / scale)
 
-            # Stack the selected predictions (boxes, scores, class_ids) along with their NMS indices
-            if len(keep) > 0:
-                predictions.append(torch.cat([boxes[keep], scores[keep].unsqueeze(1), class_ids[keep].unsqueeze(1)], dim=1))
+                    # Draw bounding box and label on the original frame
+                    color = clut[detectedClass]
+                    cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
+                    cv2.putText(frame, label[detectedClass], (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
-        return predictions
+    # Write the frame to the pipe (if needed)
+    pipe.write(frame.tobytes())
 
-    # Run NMS on the output
-    filtered_predictions = non_max_suppression(torch.tensor(output), conf_thres=SCORE_THRESHOLD, iou_thres=NMS_THRESHOLD)
-
-    # Draw bounding boxes on the frame
-    img = frame  # Use the original frame (BGR format)
-
-    height, width = img.shape[:2]  # Get the original image dimensions
-
-    for pred in filtered_predictions[0]:
-        # Scale the bounding boxes back to original image size
-        x1 = int(pred[0].item() * width / 416)  # Rescale x1
-        y1 = int(pred[1].item() * height / 416)  # Rescale y1
-        x2 = int(pred[2].item() * width / 416)  # Rescale x2
-        y2 = int(pred[3].item() * height / 416)  # Rescale y2
-        confidence = pred[4].item()
-        class_id = int(pred[5].item())
-
-        # Draw the bounding box
-        img = cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), thickness=2)
-        label = f"Class {class_id} Conf: {confidence:.2f}"
-        cv2.putText(img, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
-
-    # Write the modified frame (with bounding boxes) to the pipe
-    pipe.write(img.tobytes())
 
 cap.release()
 pipe.close()
