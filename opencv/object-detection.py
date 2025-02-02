@@ -37,7 +37,7 @@ except Exception as e:
     exit(1)
 
 # Class IDs to keep: 0 for 'person', 2 for 'car'
-TARGET_CLASSES = [0, 2]
+TARGET_CLASSES = [0]
 
 while True:
     ret, frame = cap.read()
