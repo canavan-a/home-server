@@ -67,6 +67,7 @@ while True:
     inputs = {ort_session.get_inputs()[0].name: input_frame}
     outputs = ort_session.run(None, inputs)
 
+    print(outputs)
     # Extract detections (assuming the output format is similar to YOLOv5)
     boxes = outputs[0]  # Bounding boxes
     confidences = outputs[1]  # Confidence scores
