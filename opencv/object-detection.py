@@ -1,6 +1,8 @@
 import cv2
 from ultralytics import YOLO
 import os
+import time
+
 
 # Load YOLO model
 model = YOLO("yolov8n.pt") 
@@ -38,6 +40,7 @@ except Exception as e:
 TARGET_CLASSES = [0, 2]
 
 while True:
+    start_time = time.time()
     ret, frame = cap.read()
     if not ret:
         break
@@ -61,8 +64,7 @@ while True:
             # Draw rectangle and label
             cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
             cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, color, 2)
-    print("frame processed")
-    # Write processed frame to virtual camera
+    print("Frame rate: ", 1 / (time.time() - start_time))    # Write processed frame to virtual camera
     pipe.write(frame.tobytes())
 
 cap.release()
