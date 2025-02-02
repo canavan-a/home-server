@@ -12,8 +12,7 @@ frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 fps = int(cap.get(cv2.CAP_PROP_FPS)) or 30  # Default to 30 FPS if 0
 
-
-# Must create virtual camrea to write to on device
+# Must create virtual camera to write to on device
 # sudo modprobe v4l2loopback devices=1 video_nr=30 card_label="Virtual Camera" exclusive_caps=1
 
 out = cv2.VideoWriter(
@@ -54,11 +53,5 @@ while True:
     # Write processed frame to virtual camera
     out.write(frame)
 
-    # (Optional) Display locally
-    cv2.imshow("YOLO Detection (Cars & Humans Only)", frame)
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
-
 cap.release()
 out.release()
-cv2.destroyAllWindows()
