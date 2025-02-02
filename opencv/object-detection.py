@@ -72,16 +72,15 @@ while True:
     for detection in output:
         class_id = int(np.argmax(detection[5:]))  # Get class ID
 
-        # Filter for cars and people only
         if class_id in TARGET_CLASS_IDS:
             class_name = TARGET_CLASSES[class_id]
 
-            # Bounding box coordinates (normalized)
+            # Bounding box coordinates (ensure scalar conversion)
             center_x, center_y, width, height = detection[:4]
-            center_x *= frame.shape[1]
-            center_y *= frame.shape[0]
-            width *= frame.shape[1]
-            height *= frame.shape[0]
+            center_x = float(center_x) * frame.shape[1]
+            center_y = float(center_y) * frame.shape[0]
+            width = float(width) * frame.shape[1]
+            height = float(height) * frame.shape[0]
 
             # Convert to top-left and bottom-right coordinates
             x1 = int(center_x - width / 2)
@@ -97,6 +96,7 @@ while True:
 
     # Write the annotated frame
     pipe.write(frame.tobytes())
+
 
 cap.release()
 pipe.close()
