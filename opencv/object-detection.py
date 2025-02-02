@@ -5,7 +5,7 @@ import time
 
 
 # Load YOLO model
-model = YOLO("yolov8n.pt") 
+model = YOLO("yolov11n.pt") 
 
 fifo_path = '/tmp/video_pipe'
 
