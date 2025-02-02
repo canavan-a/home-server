@@ -1,14 +1,24 @@
 import cv2
-from ultralytics import YOLO
 import os
 import time
+import numpy as np
+import onnxruntime as ort
+import urllib.request
 
+# Download the ONNX model (Tiny YOLOv2) from the GitHub URL
+model_url = "https://github.com/onnx/models/raw/refs/heads/main/validated/vision/object_detection_segmentation/tiny-yolov2/model/tinyyolov2-8.onnx"
+model_path = 'tinyyolov2-8.onnx'
 
-# Load YOLO model
-model = YOLO("yolo11n.pt") 
+# If the model is not already downloaded, download it
+if not os.path.exists(model_path):
+    print("Downloading the ONNX model...")
+    urllib.request.urlretrieve(model_url, model_path)
+    print(f"Model downloaded to {model_path}")
+
+# Load the ONNX model using ONNX Runtime
+ort_session = ort.InferenceSession(model_path)
 
 fifo_path = '/tmp/video_pipe'
-
 
 # Open physical webcam (video0)
 cap = cv2.VideoCapture("/dev/video0")
@@ -36,33 +46,49 @@ except Exception as e:
     print(f"Error: Unable to open pipe ({e})")
     exit(1)
 
-# Class IDs to keep: 0 for 'person', 2 for 'car'
-TARGET_CLASSES = [0]
+# Class IDs to keep: 0 for 'person', 1 for 'car'
+TARGET_CLASSES = [0, 1]
 
 while True:
     ret, frame = cap.read()
     if not ret:
         break
 
-    # Run YOLO inference on the frame
-    results = model(frame)
+    # Prepare the frame for YOLO input (resize to 640x640 and normalize)
+    input_frame = cv2.resize(frame, (640, 640))
+    input_frame = input_frame.astype(np.float32)
+    input_frame /= 255.0  # Normalize to [0, 1]
 
-    # Get detections from the first result
-    detections = results[0].boxes
+    # Convert to CHW format (needed for ONNX models)
+    input_frame = np.transpose(input_frame, (2, 0, 1))
+    input_frame = np.expand_dims(input_frame, axis=0)
+
+    # Run inference
+    inputs = {ort_session.get_inputs()[0].name: input_frame}
+    outputs = ort_session.run(None, inputs)
+
+    # Extract detections (assuming the output format is similar to YOLOv5)
+    boxes = outputs[0]  # Bounding boxes
+    confidences = outputs[1]  # Confidence scores
+    class_ids = outputs[2]  # Class IDs
+
     start_time = time.time()
+
     # Draw filtered bounding boxes
-    # for box in detections:
-    #     cls_id = int(box.cls[0])  # Class ID
-    #     conf = box.conf[0]        # Confidence
-    #     x1, y1, x2, y2 = map(int, box.xyxy[0])  # Bounding box coordinates
+    for i in range(len(boxes)):
+        if confidences[i] > 0.5:  # Confidence threshold
+            x1, y1, x2, y2 = boxes[i]
+            cls_id = int(class_ids[i])
 
-    #     if cls_id in TARGET_CLASSES:
-    #         label = "human" if model.names[cls_id] == "person" else "car"
-    #         color = (0, 255, 0) if cls_id == 0 else (255, 0, 0)  # Green for person, Blue for car
+            if cls_id in TARGET_CLASSES:
+                label = "human" if cls_id == 0 else "car"
+                color = (0, 255, 0) if cls_id == 0 else (255, 0, 0)  # Green for person, Blue for car
 
-    #         # Draw rectangle and label
-    #         cv2.rectangle(frame, (x1, y1), (x2, y2), color, 1)
-    print("Draw rate: ", 1 / (time.time() - start_time))    # Write processed frame to virtual camera
+                # Draw rectangle and label
+                cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), color, 1)
+                cv2.putText(frame, label, (int(x1), int(y1)-5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
+
+    print("Draw rate: ", 1 / (time.time() - start_time))  # Write processed frame to virtual camera
     pipe.write(frame.tobytes())
 
 cap.release()
