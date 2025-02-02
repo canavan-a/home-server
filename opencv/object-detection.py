@@ -6,6 +6,9 @@ model = YOLO("yolov8n.pt")
 
 # Open physical webcam (video0)
 cap = cv2.VideoCapture("/dev/video0")
+if not cap.isOpened():
+    print("Error: Unable to open physical webcam")
+    exit(1)
 
 # Open virtual webcam (video10)
 frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -21,6 +24,9 @@ out = cv2.VideoWriter(
     fps,
     (frame_width, frame_height)
 )
+if not out.isOpened():
+    print("Error: Unable to open virtual webcam")
+    exit(1)
 
 # Class IDs to keep: 0 for 'person', 2 for 'car'
 TARGET_CLASSES = [0, 2]
