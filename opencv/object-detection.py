@@ -55,7 +55,7 @@ while True:
         break
 
     # Prepare the frame for YOLO input (resize to 640x640 and normalize)
-    input_frame = cv2.resize(frame, (640, 640))
+    input_frame = cv2.resize(frame, (416, 416))
     input_frame = input_frame.astype(np.float32)
     input_frame /= 255.0  # Normalize to [0, 1]
 
