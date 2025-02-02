@@ -40,7 +40,6 @@ except Exception as e:
 TARGET_CLASSES = [0, 2]
 
 while True:
-    start_time = time.time()
     ret, frame = cap.read()
     if not ret:
         break
@@ -50,7 +49,7 @@ while True:
 
     # Get detections from the first result
     detections = results[0].boxes
-
+    start_time = time.time()
     # Draw filtered bounding boxes
     for box in detections:
         cls_id = int(box.cls[0])  # Class ID
@@ -64,7 +63,7 @@ while True:
             # Draw rectangle and label
             cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
             cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, color, 2)
-    print("Frame rate: ", 1 / (time.time() - start_time))    # Write processed frame to virtual camera
+    print("Draw rate: ", 1 / (time.time() - start_time))    # Write processed frame to virtual camera
     pipe.write(frame.tobytes())
 
 cap.release()
