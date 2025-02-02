@@ -51,17 +51,17 @@ while True:
     detections = results[0].boxes
     start_time = time.time()
     # Draw filtered bounding boxes
-    for box in detections:
-        cls_id = int(box.cls[0])  # Class ID
-        conf = box.conf[0]        # Confidence
-        x1, y1, x2, y2 = map(int, box.xyxy[0])  # Bounding box coordinates
+    # for box in detections:
+    #     cls_id = int(box.cls[0])  # Class ID
+    #     conf = box.conf[0]        # Confidence
+    #     x1, y1, x2, y2 = map(int, box.xyxy[0])  # Bounding box coordinates
 
-        if cls_id in TARGET_CLASSES:
-            label = "human" if model.names[cls_id] == "person" else "car"
-            color = (0, 255, 0) if cls_id == 0 else (255, 0, 0)  # Green for person, Blue for car
+    #     if cls_id in TARGET_CLASSES:
+    #         label = "human" if model.names[cls_id] == "person" else "car"
+    #         color = (0, 255, 0) if cls_id == 0 else (255, 0, 0)  # Green for person, Blue for car
 
-            # Draw rectangle and label
-            cv2.rectangle(frame, (x1, y1), (x2, y2), color, 1)
+    #         # Draw rectangle and label
+    #         cv2.rectangle(frame, (x1, y1), (x2, y2), color, 1)
     print("Draw rate: ", 1 / (time.time() - start_time))    # Write processed frame to virtual camera
     pipe.write(frame.tobytes())
 
