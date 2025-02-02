@@ -61,8 +61,7 @@ while True:
             color = (0, 255, 0) if cls_id == 0 else (255, 0, 0)  # Green for person, Blue for car
 
             # Draw rectangle and label
-            cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
-            cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, color, 2)
+            cv2.rectangle(frame, (x1, y1), (x2, y2), color, 1)
     print("Draw rate: ", 1 / (time.time() - start_time))    # Write processed frame to virtual camera
     pipe.write(frame.tobytes())
 
