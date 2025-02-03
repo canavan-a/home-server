@@ -4,12 +4,12 @@ import time
 import numpy as np
 from ultralytics import YOLO
 
-model = YOLO('yolov8n.pt')
+model = YOLO('yolo11n.pt')
 
 model.export(format="ncnn")
 print("model exported")
 
-ncnn_model = YOLO("yolov8n_ncnn_model")
+ncnn_model = YOLO("yolo11n_ncnn_model")
 print("ncnn model created")
 
 fifo_path = '/tmp/video_pipe'
