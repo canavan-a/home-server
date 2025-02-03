@@ -6,7 +6,7 @@ from ultralytics import YOLO
 
 model = YOLO('yolo11n.pt')
 
-model.export(format="ncnn", half=True)
+model.export(format="ncnn", half=False)
 print("model exported")
 
 ncnn_model = YOLO("yolo11n_ncnn_model")
@@ -43,6 +43,7 @@ while True:
         break
 
     # Perform YOLO detection
+    print("frame is about to process")
     results = ncnn_model(frame)
 
     # Draw bounding boxes for cars and people
