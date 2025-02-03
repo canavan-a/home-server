@@ -6,9 +6,11 @@ from ultralytics import YOLO
 
 model = YOLO('yolo11n.pt')
 
-model.export(format="ncnn")
+model.export(format="ncnn", optimize=True, half=True)
+print("model exported")
 
 ncnn_model = YOLO("yolo11n_ncnn_model")
+print("ncnn model created")
 
 fifo_path = '/tmp/video_pipe'
 
