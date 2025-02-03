@@ -4,7 +4,11 @@ import time
 import numpy as np
 from ultralytics import YOLO
 
-model = YOLO('yolov3-tiny.pt')
+model = YOLO('yolo11n.pt')
+
+model.export(format="ncnn")
+
+ncnn_model = YOLO("yolo11n_ncnn_model")
 
 fifo_path = '/tmp/video_pipe'
 
@@ -37,13 +41,13 @@ while True:
         break
 
     # Perform YOLO detection
-    results = model(frame)
+    results = ncnn_model(frame)
 
     # Draw bounding boxes for cars and people
     for result in results:
         for box in result.boxes:
             cls = int(box.cls[0])
-            label = model.names[cls]
+            label = ncnn_model.names[cls]
 
             if label in ["car", "person"]:
                 x1, y1, x2, y2 = map(int, box.xyxy[0])
