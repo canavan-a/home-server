@@ -6,7 +6,7 @@ from ultralytics import YOLO
 
 model = YOLO('yolo11n.pt')
 
-model.export(format='ncnn', half=True, optimize=True, dynamic=True)
+model.export(format='ncnn', half=True, optimize=True)
 print("model exported")
 
 ncnn_model = YOLO("yolo11n_ncnn_model")
