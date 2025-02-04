@@ -6,7 +6,7 @@ from ultralytics import YOLO
 
 model = YOLO('yolo11n.pt')
 
-model.export(format="ncnn")
+model.export(format='ncnn', half=True, optimize=True, dynamic=True)
 print("model exported")
 
 ncnn_model = YOLO("yolo11n_ncnn_model")
@@ -58,7 +58,7 @@ while True:
 
                 # Draw rectangle and label
                 cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                cv2.putText(frame, f"{label} {confidence:.2f}", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                # cv2.putText(frame, f"{label} {confidence:.2f}", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
 
     # Write the frame to the pipe (if needed)
