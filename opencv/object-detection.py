@@ -44,9 +44,10 @@ while True:
         print("Failed to grab frame")
         break
 
+    resized_frame = cv2.resize(frame, (320, 320))
     # Perform YOLO detection
     print("frame is about to process")
-    results = ncnn_model(frame)
+    results = ncnn_model(frame, imgsz=320)
 
     # Draw bounding boxes for cars and people
     for result in results:
