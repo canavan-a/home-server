@@ -60,12 +60,12 @@ while True:
         break
 
     
-    resized_frame = resize_with_aspect_ratio(frame, (320, 320))
+    # resized_frame = resize_with_aspect_ratio(frame, (320, 320))
 
     # resized_frame = cv2.resize(frame, (320, 320))
     # Perform YOLO detection
     print("frame is about to process")
-    results = ncnn_model(resized_frame)
+    results = ncnn_model(frame)
 
     # Draw bounding boxes for cars and people
     for result in results:
@@ -82,12 +82,12 @@ while True:
                     color = (0, 0, 255)
 
                 # Draw rectangle and label
-                cv2.rectangle(resized_frame, (x1, y1), (x2, y2), color, 2)
+                cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
                 # cv2.putText(frame, f"{label} {confidence:.2f}", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
 
     # Write the frame to the pipe (if needed)
-    pipe.write(resized_frame.tobytes())
+    pipe.write(frame.tobytes())
 
 # Release resources
 cap.release()
