@@ -108,7 +108,7 @@ func main() {
 	// go runNetworkActor()
 	// ScanNetwork()
 
-	StartStunTurnRunner()
+	// StartStunTurnRunner()
 
 	r.Run(":5000")
 }
@@ -868,12 +868,6 @@ func initPeerConnection(clientId string, offer webrtc.SessionDescription, rtcId 
 		ICEServers: []webrtc.ICEServer{
 			{
 				URLs: []string{"stun:stun.l.google.com:19302"}, // Google's public STUN server
-			},
-			{
-				URLs:           CloudflareIceServers.URLS,
-				Username:       CloudflareIceServers.Username,
-				Credential:     CloudflareIceServers.Credential,
-				CredentialType: webrtc.ICECredentialTypePassword,
 			},
 		},
 	}

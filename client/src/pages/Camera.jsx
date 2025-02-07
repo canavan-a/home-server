@@ -58,18 +58,11 @@ export const Camera = () => {
       };
 
       const start = async () => {
-        const turnResponse = await axios.get(
-          `https://aidan.house/api/rtc/stunturn?doorCode=${password}`
-        );
-
-        const turnServer = turnResponse.data;
-
         const servers = {
           iceServers: [
             {
               urls: [...STUN_SERVERS],
             },
-            { ...turnServer },
           ],
         };
 
