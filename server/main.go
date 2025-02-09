@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"main/hydrometer"
 	"net"
 	"net/http"
 	"os"
@@ -60,8 +61,17 @@ func main() {
 		})
 	})
 
+	hn := hydrometer.NewHydrometerNetwork()
+	hn.StartPolling()
+
 	api := r.Group("/api")
 	{
+
+		hydrometer := api.Group("/hydrometer")
+		{
+			hydrometer.GET("/bulk", hn.CreateHandler(), MiddlewareAuthenticate)
+		}
+
 		api.POST("/toggle", MiddlewareAuthenticate, handleToggleDoor)
 		api.POST("/status", MiddlewareAuthenticate, handleGetStatus)
 		api.POST("/test_auth_key", MiddlewareAuthenticate, HandleTestAuthKey)
@@ -103,12 +113,6 @@ func main() {
 		api.GET("/conn", handleConnServer)
 		api.POST("/stream", handleStreamInput)
 	}
-
-	// r.GET("/na", testNetworkActor)
-	// go runNetworkActor()
-	// ScanNetwork()
-
-	// StartStunTurnRunner()
 
 	r.Run(":5000")
 }

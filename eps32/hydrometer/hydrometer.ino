@@ -1,15 +1,14 @@
 #include <WiFi.h>
 #include <WebServer.h>
-
 #include "config.h" // un and pw
 
 
 WebServer server(80); // Listen on port 80 (HTTP)
 
+
 void handleRoot() {
   server.send(200, "text/plain", "Hello, ESP32!");
 }
-
 
 void handleHydrometerLevel() {
   server.send(200, "text/plain", String(analogRead(34)));
@@ -32,6 +31,7 @@ void setup() {
   server.on("/", handleRoot);
   server.on("/hydrometer", handleHydrometerLevel);
   server.begin(); // Start server
+
 }
 
 void loop() {
