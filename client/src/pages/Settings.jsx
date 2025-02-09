@@ -1,4 +1,11 @@
-import { faRightFromBracket } from "@fortawesome/free-solid-svg-icons";
+import {
+  faCab,
+  faCamera,
+  faCode,
+  faDoorOpen,
+  faLeaf,
+  faRightFromBracket,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useNavigate } from "react-router-dom";
 
@@ -31,20 +38,28 @@ export const Settings = () => {
               IP Address Manager
             </button>
             <button
-              className="btn btn-secondary w-full"
+              className="btn btn-glass w-full bg-blue-600"
               onClick={() => {
                 navigate("/onetimecode");
               }}
             >
-              One Time Code
+              One Time Code <FontAwesomeIcon icon={faDoorOpen} />
             </button>
             <button
-              className="btn btn-secondary w-full"
+              className="btn btn-glass bg-red-400 w-full"
               onClick={() => {
                 navigate("/camera");
               }}
             >
-              Camera
+              Camera <FontAwesomeIcon icon={faCamera} />
+            </button>
+            <button
+              className="btn btn-glass bg-green-600 w-full"
+              onClick={() => {
+                navigate("/plants");
+              }}
+            >
+              Plants <FontAwesomeIcon icon={faLeaf} />
             </button>
             <button
               className="btn btn-glass w-full"
