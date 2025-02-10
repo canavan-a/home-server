@@ -5,6 +5,7 @@ import {
   faDoorOpen,
   faLeaf,
   faRightFromBracket,
+  faTerminal,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useNavigate } from "react-router-dom";
@@ -35,7 +36,7 @@ export const Settings = () => {
                 navigate("/ipman");
               }}
             >
-              IP Address Manager
+              IP Address Manager <FontAwesomeIcon icon={faTerminal} />
             </button>
             <button
               className="btn btn-glass w-full bg-blue-600"

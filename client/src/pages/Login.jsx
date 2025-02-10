@@ -65,16 +65,22 @@ export const Login = () => {
   };
 
   useEffect(() => {
-    const poller = setInterval(() => {
-      if (password != "" && loggedIn) {
-        getStatus();
-      }
-    }, 1000);
+    let poller;
+    if (password != "") {
+      getStatus();
+      poller = setInterval(() => {
+        if (password != "" && loggedIn) {
+          getStatus();
+        }
+      }, 1000);
+    }
 
     return () => {
-      clearInterval(poller);
+      if (poller) {
+        clearInterval(poller);
+      }
     };
-  }, [getStatus]);
+  }, [getStatus, password]);
 
   const openSettings = () => {
     navigate("/settings");
