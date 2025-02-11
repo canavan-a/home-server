@@ -66,13 +66,13 @@ while True:
     # resized_frame = cv2.resize(frame, (320, 320))
     # Perform YOLO detection
     print("frame is about to process")
-    results = ncnn_model(frame)
+    results = model.predict(frame)
 
     # Draw bounding boxes for cars and people
     for result in results:
         for box in result.boxes:
             cls = int(box.cls[0])
-            label = ncnn_model.names[cls]
+            label = model.names[cls]
 
             if label in ["car", "person"]:
                 x1, y1, x2, y2 = map(int, box.xyxy[0])
