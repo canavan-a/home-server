@@ -5,14 +5,15 @@ import numpy as np
 from ultralytics import YOLO
 
 # model = YOLO('yolo11n.pt')
-model = YOLO("yolov8n.pt")
+# model = YOLO("yolov8n.pt")
+model = YOLO("yolo11n_full_integer_quant_edgetpu.tflite")
 
 
-model.export(format='ncnn', half=True)
-print("model exported")
+# model.export(format='ncnn', half=True)
+# print("model exported")
 
-ncnn_model = YOLO("yolo11n_ncnn_model")
-print("ncnn model created")
+# ncnn_model = YOLO("yolo11n_ncnn_model")
+# print("ncnn model created")
 
 fifo_path = '/tmp/video_pipe'
 
