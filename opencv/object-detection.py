@@ -66,12 +66,13 @@ while True:
     # resized_frame = cv2.resize(frame, (320, 320))
     # Perform YOLO detection
     print("frame is about to process")
-    results = model.predict(frame)
+    results = model(frame)
 
     # Draw bounding boxes for cars and people
     for result in results:
         for box in result.boxes:
             cls = int(box.cls[0])
+            print("get model names")
             label = model.names[cls]
 
             if label in ["car", "person"]:
