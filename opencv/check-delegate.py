@@ -8,7 +8,7 @@ interpreter = tflite.Interpreter(
 )
 
 # Print out the model details to confirm the Edge TPU is being used
-if interpreter._delegate is not None:
+if interpreter._delegates is not None:
     print("Edge TPU is being used for inference.")
 else:
     print("Edge TPU is NOT being used.")
