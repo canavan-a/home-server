@@ -6,7 +6,7 @@ from ultralytics import YOLO
 
 # model = YOLO('yolo11n.pt')
 # model = YOLO("yolov8n.pt")
-model = YOLO("yolo11n_full_integer_quant_edgetpu.tflite", task="detect")
+model = YOLO("yolo11n_full_integer_quant_edgetpu.tflite")
 
 
 # model.export(format='ncnn', half=True)
@@ -74,6 +74,7 @@ while True:
             cls = int(box.cls[0])
             print("get model names")
             label = model.names[cls]
+            print(label)
 
             if label in ["car", "person"]:
                 x1, y1, x2, y2 = map(int, box.xyxy[0])
