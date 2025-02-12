@@ -49,7 +49,7 @@ while True:
     
     # Perform YOLO detection
     print("frame is about to process")
-    results = model(frame)
+    results = model.predict(frame)
 
     # Draw bounding boxes for cars and people
     for result in results:
