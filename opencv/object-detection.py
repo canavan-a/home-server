@@ -6,7 +6,7 @@ from ultralytics import YOLO
 
 # model = YOLO('yolo11n.pt')
 # model = YOLO("yolov8n.pt")
-model = YOLO("yolo11n_full_integer_quant_edgetpu.tflite")
+model = YOLO("yolov8n_full_integer_quant_edgetpu.tflite")
 
 
 # model.export(format='ncnn', half=True)
@@ -38,20 +38,6 @@ except Exception as e:
     print(f"Error: Unable to open pipe ({e})")
     exit(1)
 
-def resize_with_aspect_ratio(image, target_size=(320, 320)):
-    h, w = image.shape[:2]
-    scale = min(target_size[0] / w, target_size[1] / h)
-    new_w, new_h = int(w * scale), int(h * scale)
-    
-    resized = cv2.resize(image, (new_w, new_h))
-    
-    # Create a black canvas and center the resized image
-    padded = cv2.copyMakeBorder(resized, 
-                                (target_size[1] - new_h) // 2, (target_size[1] - new_h + 1) // 2,
-                                (target_size[0] - new_w) // 2, (target_size[0] - new_w + 1) // 2,
-                                cv2.BORDER_CONSTANT, value=(0, 0, 0))
-    return padded
-
 
 # Feed the frame feed and process each frame
 while True:
@@ -61,9 +47,6 @@ while True:
         break
 
     
-    # resized_frame = resize_with_aspect_ratio(frame, (320, 320))
-
-    # resized_frame = cv2.resize(frame, (320, 320))
     # Perform YOLO detection
     print("frame is about to process")
     results = model(frame)
