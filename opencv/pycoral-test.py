@@ -9,11 +9,12 @@ from pycoral.adapters.classify import get_classes
 
 # model = YOLO('yolo11n.pt')
 # model = YOLO("yolov8n.pt")
+edgetpu_delegate_path = "/usr/lib/aarch64-linux-gnu/libedgetpu.so.1"
 
 MODEL_PATH = "yolov8n_full_integer_quant_edgetpu.tflite"
 LABELS = {0: "person", 1: "car"}
 
-interpreter = make_interpreter(MODEL_PATH)
+interpreter = make_interpreter(MODEL_PATH, edgetpu_delegate_path)
 interpreter.allocate_tensors()
 
 width, height = input_size(interpreter)
