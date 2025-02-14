@@ -3,6 +3,14 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  LineChart,
+  Line,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  ResponsiveContainer,
+} from "recharts";
 
 export const Plants = () => {
   const navigate = useNavigate();
@@ -40,6 +48,7 @@ export const Plants = () => {
       }
     };
   }, [password]);
+
   return (
     <>
       <div className="w-full h-screen flex items-center justify-center">
@@ -58,6 +67,7 @@ export const Plants = () => {
           <div className="grid gap-4">
             {selectedPlant != null && (
               <PlantCard
+                password={password}
                 value={plants[selectedPlant]}
                 selectedPlant={selectedPlant}
                 setSelectedPlant={setSelectedPlant}
@@ -125,13 +135,33 @@ const PlantRow = (props) => {
 };
 
 const PlantCard = (props) => {
-  const { selectedPlant, setSelectedPlant, value } = props;
+  const { selectedPlant, setSelectedPlant, value, password } = props;
   const averageValue = value.PushStack.length
     ? parseInt(
         value.PushStack.reduce((acc, curr) => acc + curr, 0) /
           value.PushStack.length
       )
     : 0;
+
+  const [graphData, setGraphData] = useState(null);
+  const [hours, setHours] = useState(12);
+
+  const fetchGraphData = () => {
+    setGraphData(null);
+    const RECORD_COUNT = 100;
+    axios
+      .get(
+        `https://aidan.house/api/hydrometer/graph?doorCode=${password}&plant=${selectedPlant}&count=${RECORD_COUNT}&hours=${hours}`
+      )
+      .then((response) => {
+        setGraphData(response.data);
+        console.log(response.data);
+      });
+  };
+
+  useEffect(() => {
+    fetchGraphData(24);
+  }, [selectedPlant, hours]);
   return (
     <div
       className={`text-center border-2 flex-col p-2 hover:cursor-pointer h-auto relative`}
@@ -157,6 +187,35 @@ const PlantCard = (props) => {
       </div>
       <div className="flex-grow"></div>
       <div className="font-mono "></div>
+
+      {graphData && (
+        <ResponsiveContainer width="100%" height={200}>
+          <LineChart
+            data={graphData.map((item) => ({
+              ...item,
+              Timestamp: new Date(item.Timestamp).getTime(), // Convert timestamp to milliseconds since epoch
+            }))}
+          >
+            <Line
+              type="monotone"
+              dataKey="Value"
+              stroke="#8884d8"
+              dot={false}
+            />
+            <YAxis
+              label={{ angle: -90, position: "insideLeft" }}
+              domain={[1300, "dataMax"]}
+              tickCount={5}
+            />
+            <XAxis
+              dataKey="Timestamp" // The numeric field containing your Unix timestamp values
+              type="number" // Continuous scale
+              domain={["auto", "auto"]} // Let Recharts automatically scale the axis
+              tickFormatter={(value) => new Date(value).toLocaleTimeString()} // Format as time or date
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      )}
     </div>
   );
 };

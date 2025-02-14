@@ -25,20 +25,20 @@ func GetSpacedReadings(db *gorm.DB, plantID int, count int, startTime time.Time)
 	var readings []Reading
 
 	query := `
-		WITH RankedReadings AS (
-			SELECT *, ROW_NUMBER() OVER (ORDER BY timestamp) AS rn,
-			COUNT(*) OVER () AS total_count
-			FROM readings
-			WHERE plant_id = ? AND timestamp BETWEEN ? AND ?
-		)
-		SELECT * FROM RankedReadings
-		WHERE rn % (total_count / ?) = 0 OR rn = total_count
-		ORDER BY timestamp;
+	WITH RankedReadings AS (
+		SELECT *, NTILE(?) OVER (ORDER BY timestamp) AS bucket
+		FROM readings
+		WHERE plant_id = ?
+		AND timestamp BETWEEN ? AND ?
+	)
+	SELECT DISTINCT ON (bucket) *
+	FROM RankedReadings
+	ORDER BY bucket, timestamp;
 	`
 
 	endTime := time.Now()
 
-	if err := db.Raw(query, plantID, startTime, endTime, count).Scan(&readings).Error; err != nil {
+	if err := db.Raw(query, count, plantID, endTime, startTime).Scan(&readings).Error; err != nil {
 		return nil, err
 	}
 

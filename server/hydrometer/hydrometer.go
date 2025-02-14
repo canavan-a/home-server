@@ -23,6 +23,22 @@ func (ps *PushStack) PushItem(item int) {
 	*ps = copy[1:]
 }
 
+func (ps *PushStack) Average() (average int) {
+	sum := 0
+	valid := 0
+	for _, item := range *ps {
+		if item != 0 {
+			sum += item
+			valid++
+		}
+	}
+	if valid != 0 {
+		return sum / valid
+	} else {
+		return 0
+	}
+}
+
 type Hydrometer struct {
 	ID             int
 	IP             string
@@ -144,7 +160,7 @@ func (h *Hydrometer) Poll(mut *sync.Mutex) {
 	reading := Reading{
 		PlantID:   h.ID,
 		Timestamp: time.Now(),
-		Value:     val,
+		Value:     h.PushStack.Average(),
 	}
 
 	go StoreReading(reading)
@@ -175,11 +191,6 @@ func (hn *HydrometerNetwork) CreateHandler() func(c *gin.Context) {
 }
 
 func HandleGraphData(c *gin.Context) {
-	db, err := connect()
-	if err != nil {
-		c.JSON(400, "error connecting to db")
-		return
-	}
 
 	plantId, err := strconv.Atoi(c.Query("plant"))
 	if err != nil {
@@ -201,7 +212,9 @@ func HandleGraphData(c *gin.Context) {
 
 	startDate := time.Now().Add(time.Duration(-hours) * time.Hour)
 
-	readings, err := GetSpacedReadings(db, plantId, count, startDate)
+	txn := DB.Begin()
+
+	readings, err := GetSpacedReadings(txn, plantId, count, startDate)
 	if err != nil {
 		c.JSON(400, "error fetching")
 		return
