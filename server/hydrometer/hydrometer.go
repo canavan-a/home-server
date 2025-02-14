@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type PushStack []int
@@ -37,7 +38,20 @@ type HydrometerNetwork struct {
 	Mutex sync.Mutex
 }
 
+var (
+	DB *gorm.DB
+)
+
 func NewHydrometerNetwork() (hn HydrometerNetwork) {
+
+	// init db connection
+	db, err := connect()
+	if err != nil {
+		panic(err)
+	}
+	// init db
+	DB = db
+
 	PUSH_STACK_SIZE := 100
 
 	h0 := Hydrometer{
@@ -138,17 +152,17 @@ func (h *Hydrometer) Poll(mut *sync.Mutex) {
 }
 
 func StoreReading(reading Reading) {
-	db, err := connect()
-	if err != nil {
-		fmt.Println("could not connect")
-		return
-	}
 
-	err = InsertReading(db, reading)
+	txn := DB.Begin()
+
+	err := InsertReading(txn, reading)
 	if err != nil {
+		txn.Rollback()
 		fmt.Println("could not insert")
 		return
 	}
+
+	txn.Commit()
 }
 
 func (hn *HydrometerNetwork) CreateHandler() func(c *gin.Context) {
