@@ -1,6 +1,7 @@
 package hydrometer
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -125,6 +126,29 @@ func (h *Hydrometer) Poll(mut *sync.Mutex) {
 	h.PushStack.PushItem(val)
 	mut.Unlock()
 
+	// store item
+	reading := Reading{
+		PlantID:   h.ID,
+		Timestamp: time.Now(),
+		Value:     val,
+	}
+
+	go StoreReading(reading)
+
+}
+
+func StoreReading(reading Reading) {
+	db, err := connect()
+	if err != nil {
+		fmt.Println("could not connect")
+		return
+	}
+
+	err = InsertReading(db, reading)
+	if err != nil {
+		fmt.Println("could not insert")
+		return
+	}
 }
 
 func (hn *HydrometerNetwork) CreateHandler() func(c *gin.Context) {
@@ -133,5 +157,42 @@ func (hn *HydrometerNetwork) CreateHandler() func(c *gin.Context) {
 
 		c.JSON(200, hn.Nodes)
 	}
+
+}
+
+func HandleGraphData(c *gin.Context) {
+	db, err := connect()
+	if err != nil {
+		c.JSON(400, "error connecting to db")
+		return
+	}
+
+	plantId, err := strconv.Atoi(c.Query("plant"))
+	if err != nil {
+		c.JSON(400, "error converting")
+		return
+	}
+
+	count, err := strconv.Atoi(c.Query("count"))
+	if err != nil {
+		c.JSON(400, "error converting")
+		return
+	}
+
+	hours, err := strconv.Atoi(c.Query("hours"))
+	if err != nil {
+		c.JSON(400, "error converting")
+		return
+	}
+
+	startDate := time.Now().Add(time.Duration(-hours) * time.Hour)
+
+	readings, err := GetSpacedReadings(db, plantId, count, startDate)
+	if err != nil {
+		c.JSON(400, "error fetching")
+		return
+	}
+
+	c.JSON(200, readings)
 
 }

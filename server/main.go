@@ -67,9 +67,10 @@ func main() {
 	api := r.Group("/api")
 	{
 
-		hydrometer := api.Group("/hydrometer")
+		hyd := api.Group("/hydrometer")
 		{
-			hydrometer.GET("/bulk", hn.CreateHandler(), MiddlewareAuthenticate)
+			hyd.GET("/bulk", hn.CreateHandler(), MiddlewareAuthenticate)
+			hyd.GET("/graph", hydrometer.HandleGraphData, MiddlewareAuthenticate)
 		}
 
 		api.POST("/toggle", MiddlewareAuthenticate, handleToggleDoor)
