@@ -38,7 +38,7 @@ func GetSpacedReadings(db *gorm.DB, plantID int, count int, startTime time.Time)
 
 	endTime := time.Now()
 
-	if err := db.Raw(query, count, plantID, endTime, startTime).Scan(&readings).Error; err != nil {
+	if err := db.Raw(query, count, plantID, startTime, endTime).Scan(&readings).Error; err != nil {
 		return nil, err
 	}
 

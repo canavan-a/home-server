@@ -39,7 +39,7 @@ export const Plants = () => {
       pollPlants();
       interval = setInterval(() => {
         pollPlants();
-      }, 500);
+      }, 2000);
     }
 
     return () => {
@@ -207,12 +207,12 @@ const PlantCard = (props) => {
               domain={[1300, "dataMax"]}
               tickCount={5}
             />
-            <XAxis
+            {/* <XAxis
               dataKey="Timestamp" // The numeric field containing your Unix timestamp values
               type="number" // Continuous scale
               domain={["auto", "auto"]} // Let Recharts automatically scale the axis
               tickFormatter={(value) => new Date(value).toLocaleTimeString()} // Format as time or date
-            />
+            /> */}
           </LineChart>
         </ResponsiveContainer>
       )}
