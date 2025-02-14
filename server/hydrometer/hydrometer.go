@@ -74,7 +74,7 @@ func NewHydrometerNetwork() (hn HydrometerNetwork) {
 		ID:             0,
 		IP:             "192.168.1.160",
 		Name:           "Dieffenbachia",
-		WaterThreshold: 2500,
+		WaterThreshold: 2100,
 		Connected:      false,
 		PushStack:      NewPushStack(PUSH_STACK_SIZE),
 	}
@@ -82,7 +82,7 @@ func NewHydrometerNetwork() (hn HydrometerNetwork) {
 		ID:             1,
 		IP:             "192.168.1.161",
 		Name:           "Money Tree",
-		WaterThreshold: 2500,
+		WaterThreshold: 2100,
 		Connected:      false,
 		PushStack:      NewPushStack(PUSH_STACK_SIZE),
 	}
@@ -219,6 +219,8 @@ func HandleGraphData(c *gin.Context) {
 		c.JSON(400, "error fetching")
 		return
 	}
+
+	txn.Commit()
 
 	c.JSON(200, readings)
 

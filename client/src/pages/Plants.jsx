@@ -144,7 +144,7 @@ const PlantCard = (props) => {
     : 0;
 
   const [graphData, setGraphData] = useState(null);
-  const [hours, setHours] = useState(12);
+  const [hours, setHours] = useState(1);
 
   const fetchGraphData = () => {
     setGraphData(null);
@@ -204,18 +204,61 @@ const PlantCard = (props) => {
             />
             <YAxis
               label={{ angle: -90, position: "insideLeft" }}
-              domain={[1300, "dataMax"]}
-              tickCount={5}
+              domain={[
+                Math.min(...graphData.map((d) => d.Value)) - 20,
+                Math.max(...graphData.map((d) => d.Value)) + 20,
+              ]}
+              ticks={[
+                Math.min(...graphData.map((d) => d.Value)),
+                Math.max(...graphData.map((d) => d.Value)),
+              ]}
             />
-            {/* <XAxis
-              dataKey="Timestamp" // The numeric field containing your Unix timestamp values
-              type="number" // Continuous scale
-              domain={["auto", "auto"]} // Let Recharts automatically scale the axis
-              tickFormatter={(value) => new Date(value).toLocaleTimeString()} // Format as time or date
-            /> */}
           </LineChart>
         </ResponsiveContainer>
       )}
+      <div className="font-mono flex-grow">
+        <TimeFrameButton value={24 * 7 * 3} hours={hours} setHours={setHours}>
+          3 week
+        </TimeFrameButton>
+        <TimeFrameButton value={48 * 7} hours={hours} setHours={setHours}>
+          2 weeks
+        </TimeFrameButton>
+        <TimeFrameButton value={24 * 7} hours={hours} setHours={setHours}>
+          1 week
+        </TimeFrameButton>
+        <TimeFrameButton value={24} hours={hours} setHours={setHours}>
+          24 hours
+        </TimeFrameButton>
+        <TimeFrameButton value={12} hours={hours} setHours={setHours}>
+          12 hours
+        </TimeFrameButton>
+        <TimeFrameButton value={3} hours={hours} setHours={setHours}>
+          3 hours
+        </TimeFrameButton>
+        <TimeFrameButton value={1} hours={hours} setHours={setHours}>
+          1 hour
+        </TimeFrameButton>
+      </div>
     </div>
+  );
+};
+
+const TimeFrameButton = (props) => {
+  const { value, setHours, hours, children } = props;
+
+  const currentButton = hours == value;
+
+  const click = () => {
+    setHours(value);
+  };
+
+  return (
+    <button
+      disabled={currentButton}
+      onClick={click}
+      className={`btn ${currentButton ? "btn-primary" : "btn-glass"} btn-xs`}
+    >
+      {children}
+    </button>
   );
 };
