@@ -1,5 +1,6 @@
 #include <WiFi.h>
 #include <WebServer.h>
+#include <ArduinoOTA.h>
 #include "config.h" // un and pw
 
 
@@ -32,9 +33,10 @@ void setup() {
   server.on("/hydrometer", handleHydrometerLevel);
   server.begin(); // Start server
 
+  ArduinoOTA.begin();
 }
 
 void loop() {
   server.handleClient(); // Listen for incoming requests
-
+  ArduinoOTA.handle();
 }
