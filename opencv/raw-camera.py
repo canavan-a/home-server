@@ -1,11 +1,10 @@
 import cv2
 
-# Open webcam
-cap = cv2.VideoCapture("/dev/video0")
-
-if not cap.isOpened():
-    print("Error: Unable to open physical webcam")
-    exit()
+cap = cv2.VideoCapture(0)
+cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))  # Force MJPG mode
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)  # Try 1280x720 for balance
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+cap.set(cv2.CAP_PROP_FPS, 30)
 
 while True:
     ret, frame = cap.read()
@@ -13,11 +12,9 @@ while True:
         print("Failed to grab frame")
         break
 
-    # Show raw video feed
-    cv2.imshow("Raw Camera Feed", frame)
+    cv2.imshow("Webcam", frame)
 
-    # Exit on 'q' key
-    if cv2.waitKey(1) & 0xFF == ord('q'):
+    if cv2.waitKey(1) & 0xFF == ord("q"):
         break
 
 cap.release()
