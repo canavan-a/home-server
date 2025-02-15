@@ -8,7 +8,11 @@ model = YOLO("yolov8n.pt")
 ALLOWED_CLASSES = {0, 2, 7}  # 0: person, 2: car, 7: truck
 
 # Open webcam
-cap = cv2.VideoCapture("/dev/video0")
+cap = cv2.VideoCapture(0)
+cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))  # Force MJPG mode
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)  # Try 1280x720 for balance
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+cap.set(cv2.CAP_PROP_FPS, 30)
 if not cap.isOpened():
     print("Error: Unable to open physical webcam")
     exit()
