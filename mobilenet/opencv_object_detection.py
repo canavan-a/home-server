@@ -8,7 +8,7 @@ from pycoral.utils.edgetpu import make_interpreter
 # Model and label file paths
 MODEL_PATH = "ssdlite_mobiledet_coco_qat_postprocess_edgetpu.tflite"
 LABEL_PATH = "coco_labels.txt"
-SCORE_THRESHOLD = 0.65
+SCORE_THRESHOLD = 0.6
 
 # Load model and labels
 interpreter = make_interpreter(MODEL_PATH)
@@ -82,11 +82,11 @@ while True:
 
             # Draw bounding box and label
             if label == "person":
-                color = (0, 0, 255)
+                color = (255, 0, 0)
             else:
                 color = (0, 255, 0)
 
-            cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), color, 2)
+            cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), color, 3)
 
     # Display frame
     resized_frame = cv2.resize(frame, (640, 480))
