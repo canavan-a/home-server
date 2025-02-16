@@ -31,4 +31,4 @@ aidan.home
 
 ### REad from YOLO pipe
 
-`ffmpeg -f rawvideo -pix_fmt bgr24 -s 640x480 -r 30 -i /tmp/video_pipe -c:v vp8 -b:v 200k -g 15 -an -s 480x360 -filter:v "drawtext=text='%{localtime}':x=10:y=10:fontcolor=white:fontsize=14:box=1:boxcolor=black@0.5" -preset ultrafast -f rtp rtp://127.0.0.1:5005`
+`ffmpeg -f rawvideo -pix_fmt bgr24 -s 640x480 -r 30 -i /tmp/video_pipe2 -c:v vp8 -b:v 200k -g 15 -an -s 480x360 -filter:v "drawtext=text='%{localtime}':x=10:y=10:fontcolor=white:fontsize=14:box=1:boxcolor=black@0.5" -preset ultrafast -f rtp rtp://127.0.0.1:5005`

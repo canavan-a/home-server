@@ -8,7 +8,7 @@ from pycoral.utils.edgetpu import make_interpreter
 # Model and label file paths
 MODEL_PATH = "ssdlite_mobiledet_coco_qat_postprocess_edgetpu.tflite"
 LABEL_PATH = "coco_labels.txt"
-SCORE_THRESHOLD = 0.5
+SCORE_THRESHOLD = 0.65
 
 # Load model and labels
 interpreter = make_interpreter(MODEL_PATH)
@@ -41,6 +41,8 @@ if not cap.isOpened():
     print("Error: Could not open camera.")
     exit()
 
+allowed_objects = ["car", "truck", "person"]
+
 while True:
     ret, frame = cap.read()
     if not ret:
@@ -64,21 +66,27 @@ while True:
 
     # Draw detections
     for obj in objects:
-        ymin, xmin, ymax, xmax = obj.bbox.ymin, obj.bbox.xmin, obj.bbox.ymax, obj.bbox.xmax
-
-        # Rescale bounding box to original frame size
-        xmin = int(xmin * scale_x)
-        xmax = int(xmax * scale_x)
-        ymin = int(ymin * scale_y)
-        ymax = int(ymax * scale_y)
-
         label = labels.get(obj.id, "Unknown")
-        score = obj.score
+        if label in allowed_objects:
+            
+            ymin, xmin, ymax, xmax = obj.bbox.ymin, obj.bbox.xmin, obj.bbox.ymax, obj.bbox.xmax
 
-        # Draw bounding box and label
-        cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (0, 255, 0), 2)
-        cv2.putText(frame, f"{label}: {score:.2f}", (xmin, ymin - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+            # Rescale bounding box to original frame size
+            xmin = int(xmin * scale_x)
+            xmax = int(xmax * scale_x)
+            ymin = int(ymin * scale_y)
+            ymax = int(ymax * scale_y)
+
+
+            score = obj.score
+
+            # Draw bounding box and label
+            if label == "person":
+                color = (0, 0, 255)
+            else:
+                color = (0, 255, 0)
+
+            cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), color, 2)
 
     # Display frame
     resized_frame = cv2.resize(frame, (640, 480))
