@@ -15,7 +15,7 @@ interpreter = make_interpreter(MODEL_PATH)
 interpreter.allocate_tensors()
 labels = read_label_file(LABEL_PATH)
 
-fifo_path = '/tmp/video_pipe'
+fifo_path = '/tmp/video_pipe2'
 
 # Open video capture
 cap = cv2.VideoCapture(0)  # /dev/video0
