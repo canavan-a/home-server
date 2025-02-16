@@ -8,7 +8,7 @@ from pycoral.utils.edgetpu import make_interpreter
 # Model and label file paths
 MODEL_PATH = "ssdlite_mobiledet_coco_qat_postprocess_edgetpu.tflite"
 LABEL_PATH = "coco_labels.txt"
-SCORE_THRESHOLD = 0.6
+SCORE_THRESHOLD = 0.65
 
 # Load model and labels
 interpreter = make_interpreter(MODEL_PATH)
