@@ -750,7 +750,7 @@ func HandleCameraControl(c *gin.Context) {
 
 func HandleCameraControlDynamic(c *gin.Context) {
 	HARD_LIMIT := 4000
-	controlCommand := c.GetString("controlCommand")
+	controlCommand := c.Query("controlCommand")
 
 	if controlCommand == "" {
 		c.JSON(400, "invalid command")
