@@ -751,10 +751,13 @@ func HandleCameraControl(c *gin.Context) {
 func HandleCameraControlDynamic(c *gin.Context) {
 	HARD_LIMIT := 4000
 	controlCommand := c.GetString("controlCommand")
+
 	if controlCommand == "" {
 		c.JSON(400, "invalid command")
 		return
 	}
+
+	fmt.Println(controlCommand)
 
 	first := controlCommand[0]
 	last := controlCommand[len(controlCommand)-1]
@@ -764,12 +767,15 @@ func HandleCameraControlDynamic(c *gin.Context) {
 		return
 	}
 
+	fmt.Println(controlCommand)
+
 	valid := "LR"
 
 	if !strings.Contains(valid, string(first)) {
 		c.JSON(400, "invalid command")
 		return
 	}
+	fmt.Println(controlCommand)
 
 	middle := controlCommand[1 : len(controlCommand)-1]
 
