@@ -37,6 +37,24 @@ export const Camera = () => {
       });
   };
 
+  const moveCameraDynamic = (dir) => {
+    axios
+      .post(
+        `https://aidan.house/api/camera/dynamic_move?controlCommand=${
+          dir.toUpperCase() + 500 + dir.toUpperCase()
+        }`,
+        {
+          doorCode: password,
+        }
+      )
+      .then(() => {
+        console.log("moved camera");
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  };
+
   useEffect(() => {
     let signalingServer;
     let interval;
@@ -203,12 +221,21 @@ export const Camera = () => {
         <div className="absolute bottom-4 left-0 w-full flex items-center justify-center">
           <div className="flex">
             <button
+              className="btn btn-md mr-4"
+              onClick={() => {
+                moveCameraDynamic("r");
+              }}
+            >
+              <FontAwesomeIcon icon={faChevronLeft} />
+              <FontAwesomeIcon icon={faChevronLeft} />
+            </button>
+            <button
               className="btn btn-md"
               onClick={() => {
                 moveCamera("r");
               }}
             >
-              <FontAwesomeIcon icon={faArrowLeft} />
+              <FontAwesomeIcon icon={faChevronLeft} />
             </button>
             <button
               onClick={() => startVideoStream()}
@@ -223,7 +250,16 @@ export const Camera = () => {
                 moveCamera("l");
               }}
             >
-              <FontAwesomeIcon icon={faArrowRight} />
+              <FontAwesomeIcon icon={faChevronRight} />
+            </button>
+            <button
+              className="btn btn-md ml-4"
+              onClick={() => {
+                moveCameraDynamic("l");
+              }}
+            >
+              <FontAwesomeIcon icon={faChevronRight} />
+              <FontAwesomeIcon icon={faChevronRight} />
             </button>
           </div>
         </div>

@@ -766,7 +766,7 @@ func HandleCameraControlDynamic(c *gin.Context) {
 
 	valid := "LR"
 
-	if !bytes.Contains([]byte(valid), []byte{first}) {
+	if !strings.Contains(valid, string(first)) {
 		c.JSON(400, "invalid command")
 		return
 	}
