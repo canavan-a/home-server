@@ -119,6 +119,7 @@ while True:
     resized_frame = cv2.resize(frame, (640, 480))
     # cv2.imshow("EdgeTPU Object Detection", resized_frame)
     pipe.write(resized_frame.tobytes())
+    print("frame processed")
 
 
     # Break on 'q' key
