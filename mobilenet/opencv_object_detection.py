@@ -113,7 +113,7 @@ while True:
 
     
     if len(people) != 0:
-        json_pipe.write(json.dumps(people))
+        json_pipe.write(json.dumps(people).encode())
 
     # Display frame
     resized_frame = cv2.resize(frame, (640, 480))
