@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import os
+import json
 from pycoral.adapters import common, detect
 from pycoral.utils.dataset import read_label_file
 from pycoral.utils.edgetpu import make_interpreter
@@ -8,7 +9,7 @@ from pycoral.utils.edgetpu import make_interpreter
 # Model and label file paths
 MODEL_PATH = "ssdlite_mobiledet_coco_qat_postprocess_edgetpu.tflite"
 LABEL_PATH = "coco_labels.txt"
-SCORE_THRESHOLD = 0.65
+SCORE_THRESHOLD = 0.60
 
 # Load model and labels
 interpreter = make_interpreter(MODEL_PATH)
@@ -16,6 +17,7 @@ interpreter.allocate_tensors()
 labels = read_label_file(LABEL_PATH)
 
 fifo_path = '/tmp/video_pipe2'
+json_pipe_path = '/tmp/json_pipe'
 
 # Open video capture
 cap = cv2.VideoCapture(0)  # /dev/video0
@@ -29,9 +31,22 @@ if not os.path.exists(fifo_path):
     os.mkfifo(fifo_path)
     print("pipe made")
 
+if not os.path.exists(json_pipe_path):
+    print("making json pipe")
+    os.mkfifo(json_pipe_path)
+    print("json pipe made")
+
 try:
     print("opening pipe")
     pipe = open(fifo_path, 'wb')
+    print("pipe open")
+except Exception as e:
+    print(f"Error: Unable to open pipe ({e})")
+    exit(1)
+
+try:
+    print("opening pipe")
+    json_pipe = open(json_pipe_path, 'wb')
     print("pipe open")
 except Exception as e:
     print(f"Error: Unable to open pipe ({e})")
@@ -65,11 +80,19 @@ while True:
     scale_y = h_orig / h_resized
 
     # Draw detections
+
+    people = []
+    person_index = 0
+
     for obj in objects:
         label = labels.get(obj.id, "Unknown")
         if label in allowed_objects:
             
             ymin, xmin, ymax, xmax = obj.bbox.ymin, obj.bbox.xmin, obj.bbox.ymax, obj.bbox.xmax
+
+            if label == "person":
+                people.append({ person_index: person_index, ymin:obj.bbox.ymin, xmin:obj.bbox.xmin, ymax: obj.bbox.ymax, xmax:obj.bbox.xmax })
+                person_index += 1
 
             # Rescale bounding box to original frame size
             xmin = int(xmin * scale_x)
@@ -87,6 +110,10 @@ while True:
                 color = (0, 255, 0)
 
             cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), color, 3)
+
+    
+    if len(people) != 0:
+        json_pipe.write(json.dumps(people))
 
     # Display frame
     resized_frame = cv2.resize(frame, (640, 480))

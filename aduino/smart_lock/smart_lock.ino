@@ -102,7 +102,7 @@ void loop() {
           stepperCamera.runSpeed();
       }
 
-      delay(500);
+      delay(100);
 
       // disable stepper
       digitalWrite(Y_ENABLE_PIN, HIGH);
@@ -112,6 +112,29 @@ void loop() {
       } else {
         Serial.println("O"); // neither or open
       }
+      
+    } else if (command == 'L' || command = 'R'){
+      // expect L{number}L 
+      String numberString = Serial.readStringUntil(command);
+
+      int num = numberString.toInt();
+      
+      Serial.read();
+
+      digitalWrite(Y_ENABLE_PIN, LOW);
+
+      if (command == 'L'){
+        stepperCamera.setSpeed(700);
+      } else{
+        stepperCamera.setSpeed(-700);
+      }
+      unsigned long startTime = millis();
+
+      while(millis() - startTime < num){
+        stepperCamera.runSpeed();
+      }
+      delay(100);
+      digitalWrite(Y_ENABLE_PIN, HIGH);
       
     }
   }

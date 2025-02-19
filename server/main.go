@@ -10,10 +10,12 @@ import (
 	"io"
 	"log"
 	"main/hydrometer"
+	"main/tracker"
 	"net"
 	"net/http"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -64,6 +66,9 @@ func main() {
 	hn := hydrometer.NewHydrometerNetwork()
 	hn.StartPolling()
 
+	tk := tracker.NewTracker("/tmp/json_pipe", func(tp tracker.TrackerPacket) {})
+	go tk.Run()
+
 	api := r.Group("/api")
 	{
 
@@ -101,6 +106,7 @@ func main() {
 		camera := api.Group("/camera", MiddlewareAuthenticate)
 		{
 			camera.POST("/move", HandleCameraControl)
+			camera.POST("/dynamic_move", HandleCameraControlDynamic)
 			camera.GET("/relay", handleRelayServer)
 		}
 		rtc := api.Group("/rtc", MiddlewareAuthenticate)
@@ -739,6 +745,50 @@ func HandleCameraControl(c *gin.Context) {
 	}
 
 	c.JSON(200, "sent direction")
+
+}
+
+func HandleCameraControlDynamic(c *gin.Context) {
+	HARD_LIMIT := 4000
+	controlCommand := c.GetString("controlCommand")
+	if controlCommand == "" {
+		c.JSON(400, "invalid command")
+		return
+	}
+
+	first := controlCommand[0]
+	last := controlCommand[len(controlCommand)-1]
+
+	if first != last {
+		c.JSON(400, "invalid command")
+		return
+	}
+
+	valid := "LR"
+
+	if !bytes.Contains([]byte(valid), []byte{first}) {
+		c.JSON(400, "invalid command")
+		return
+	}
+
+	middle := controlCommand[1 : len(controlCommand)-1]
+
+	numberValue, err := strconv.Atoi(middle)
+	if err != nil {
+		c.JSON(400, "invalid number")
+		return
+	}
+
+	if numberValue > HARD_LIMIT {
+		c.JSON(400, "number too large")
+		return
+	}
+
+	err = SerialSend(controlCommand)
+	if err != nil {
+		c.JSON(400, "could not send serial")
+		return
+	}
 
 }
 
