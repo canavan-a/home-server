@@ -113,7 +113,7 @@ void loop() {
         Serial.println("O"); // neither or open
       }
       
-    } else if (command == 'L' || command = 'R'){
+    } else if (command == 'L' || command == 'R'){
       // expect L{number}L 
       String numberString = Serial.readStringUntil(command);
 
