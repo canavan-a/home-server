@@ -93,7 +93,7 @@ while True:
             ymin, xmin, ymax, xmax = obj.bbox.ymin, obj.bbox.xmin, obj.bbox.ymax, obj.bbox.xmax
 
             if label == "person":
-                people.append({ person_index: person_index, ymin:obj.bbox.ymin, xmin:obj.bbox.xmin, ymax: obj.bbox.ymax, xmax:obj.bbox.xmax })
+                people.append({ "person_index": person_index, "ymin":obj.bbox.ymin, "xmin":obj.bbox.xmin, "ymax": obj.bbox.ymax, "xmax":obj.bbox.xmax })
                 person_index += 1
 
             # Rescale bounding box to original frame size
