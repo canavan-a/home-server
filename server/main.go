@@ -444,6 +444,46 @@ func MakeTrackerStatusRoute(t *tracker.Tracker) func(c *gin.Context) {
 	}
 }
 
+func GetTrackerSpeed(c *gin.Context) {
+	speed, err := SerialSendRec("v")
+	if err != nil {
+		c.JSON(400, "could not get tracker speed")
+		return
+	}
+
+	c.JSON(200, speed)
+}
+
+func SetTrackerSpeed(c *gin.Context) {
+	speed := c.Query("speed")
+	if speed == "" {
+		c.JSON(400, gin.H{"response": "no speed found"})
+		return
+	}
+
+	value, err := strconv.Atoi(speed)
+	if err != nil {
+		c.JSON(400, "invalid number")
+		return
+	}
+
+	if !(value >= 50 && value <= 800) {
+		c.JSON(400, "invalid number")
+		return
+	}
+
+	command := fmt.Sprintf("V%dV", value)
+
+	err = SerialSend(command)
+	if err != nil {
+		c.JSON(400, "command could not execute")
+		return
+	}
+
+	c.JSON(200, "updated speed")
+
+}
+
 var (
 	ShareCount_FRAME_EXIT   int
 	ShareCount_FRAME_CENTER int

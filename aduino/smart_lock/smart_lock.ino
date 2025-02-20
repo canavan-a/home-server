@@ -49,6 +49,7 @@ void setup() {
 bool directionToggle = true;
 
 int MAXIMUM_RUNTIME = 1000;
+int trackingVelocity = 350;
 char cameraControlAction = "Q";
 unsigned long cameraControlStartTime = millis();
 
@@ -140,7 +141,21 @@ void loop() {
       // delay(50);
       digitalWrite(Y_ENABLE_PIN, HIGH);
       
-    } else if (command == 'S' || command == 'P' || command == 'Q'){
+    } else if (command == 'V'){
+      // expect L{number}L 
+      String numberString = Serial.readStringUntil(command);
+
+      int num = numberString.toInt();
+      
+      Serial.read();
+
+      trackingVelocity = num;
+      
+    }else if (command == 'v'){
+      
+      Serial.println(trackingVelocity);
+
+    }else if (command == 'S' || command == 'P' || command == 'Q'){
       cameraControlAction = command;
       cameraControlStartTime = millis();
     }
@@ -163,13 +178,13 @@ void loop() {
     if (digitalRead(Y_ENABLE_PIN) == HIGH) {
       digitalWrite(Y_ENABLE_PIN, LOW);
     }
-    stepperCamera.setSpeed(180);
+    stepperCamera.setSpeed(trackingVelocity);
     stepperCamera.runSpeed();
   } else if (cameraControlAction == 'P'){
     if (digitalRead(Y_ENABLE_PIN) == HIGH) { 
       digitalWrite(Y_ENABLE_PIN, LOW);
     }
-    stepperCamera.setSpeed(-180);
+    stepperCamera.setSpeed(-1 * trackingVelocity);
     stepperCamera.runSpeed();
   } else { // Q
     if (digitalRead(Y_ENABLE_PIN) == LOW) {  
