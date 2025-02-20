@@ -163,13 +163,13 @@ void loop() {
     if (digitalRead(Y_ENABLE_PIN) == HIGH) {
       digitalWrite(Y_ENABLE_PIN, LOW);
     }
-    stepperCamera.setSpeed(150);
+    stepperCamera.setSpeed(180);
     stepperCamera.runSpeed();
   } else if (cameraControlAction == 'P'){
     if (digitalRead(Y_ENABLE_PIN) == HIGH) { 
       digitalWrite(Y_ENABLE_PIN, LOW);
     }
-    stepperCamera.setSpeed(-150);
+    stepperCamera.setSpeed(-180);
     stepperCamera.runSpeed();
   } else { // Q
     if (digitalRead(Y_ENABLE_PIN) == LOW) {  
