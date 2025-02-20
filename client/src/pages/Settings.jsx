@@ -33,10 +33,10 @@ export const Settings = () => {
             <button
               className="btn btn-secondary w-full"
               onClick={() => {
-                navigate("/ipman");
+                navigate("/camconfig");
               }}
             >
-              IP Address Manager <FontAwesomeIcon icon={faTerminal} />
+              Camera Configuration <FontAwesomeIcon icon={faTerminal} />
             </button>
             <button
               className="btn btn-glass w-full bg-blue-600"

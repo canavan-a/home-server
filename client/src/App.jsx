@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { Route, Routes, BrowserRouter as Router } from "react-router-dom";
 import { Login } from "./pages/Login";
 import { Settings } from "./pages/Settings";
-import { IpMan } from "./pages/IpMan";
+import { CamConfig } from "./pages/CamConfig";
 import { OneTime } from "./pages/OneTime";
 import { Camera } from "./pages/Camera";
 import { Plants } from "./pages/Plants";
@@ -50,7 +50,7 @@ function App() {
           <Route path="/settings" element={<Settings />} />
           <Route path="/camera" element={<Camera />} />
           <Route path="/onetimecode" element={<OneTime />} />
-          <Route path="/ipman" element={<IpMan />} />
+          <Route path="/camconfig" element={<CamConfig />} />
           <Route path="/plants" element={<Plants />} />
           <Route path="/*" element={<Login />} />
         </Routes>

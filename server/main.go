@@ -75,6 +75,12 @@ func main() {
 		{
 			trk.GET("/toggle", MakeToggleTrackerRoute(&tk))
 			trk.GET("/status", MakeTrackerStatusRoute(&tk))
+			speed := trk.Group("speed")
+			{
+				speed.GET("/get", GetTrackerSpeed)
+				speed.GET("/set", SetTrackerSpeed)
+			}
+
 		}
 
 		hyd := api.Group("/hydrometer")
