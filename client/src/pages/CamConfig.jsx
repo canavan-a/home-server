@@ -17,10 +17,9 @@ export const CamConfig = () => {
 
   const getSpeed = () => {
     axios
-      .get(`https://aidan.house/api/tracker/toggle?doorCode=${password}`)
-      .then(() => {
-        console.log("tracker toggled");
-        getTrackerStatus();
+      .get(`https://aidan.house/api/tracker/speed/get?doorCode=${password}`)
+      .then((response) => {
+        console.log(response.data);
       })
       .catch((error) => {
         console.log(error);
@@ -30,6 +29,7 @@ export const CamConfig = () => {
   useEffect(() => {
     setPassword(localStorage.getItem("pw"));
     if (password != null) {
+      getSpeed();
     }
   }, [password]);
 

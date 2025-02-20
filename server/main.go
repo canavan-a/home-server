@@ -418,6 +418,33 @@ func SerialSendRec(input string) (output string, err error) {
 
 }
 
+func SerialSendRecLine(input string) (output string, err error) {
+	serialMutex.Lock()
+	defer serialMutex.Unlock()
+
+	s, err := serial.OpenPort(c)
+	if err != nil {
+		return
+	}
+	defer s.Close()
+
+	command := []byte(input)
+	_, err = s.Write(command)
+	if err != nil {
+		return
+	}
+
+	reader := bufio.NewReader(s)
+
+	line, err := reader.ReadString('\n')
+	if err != nil {
+		return
+	}
+
+	return line, nil
+
+}
+
 func SerialSend(input string) (err error) {
 	serialMutex.Lock()
 	defer serialMutex.Unlock()
@@ -451,7 +478,7 @@ func MakeTrackerStatusRoute(t *tracker.Tracker) func(c *gin.Context) {
 }
 
 func GetTrackerSpeed(c *gin.Context) {
-	speed, err := SerialSendRec("v")
+	speed, err := SerialSendRecLine("v")
 	if err != nil {
 		c.JSON(400, "could not get tracker speed")
 		return
