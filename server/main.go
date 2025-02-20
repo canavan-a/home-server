@@ -434,7 +434,7 @@ func SerialSend(input string) (err error) {
 func MakeToggleTrackerRoute(t *tracker.Tracker) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		t.Toggle()
-		c.JSON(300, "toggled")
+		c.JSON(200, "toggled")
 	}
 }
 

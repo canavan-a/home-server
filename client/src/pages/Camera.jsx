@@ -5,6 +5,7 @@ import {
   faChevronRight,
   faPlay,
   faRightFromBracket,
+  faStop,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import axios from "axios";
@@ -41,7 +42,7 @@ export const Camera = () => {
     axios
       .post(
         `https://aidan.house/api/camera/dynamic_move?controlCommand=${
-          dir.toUpperCase() + 500 + dir.toUpperCase()
+          dir.toUpperCase() + 800 + dir.toUpperCase()
         }`,
         {
           doorCode: password,
@@ -189,6 +190,43 @@ export const Camera = () => {
     }
   };
 
+  const [trackerStatus, setTrackerStatus] = useState(true);
+
+  const toggleTracking = () => {
+    axios
+      .get(`https://aidan.house/api/tracker/toggle?doorCode=${password}`)
+      .then(() => {
+        console.log("tracker toggled");
+        getTrackerStatus();
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  };
+
+  const getTrackerStatus = () => {
+    axios
+      .get(`https://aidan.house/api/tracker/status?doorCode=${password}`)
+      .then((response) => {
+        console.log(response.data);
+        setTrackerStatus(response.data);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  };
+
+  useEffect(() => {
+    let interval;
+    if (password) {
+      getTrackerStatus();
+      interval = setInterval(getTrackerStatus, 1000);
+    }
+    return () => {
+      clearInterval(interval);
+    };
+  }, [password]);
+
   return (
     <>
       <div className="relative w-full h-screen">
@@ -238,11 +276,15 @@ export const Camera = () => {
               <FontAwesomeIcon icon={faChevronLeft} />
             </button>
             <button
-              onClick={() => startVideoStream()}
-              className="btn btn-md mx-4"
-              disabled={true}
+              onClick={toggleTracking}
+              className={`btn btn-md mx-4 ${"btn-primary"}`}
             >
-              {/* <FontAwesomeIcon icon={faPlay} /> */}
+              {!trackerStatus ? (
+                <FontAwesomeIcon icon={faPlay} />
+              ) : (
+                <FontAwesomeIcon icon={faStop} />
+              )}
+              track
             </button>
             <button
               className="btn btn-md"
