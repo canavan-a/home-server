@@ -457,7 +457,7 @@ func TrackerRunner(y, x int) {
 	noDetection := x == 0 && y == 0
 
 	LEFT_RIGHT_PADDING := 110
-	EXIT_FRAME_LIMIT := 10
+	EXIT_FRAME_LIMIT := 3
 
 	// handle none detection
 	if noDetection {

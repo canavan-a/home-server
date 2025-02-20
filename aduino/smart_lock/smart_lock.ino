@@ -48,7 +48,7 @@ void setup() {
 
 bool directionToggle = true;
 
-int MAXIMUM_RUNTIME = 1500;
+int MAXIMUM_RUNTIME = 1000;
 char cameraControlAction = "Q";
 unsigned long cameraControlStartTime = millis();
 
@@ -163,13 +163,13 @@ void loop() {
     if (digitalRead(Y_ENABLE_PIN) == HIGH) {
       digitalWrite(Y_ENABLE_PIN, LOW);
     }
-    stepperCamera.setSpeed(1000);
+    stepperCamera.setSpeed(150);
     stepperCamera.runSpeed();
   } else if (cameraControlAction == 'P'){
     if (digitalRead(Y_ENABLE_PIN) == HIGH) { 
       digitalWrite(Y_ENABLE_PIN, LOW);
     }
-    stepperCamera.setSpeed(-1000);
+    stepperCamera.setSpeed(-150);
     stepperCamera.runSpeed();
   } else { // Q
     if (digitalRead(Y_ENABLE_PIN) == LOW) {  
@@ -177,5 +177,5 @@ void loop() {
     }
 
   }
-
+  
 }
