@@ -239,7 +239,7 @@ export const Camera = () => {
             </button>
             <button
               onClick={() => startVideoStream()}
-              className="btn btn-md mx-2"
+              className="btn btn-md mx-4"
               disabled={true}
             >
               {/* <FontAwesomeIcon icon={faPlay} /> */}

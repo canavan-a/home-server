@@ -66,11 +66,16 @@ func main() {
 	hn := hydrometer.NewHydrometerNetwork()
 	hn.StartPolling()
 
-	tk := tracker.NewTracker("/tmp/json_pipe", func(tp tracker.TrackerPacket) {})
+	tk := tracker.NewTracker("/tmp/json_pipe", TrackerRunner)
 	go tk.Run()
 
 	api := r.Group("/api")
 	{
+		trk := api.Group("/tracker", MiddlewareAuthenticate)
+		{
+			trk.GET("/toggle", MakeToggleTrackerRoute(&tk))
+			trk.GET("/status", MakeTrackerStatusRoute(&tk))
+		}
 
 		hyd := api.Group("/hydrometer")
 		{
@@ -424,6 +429,49 @@ func SerialSend(input string) (err error) {
 	}
 
 	return
+}
+
+func MakeToggleTrackerRoute(t *tracker.Tracker) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		t.Toggle()
+		c.JSON(300, "toggled")
+	}
+}
+
+func MakeTrackerStatusRoute(t *tracker.Tracker) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		c.JSON(200, t.Active)
+	}
+}
+
+func TrackerRunner(y, x int) {
+	// center coords
+	// only tracking off x coord
+
+	// center is 160
+
+	// range center is
+
+	CENTER_BUFFER := 80
+	TIMING := 50
+
+	lower := CENTER_BUFFER
+	upper := 320 - CENTER_BUFFER
+
+	// Commands are inverted FML
+	command := ""
+	if x < lower {
+		//move left
+		command = "R"
+	} else if x > upper {
+		// move right
+		command = "L"
+	}
+
+	if command != "" {
+		toSend := fmt.Sprintf("%s%d%s", command, TIMING, command)
+		_ = SerialSend(toSend) // ignore the error
+	}
 }
 
 func handleGetStatus(c *gin.Context) {

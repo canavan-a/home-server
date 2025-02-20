@@ -102,7 +102,7 @@ void loop() {
           stepperCamera.runSpeed();
       }
 
-      delay(100);
+      // delay(50);
 
       // disable stepper
       digitalWrite(Y_ENABLE_PIN, HIGH);
@@ -133,7 +133,7 @@ void loop() {
       while(millis() - startTime < num){
         stepperCamera.runSpeed();
       }
-      delay(100);
+      // delay(50);
       digitalWrite(Y_ENABLE_PIN, HIGH);
       
     }
