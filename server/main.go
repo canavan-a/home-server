@@ -454,7 +454,7 @@ func TrackerRunner(y, x int) {
 	// center coords
 	// only tracking off x coord
 
-	noDetection := x == 0 && y == 0
+	noDetection := (x == 0) && (y == 0)
 
 	LEFT_RIGHT_PADDING := 85
 	EXIT_FRAME_LIMIT := 3
@@ -467,7 +467,7 @@ func TrackerRunner(y, x int) {
 		ShareTimeLock.Unlock()
 	}
 
-	if ShareCount_FRAME_EXIT >= EXIT_FRAME_LIMIT && noDetection {
+	if (ShareCount_FRAME_EXIT >= EXIT_FRAME_LIMIT) && noDetection {
 		fmt.Println("FRAME EXIT")
 		fmt.Println(ShareCount_FRAME_EXIT)
 		_ = SerialSend("Q")
