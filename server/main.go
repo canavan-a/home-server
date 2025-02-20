@@ -359,7 +359,7 @@ func handleToggleDoor(c *gin.Context) {
 
 var (
 	c = &serial.Config{
-		Name:        "/dev/ttyACM0",
+		Name:        "/dev/ttyACM1",
 		Baud:        9600,
 		ReadTimeout: time.Second,
 	}
