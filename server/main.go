@@ -445,43 +445,66 @@ func MakeTrackerStatusRoute(t *tracker.Tracker) func(c *gin.Context) {
 }
 
 var (
-	ShareTimeLock sync.Mutex
+	ShareCount_FRAME_EXIT   int
+	ShareCount_FRAME_CENTER int
+	ShareTimeLock           sync.Mutex
 )
 
 func TrackerRunner(y, x int) {
 	// center coords
 	// only tracking off x coord
 
-	// center is 160
+	noDetection := x == 0 && y == 0
 
-	// range center is
-	if !ShareTimeLock.TryLock() {
+	LEFT_RIGHT_PADDING := 110
+	EXIT_FRAME_LIMIT := 10
+
+	// handle none detection
+	if noDetection {
+		ShareTimeLock.Lock()
+		ShareCount_FRAME_EXIT += 1
+		ShareTimeLock.Unlock()
+	}
+
+	if ShareCount_FRAME_EXIT >= EXIT_FRAME_LIMIT && noDetection {
+		_ = SerialSend("Q")
 		return
 	}
-	defer ShareTimeLock.Unlock()
 
-	CENTER_BUFFER := 110
-	TIMING := 10
-
-	lower := CENTER_BUFFER
-	upper := 320 - CENTER_BUFFER
+	lower := LEFT_RIGHT_PADDING
+	upper := 320 - LEFT_RIGHT_PADDING
 
 	// Commands are inverted FML
 	command := ""
 	if x < lower {
 		//move left
-		command = "R"
+		command = "P"
+		ShareTimeLock.Lock()
+		ShareCount_FRAME_EXIT = 0
+		ShareCount_FRAME_CENTER = 0
+		ShareTimeLock.Unlock()
 	} else if x > upper {
 		// move right
-		command = "L"
+		command = "S"
+		ShareTimeLock.Lock()
+		ShareCount_FRAME_EXIT = 0
+		ShareCount_FRAME_CENTER = 0
+		ShareTimeLock.Unlock()
+	} else {
+		// we are in the center
+
+		ShareTimeLock.Lock()
+		ShareCount_FRAME_CENTER += 1
+		ShareTimeLock.Unlock()
+		if ShareCount_FRAME_CENTER >= EXIT_FRAME_LIMIT {
+			command = "Q"
+		}
 	}
 
 	if command != "" {
-		fmt.Println(x)
-		toSend := fmt.Sprintf("%s%d%s", command, TIMING, command)
-		_ = SerialSend(toSend) // ignore the error
+		_ = SerialSend(command) // ignore the error
 	}
-	time.Sleep(time.Millisecond * 50)
+
 }
 
 func handleGetStatus(c *gin.Context) {

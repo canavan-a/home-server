@@ -61,6 +61,10 @@ func (t *Tracker) Run() {
 
 func calclulateCenter(packets []TrackerPacket) (y, x int) {
 
+	if len(packets) == 0 {
+		return
+	}
+
 	for _, packet := range packets {
 		vY, vX := packet.Center()
 		y += vY

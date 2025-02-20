@@ -2,9 +2,9 @@ import cv2
 import numpy as np
 import os
 import json
-from pycoral.adapters import common, detect
-from pycoral.utils.dataset import read_label_file
-from pycoral.utils.edgetpu import make_interpreter
+from pycoral.adapters import common, detect # type: ignore
+from pycoral.utils.dataset import read_label_file # type: ignore
+from pycoral.utils.edgetpu import make_interpreter # type: ignore
 
 # Model and label file paths
 MODEL_PATH = "ssdlite_mobiledet_coco_qat_postprocess_edgetpu.tflite"
@@ -114,9 +114,9 @@ while True:
             cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), color, 3)
 
     
-    if len(people) != 0:
-        json_pipe.write((json.dumps(people)+"\n").encode())
-        json_pipe.flush()
+    # if len(people) != 0:
+    json_pipe.write((json.dumps(people)+"\n").encode())
+    json_pipe.flush()
 
     # Display frame
     resized_frame = cv2.resize(frame, (640, 480))
