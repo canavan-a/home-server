@@ -48,6 +48,10 @@ void setup() {
 
 bool directionToggle = true;
 
+int MAXIMUM_RUNTIME = 1500;
+char cameraControlAction = "Q";
+unsigned long cameraControlStartTime = millis();
+
 void loop() {
 
   bool xMinState = digitalRead(X_MIN_PIN);
@@ -136,6 +140,42 @@ void loop() {
       // delay(50);
       digitalWrite(Y_ENABLE_PIN, HIGH);
       
+    } else if (command == 'S' || command == 'P' || command == 'Q'){
+      cameraControlAction = command;
+      cameraControlStartTime = millis();
     }
   }
+
+
+  // non blocking camera control
+  // inputs will be: SPQ
+
+  // S: left
+  // P: right
+  // Q: stop
+
+  if (millis() - cameraControlStartTime > MAXIMUM_RUNTIME){
+    // global timeout
+    cameraControlAction = 'R'
+  }
+
+  if (cameraControlAction == 'S'){
+    if (digitalRead(Y_ENABLE_PIN) == HIGH) {
+      digitalWrite(Y_ENABLE_PIN, LOW);
+    }
+    stepperCamera.setSpeed(1000);
+    stepperCamera.runSpeed();
+  } else if (cameraControlAction == 'P'){
+    if (digitalRead(Y_ENABLE_PIN) == HIGH) { 
+      digitalWrite(Y_ENABLE_PIN, LOW);
+    }
+    stepperCamera.setSpeed(-1000);
+    stepperCamera.runSpeed();
+  } else { //R
+    if (digitalRead(Y_ENABLE_PIN) == LOW) {  
+      digitalWrite(Y_ENABLE_PIN, HIGH);
+    }
+
+  }
+
 }
