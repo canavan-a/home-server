@@ -456,12 +456,11 @@ func TrackerRunner(y, x int) {
 
 	noDetection := (x == 0) && (y == 0)
 
-	LEFT_RIGHT_PADDING := 85
-	EXIT_FRAME_LIMIT := 6
+	LEFT_RIGHT_PADDING := 93
+	EXIT_FRAME_LIMIT := 11
 
 	// handle none detection
 	if noDetection {
-		fmt.Println("no detection")
 		ShareTimeLock.Lock()
 		ShareCount_FRAME_EXIT += 1
 		ShareTimeLock.Unlock()
