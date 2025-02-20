@@ -457,7 +457,7 @@ func TrackerRunner(y, x int) {
 	noDetection := (x == 0) && (y == 0)
 
 	LEFT_RIGHT_PADDING := 85
-	EXIT_FRAME_LIMIT := 3
+	EXIT_FRAME_LIMIT := 6
 
 	// handle none detection
 	if noDetection {
@@ -495,12 +495,13 @@ func TrackerRunner(y, x int) {
 	} else {
 		// we are in the center
 
-		ShareTimeLock.Lock()
-		ShareCount_FRAME_CENTER += 1
-		ShareTimeLock.Unlock()
-		if ShareCount_FRAME_CENTER >= EXIT_FRAME_LIMIT {
-			command = "Q"
-		}
+		// ShareTimeLock.Lock()
+		// ShareCount_FRAME_CENTER += 1
+		// ShareTimeLock.Unlock()
+		// if ShareCount_FRAME_CENTER >= EXIT_FRAME_LIMIT {
+		// 	command = "Q"
+		// }
+		command = "Q"
 	}
 
 	if command != "" {
