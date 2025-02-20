@@ -452,8 +452,8 @@ func TrackerRunner(y, x int) {
 
 	// range center is
 
-	CENTER_BUFFER := 50
-	TIMING := 10
+	CENTER_BUFFER := 130
+	TIMING := 5
 
 	lower := CENTER_BUFFER
 	upper := 320 - CENTER_BUFFER
