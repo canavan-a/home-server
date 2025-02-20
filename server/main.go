@@ -465,14 +465,11 @@ func TrackerRunner(y, x int) {
 		ShareTimeLock.Lock()
 		ShareCount_FRAME_EXIT += 1
 		ShareTimeLock.Unlock()
-	}
 
-	fmt.Println(ShareCount_FRAME_EXIT)
+		if ShareCount_FRAME_EXIT >= EXIT_FRAME_LIMIT {
+			_ = SerialSend("Q")
+		}
 
-	if (ShareCount_FRAME_EXIT >= EXIT_FRAME_LIMIT) && noDetection {
-		fmt.Println("FRAME EXIT")
-		fmt.Println(ShareCount_FRAME_EXIT)
-		_ = SerialSend("Q")
 		return
 	}
 

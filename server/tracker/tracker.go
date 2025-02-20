@@ -26,7 +26,7 @@ type Tracker struct {
 func NewTracker(fifoPath string, action func(int, int)) (t Tracker) {
 	t.FifoPath = fifoPath
 	t.Action = action
-	t.Active = true
+	t.Active = false
 	return
 }
 
