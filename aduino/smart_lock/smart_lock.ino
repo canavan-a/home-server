@@ -156,7 +156,7 @@ void loop() {
 
   if (millis() - cameraControlStartTime > MAXIMUM_RUNTIME){
     // global timeout
-    cameraControlAction = 'R'
+    cameraControlAction = 'Q';
   }
 
   if (cameraControlAction == 'S'){
@@ -171,7 +171,7 @@ void loop() {
     }
     stepperCamera.setSpeed(-1000);
     stepperCamera.runSpeed();
-  } else { //R
+  } else { // Q
     if (digitalRead(Y_ENABLE_PIN) == LOW) {  
       digitalWrite(Y_ENABLE_PIN, HIGH);
     }
