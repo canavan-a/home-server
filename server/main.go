@@ -444,6 +444,10 @@ func MakeTrackerStatusRoute(t *tracker.Tracker) func(c *gin.Context) {
 	}
 }
 
+var (
+	ShareTimeLock sync.Mutex
+)
+
 func TrackerRunner(y, x int) {
 	// center coords
 	// only tracking off x coord
@@ -451,6 +455,11 @@ func TrackerRunner(y, x int) {
 	// center is 160
 
 	// range center is
+	if !ShareTimeLock.TryLock() {
+		return
+	}
+	ShareTimeLock.Lock()
+	defer ShareTimeLock.Unlock()
 
 	CENTER_BUFFER := 130
 	TIMING := 5
@@ -472,6 +481,7 @@ func TrackerRunner(y, x int) {
 		toSend := fmt.Sprintf("%s%d%s", command, TIMING, command)
 		_ = SerialSend(toSend) // ignore the error
 	}
+	time.Sleep(time.Millisecond * 50)
 }
 
 func handleGetStatus(c *gin.Context) {
