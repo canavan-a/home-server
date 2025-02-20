@@ -458,7 +458,6 @@ func TrackerRunner(y, x int) {
 	if !ShareTimeLock.TryLock() {
 		return
 	}
-	ShareTimeLock.Lock()
 	defer ShareTimeLock.Unlock()
 
 	CENTER_BUFFER := 130
