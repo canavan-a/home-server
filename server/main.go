@@ -460,8 +460,8 @@ func TrackerRunner(y, x int) {
 	}
 	defer ShareTimeLock.Unlock()
 
-	CENTER_BUFFER := 130
-	TIMING := 5
+	CENTER_BUFFER := 110
+	TIMING := 10
 
 	lower := CENTER_BUFFER
 	upper := 320 - CENTER_BUFFER
@@ -477,6 +477,7 @@ func TrackerRunner(y, x int) {
 	}
 
 	if command != "" {
+		fmt.Println(x)
 		toSend := fmt.Sprintf("%s%d%s", command, TIMING, command)
 		_ = SerialSend(toSend) // ignore the error
 	}

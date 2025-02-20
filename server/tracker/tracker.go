@@ -3,7 +3,6 @@ package tracker
 import (
 	"bufio"
 	"encoding/json"
-	"fmt"
 	"os"
 	"sync"
 )
@@ -55,7 +54,6 @@ func (t *Tracker) Run() {
 			_ = json.Unmarshal([]byte(line), &packets)
 			y, x := calclulateCenter(packets)
 			t.Action(y, x)
-			fmt.Println(packets)
 		}
 	}
 
