@@ -11,6 +11,6 @@ type Clipper struct {
 	PacketChannel chan rtp.Packet
 }
 
-func (c *Clipper) RunFrame(y, x int) { // pass this function to the tracker
+func (c *Clipper) ReceiveFrame(y, x int) { // pass this function to the tracker
 
 }
