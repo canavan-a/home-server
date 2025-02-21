@@ -18,14 +18,14 @@ type TrackerPacket struct {
 
 type Tracker struct {
 	FifoPath string
-	Action   func(y, x int)
+	Actions  []func(y, x int)
 	Active   bool
 	Mutex    sync.Mutex
 }
 
-func NewTracker(fifoPath string, action func(int, int)) (t Tracker) {
+func NewTracker(fifoPath string, actions ...func(int, int)) (t Tracker) {
 	t.FifoPath = fifoPath
-	t.Action = action
+	t.Actions = actions
 	t.Active = false
 	return
 }
@@ -53,7 +53,10 @@ func (t *Tracker) Run() {
 			var packets []TrackerPacket
 			_ = json.Unmarshal([]byte(line), &packets)
 			y, x := calclulateCenter(packets)
-			t.Action(y, x)
+			for _, action := range t.Actions {
+				action(y, x)
+			}
+
 		}
 	}
 

@@ -1188,7 +1188,7 @@ func CreateMediaStreamer(Port uint16, Hostname string, WebRTCTrack *webrtc.Track
 	}
 }
 
-func StreamReader(streamerType string, hostname string, port uint16) error {
+func StreamReader(streamerType string, hostname string, port uint16, auxListeners ...chan rtp.Packet) error {
 	var streamMap *map[string]RTPMediaStreamer
 	switch streamerType {
 	case "video":
@@ -1229,6 +1229,11 @@ func StreamReader(streamerType string, hostname string, port uint16) error {
 		if err != nil {
 			log.Printf("Error parsing packet")
 			continue
+		}
+
+		// send packet to all auxListeners
+		for _, channel := range auxListeners {
+			channel <- packet
 		}
 
 		MediaMutex.Lock()
