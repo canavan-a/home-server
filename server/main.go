@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"main/clipper"
 	"main/hydrometer"
 	"main/tracker"
 	"net"
@@ -47,11 +48,20 @@ func main() {
 		panic("Error loading .env file")
 	}
 
+	device := clipper.NewClipStorageDevice()
+	go device.Run()
+
+	clipMaker := clipper.NewClipper(device.StorageChannel)
+	go clipMaker.Run()
+
 	go func() {
 		fmt.Println("starting video stream")
-		err := StreamReader("video", "0.0.0.0", 5005)
+		err := StreamReader("video", "0.0.0.0", 5005, clipMaker.PacketChannel)
 		panic(err)
 	}()
+
+	tk := tracker.NewTracker("/tmp/json_pipe", TrackerRunner, clipMaker.ReceiveEntity)
+	go tk.Run()
 
 	config := cors.DefaultConfig()
 	config.AllowOrigins = []string{"*"}
@@ -65,9 +75,6 @@ func main() {
 
 	hn := hydrometer.NewHydrometerNetwork()
 	hn.StartPolling()
-
-	tk := tracker.NewTracker("/tmp/json_pipe", TrackerRunner)
-	go tk.Run()
 
 	api := r.Group("/api")
 	{
@@ -566,13 +573,6 @@ func TrackerRunner(y, x int) {
 		ShareTimeLock.Unlock()
 	} else {
 		// we are in the center
-
-		// ShareTimeLock.Lock()
-		// ShareCount_FRAME_CENTER += 1
-		// ShareTimeLock.Unlock()
-		// if ShareCount_FRAME_CENTER >= EXIT_FRAME_LIMIT {
-		// 	command = "Q"
-		// }
 		command = "Q"
 	}
 
