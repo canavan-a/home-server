@@ -17,6 +17,26 @@ export const CamConfig = () => {
 
   const [loading, setLoading] = useState(false);
 
+  const [clipFarmStatus, setClipFarmStatus] = useState(false);
+
+  const getClipFarmStatus = () => {
+    axios
+      .get(`https://aidan.house/api/clipper/status?doorCode=${password}`)
+      .then((response) => {
+        setClipFarmStatus(response.data);
+      })
+      .catch((error) => {});
+  };
+
+  const toggleClipFarmStatus = () => {
+    axios
+      .get(`https://aidan.house/api/clipper/toggle?doorCode=${password}`)
+      .then((response) => {
+        getClipFarmStatus();
+      })
+      .catch((error) => {});
+  };
+
   const getSpeed = () => {
     setLoading(true);
     axios
@@ -36,6 +56,7 @@ export const CamConfig = () => {
     setPassword(localStorage.getItem("pw"));
     if (password != null) {
       getSpeed();
+      getClipFarmStatus();
     }
   }, [password]);
 
@@ -96,6 +117,18 @@ export const CamConfig = () => {
               >
                 update
               </button>
+            </div>
+            <div className="text-center flex p-2 ">
+              <div className="flex-grow"></div>
+              <button
+                className={`btn ${
+                  clipFarmStatus ? "btn-success" : "btn-error"
+                }`}
+                onClick={toggleClipFarmStatus}
+              >
+                clip farm: {clipFarmStatus ? "active" : "disabled"}
+              </button>
+              <div className="flex-grow"></div>
             </div>
           </div>
         </div>
