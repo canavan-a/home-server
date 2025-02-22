@@ -15,7 +15,7 @@ var (
 	DEFAULT_PREQUEUE_SIZE = 3 * 15 * 60 * 10
 
 	// need 5 consecutive frames with entity to start recording
-	FRAMES_TO_START = 5
+	FRAMES_TO_START = 10
 
 	// need 90 consecutive frames WITHOUT entity to end recording
 	FRAMES_TO_KILL = 90

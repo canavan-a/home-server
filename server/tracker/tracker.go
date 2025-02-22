@@ -17,20 +17,28 @@ type TrackerPacket struct {
 }
 
 type Tracker struct {
-	FifoPath string
-	Actions  []func(y, x int)
-	Active   bool
-	Mutex    sync.Mutex
+	FifoPath      string
+	Actions       []func(y, x int)
+	Active        bool
+	AciveClipping bool
+	Mutex         sync.Mutex
 }
 
 func NewTracker(fifoPath string, actions ...func(int, int)) (t Tracker) {
 	t.FifoPath = fifoPath
 	t.Actions = actions
 	t.Active = false
+	t.AciveClipping = false
 	return
 }
 
 func (t *Tracker) Toggle() {
+	t.Mutex.Lock()
+	t.Active = !t.Active
+	t.Mutex.Unlock()
+}
+
+func (t *Tracker) ToggleClipping() {
 	t.Mutex.Lock()
 	t.Active = !t.Active
 	t.Mutex.Unlock()
@@ -49,15 +57,19 @@ func (t *Tracker) Run() {
 
 	for scanner.Scan() {
 		line := scanner.Text()
-		if t.Active {
-			var packets []TrackerPacket
-			_ = json.Unmarshal([]byte(line), &packets)
-			y, x := calclulateCenter(packets)
-			for _, action := range t.Actions {
+
+		var packets []TrackerPacket
+		_ = json.Unmarshal([]byte(line), &packets)
+		y, x := calclulateCenter(packets)
+		for i, action := range t.Actions {
+			if i == 0 && t.Active { // movement tracking
+				action(y, x)
+
+			} else if i == 1 && t.AciveClipping { // clip farming
 				action(y, x)
 			}
-
 		}
+
 	}
 
 }

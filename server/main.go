@@ -90,6 +90,12 @@ func main() {
 
 		}
 
+		clp := api.Group("/clipper", MiddlewareAuthenticate)
+		{
+			clp.GET("/toggle", MakeClipperToggleRoute(&tk, clipMaker))
+			clp.GET("/status", MakeClipperStatusRoute(&tk))
+		}
+
 		hyd := api.Group("/hydrometer")
 		{
 			hyd.GET("/bulk", hn.CreateHandler(), MiddlewareAuthenticate)
@@ -481,6 +487,31 @@ func MakeToggleTrackerRoute(t *tracker.Tracker) func(c *gin.Context) {
 func MakeTrackerStatusRoute(t *tracker.Tracker) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		c.JSON(200, t.Active)
+	}
+}
+
+func MakeClipperToggleRoute(t *tracker.Tracker, cl *clipper.Clipper) func(c *gin.Context) {
+	return func(c *gin.Context) {
+
+		t.Mutex.Lock()
+		if t.AciveClipping {
+			t.AciveClipping = false
+			cl.Mutex.Lock()
+			if cl.Clipping {
+				cl.Clipping = false
+			}
+			cl.Mutex.Unlock()
+		} else {
+			t.AciveClipping = true
+		}
+		t.Mutex.Unlock()
+
+	}
+}
+
+func MakeClipperStatusRoute(t *tracker.Tracker) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		c.JSON(200, t.AciveClipping)
 	}
 }
 
