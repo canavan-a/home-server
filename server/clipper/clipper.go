@@ -1,6 +1,7 @@
 package clipper
 
 import (
+	"fmt"
 	"main/clipper/fixedsizequeue"
 	"sync"
 
@@ -53,6 +54,8 @@ func (c *Clipper) ReceiveEntity(y, x int) { // pass this function to the tracker
 
 		c.Mutex.Lock()
 		if c.FramesToKill >= FRAMES_TO_KILL && c.Clipping { // break the clip
+			fmt.Println("Clipper done, saving")
+
 			// stopre the clip
 			c.ClipStorageChannel <- c.Clip
 			// stop the clipper
@@ -70,6 +73,7 @@ func (c *Clipper) ReceiveEntity(y, x int) { // pass this function to the tracker
 
 		c.Mutex.Lock()
 		if !c.Clipping && c.FramesToStart >= FRAMES_TO_START {
+			fmt.Println("Clipper starting")
 			c.Clip = append([]rtp.Packet{}, c.PreQueue.CopyOut()...)
 			c.Clipping = true
 		}
