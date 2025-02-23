@@ -1,4 +1,4 @@
-package hydrometer
+package database
 
 import (
 	"fmt"

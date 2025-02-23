@@ -10,7 +10,7 @@ import (
 	"io"
 	"log"
 	"main/clipper"
-	"main/hydrometer"
+	"main/database"
 	"main/tracker"
 	"net"
 	"net/http"
@@ -73,7 +73,7 @@ func main() {
 		})
 	})
 
-	hn := hydrometer.NewHydrometerNetwork()
+	hn := database.NewHydrometerNetwork()
 	hn.StartPolling()
 
 	api := r.Group("/api")
@@ -94,12 +94,13 @@ func main() {
 		{
 			clp.GET("/toggle", MakeClipperToggleRoute(&tk, clipMaker))
 			clp.GET("/status", MakeClipperStatusRoute(&tk))
+			clp.GET("/clipping", MakeClipperClippingRoute(clipMaker))
 		}
 
 		hyd := api.Group("/hydrometer")
 		{
 			hyd.GET("/bulk", hn.CreateHandler(), MiddlewareAuthenticate)
-			hyd.GET("/graph", hydrometer.HandleGraphData, MiddlewareAuthenticate)
+			hyd.GET("/graph", database.HandleGraphData, MiddlewareAuthenticate)
 		}
 
 		api.POST("/toggle", MiddlewareAuthenticate, handleToggleDoor)
@@ -512,6 +513,14 @@ func MakeClipperToggleRoute(t *tracker.Tracker, cl *clipper.Clipper) func(c *gin
 func MakeClipperStatusRoute(t *tracker.Tracker) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		c.JSON(200, t.AciveClipping)
+	}
+}
+
+func MakeClipperClippingRoute(cl *clipper.Clipper) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		cl.Mutex.Lock()
+		c.JSON(200, cl.Clipping)
+		cl.Mutex.Unlock()
 	}
 }
 

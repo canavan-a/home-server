@@ -12,7 +12,9 @@ import (
 // 15 ish FPS
 // 10 seconds of prequeue
 var (
-	DEFAULT_PREQUEUE_SIZE = 3 * 15 * 60 * 10
+	DEFAULT_PREQUEUE_SIZE = 3 * 15 * 10 // roughly 10 seconds pre clip
+
+	MAX_CLIP_SIZE = 3 * 15 * 10 * 60 // roughly 10 minutes of video
 
 	// need 5 consecutive frames with entity to start recording
 	FRAMES_TO_START = 10
@@ -76,6 +78,21 @@ func (c *Clipper) ReceiveEntity(y, x int) { // pass this function to the tracker
 			fmt.Println("Clipper starting")
 			c.Clip = append([]rtp.Packet{}, c.PreQueue.CopyOut()...)
 			c.Clipping = true
+		}
+		c.Mutex.Unlock()
+
+		c.Mutex.Lock()
+		// if clips gets too large save and break
+		if len(c.Clip) > MAX_CLIP_SIZE {
+			// clip is too big, save
+			fmt.Println("Clip has reached maximum size")
+
+			c.ClipStorageChannel <- c.Clip
+			c.Clipping = false
+			c.Clip = []rtp.Packet{}
+
+			// do not adjust frame counts so we can just continue and get the next clip right after
+
 		}
 		c.Mutex.Unlock()
 
