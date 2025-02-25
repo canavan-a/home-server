@@ -1,44 +1,33 @@
-package clipper_test
+package rawframe
 
 import (
 	"fmt"
 	"io"
 	"log"
-	"main/clipper"
-	"os/exec"
-	"testing"
-	"time"
+	"os"
 )
 
-func Test_store(t *testing.T) {
-
-	packets, err := createRtpsample()
-	if err != nil {
-		t.Error(err.Error())
-	}
-
-	clipper.Store(packets)
-	//create some rtp packets
-
+type FrameReader struct {
+	FifoPath      string
+	OutputChannel chan []byte
 }
 
-func createRtpsample() (frames [][]byte, err error) {
-	// Adjusted FFmpeg command for 640x480
-	cmd := exec.Command("ffmpeg", "-f", "dshow", "-i", "video=FHD Camera", "-pix_fmt", "bgr24", "-s", "640x480", "-f", "rawvideo", "pipe:1")
+func NewFrameReader(path string, output chan []byte) *FrameReader {
+	return &FrameReader{
+		FifoPath:      path,
+		OutputChannel: output,
+	}
+}
 
-	// Create a buffer to hold the output
-	cmdOut, err := cmd.StdoutPipe()
+func (fr *FrameReader) Run() {
+	pipe, err := os.Open(fr.FifoPath)
 	if err != nil {
-		log.Fatalf("Error creating StdoutPipe: %v", err)
+		// could not open pipe
+		panic(err)
 	}
 
-	// Start the command
-	err = cmd.Start()
-	if err != nil {
-		log.Fatalf("Error starting command: %v", err)
-	}
+	defer pipe.Close()
 
-	// Define buffer to hold frame data
 	frameSize := 640 * 480 * 3 // 921,600 bytes for BGR24 640x480
 	frameCount := 0
 
@@ -46,11 +35,10 @@ func createRtpsample() (frames [][]byte, err error) {
 	fullFrame := make([]byte, frameSize)
 	bytesRead := 0
 
-	start := time.Now()
-	for time.Since(start) < 5*time.Second {
+	for {
 		// Temporary buffer for partial reads
 		chunk := make([]byte, 65536) // 64KB chunks
-		n, err := cmdOut.Read(chunk)
+		n, err := pipe.Read(chunk)
 		if err == io.EOF {
 			break
 		}
@@ -66,7 +54,7 @@ func createRtpsample() (frames [][]byte, err error) {
 			// Store completed frame
 			frameCopy := make([]byte, frameSize)
 			copy(frameCopy, fullFrame[:frameSize])
-			frames = append(frames, frameCopy)
+			fr.OutputChannel <- frameCopy
 			frameCount++
 			fmt.Printf("Captured frame %d, size: %d bytes\n", frameCount, frameSize)
 
@@ -83,12 +71,4 @@ func createRtpsample() (frames [][]byte, err error) {
 		}
 	}
 
-	// Stop the command
-	err = cmd.Process.Kill()
-	if err != nil {
-		log.Fatalf("Error stopping command: %v", err)
-	}
-
-	fmt.Printf("Total frames captured: %d\n", frameCount)
-	return frames, nil
 }

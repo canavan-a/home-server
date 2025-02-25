@@ -18,6 +18,7 @@ labels = read_label_file(LABEL_PATH)
 
 fifo_path = '/tmp/video_pipe2'
 json_pipe_path = '/tmp/json_pipe'
+raw_frame_pipe = '/tmp/raw_frame'
 
 # Open video capture
 cap = cv2.VideoCapture(0)  # /dev/video0
@@ -36,9 +37,22 @@ if not os.path.exists(json_pipe_path):
     os.mkfifo(json_pipe_path)
     print("json pipe made")
 
+if not os.path.exists(raw_frame_pipe):
+    print("making json pipe")
+    os.mkfifo(raw_frame_pipe)
+    print("json pipe made")
+
 try:
     print("opening pipe")
     pipe = open(fifo_path, 'wb')
+    print("pipe open")
+except Exception as e:
+    print(f"Error: Unable to open pipe ({e})")
+    exit(1)
+
+try:
+    print("opening pipe")
+    rf_pipe = open(raw_frame_pipe, 'wb')
     print("pipe open")
 except Exception as e:
     print(f"Error: Unable to open pipe ({e})")
@@ -120,8 +134,9 @@ while True:
 
     # Display frame
     resized_frame = cv2.resize(frame, (640, 480))
-    # cv2.imshow("EdgeTPU Object Detection", resized_frame)
+
     pipe.write(resized_frame.tobytes())
+    rf_pipe.write(resized_frame.tobytes())
 
     # Break on 'q' key
     if cv2.waitKey(1) & 0xFF == ord('q'):
