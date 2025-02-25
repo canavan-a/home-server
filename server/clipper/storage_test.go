@@ -34,9 +34,13 @@ func createRtpsample() (packets []rtp.Packet, err error) {
 		"-i", "video=FHD Camera",
 		"-c:v", "vp8",
 		"-b:v", "600k",
+		"-g", "15",
+		"-keyint_min", "3",
+		"-auto-alt-ref", "0",
 		"-f", "rtp",
 		"rtp://127.0.0.1:5010",
 	)
+
 	fmt.Println("started rtp server")
 	err = cmd.Start()
 	if err != nil {
@@ -66,7 +70,7 @@ func createRtpsample() (packets []rtp.Packet, err error) {
 	start := time.Now()
 	fmt.Println("listening to rtp server")
 
-	for time.Since(start) < 5*time.Second {
+	for time.Since(start) < 8*time.Second {
 		n, _, err := conn.ReadFromUDP(buf)
 		if err != nil {
 			fmt.Println("Error reading from UDP:", err)
