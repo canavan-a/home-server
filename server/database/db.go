@@ -8,7 +8,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func connect() (db *gorm.DB, err error) {
+func Connect() (db *gorm.DB, err error) {
 	connectionString := os.Getenv("PG_CONN_STR")
 
 	db, err = gorm.Open(postgres.Open(connectionString), &gorm.Config{})

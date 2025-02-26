@@ -13,6 +13,12 @@ type Reading struct {
 	Value     int       `gorm:"not null"`
 }
 
+type Clip struct {
+	ID        uint      `gorm:"primaryKey"`
+	Timestamp time.Time `gorm:"not null"`
+	Clip      []byte    `gorm:"not null"`
+}
+
 func InsertReading(db *gorm.DB, reading Reading) (err error) {
 
 	err = db.Create(&reading).Error
@@ -43,4 +49,23 @@ func GetSpacedReadings(db *gorm.DB, plantID int, count int, startTime time.Time)
 	}
 
 	return readings, nil
+}
+
+func InsertClip(db *gorm.DB, clip Clip) (err error) {
+	err = db.Create(&clip).Error
+	return
+}
+
+func ListClips(db *gorm.DB) (clips []Clip, err error) {
+	err = db.Select("id", "timestamp").Order("timestamp Desc").Find(&clips).Error
+
+	return
+
+}
+
+func GetClip(db *gorm.DB, id int) (clip Clip, err error) {
+
+	err = db.Where("id = ?", id).First(&clip).Error
+
+	return
 }

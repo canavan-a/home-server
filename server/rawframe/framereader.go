@@ -2,8 +2,6 @@ package rawframe
 
 import (
 	"fmt"
-	"io"
-	"log"
 	"os"
 )
 
@@ -22,52 +20,53 @@ func NewFrameReader(path string, output chan []byte) *FrameReader {
 func (fr *FrameReader) Run() {
 	pipe, err := os.Open(fr.FifoPath)
 	if err != nil {
-		// could not open pipe
 		panic(err)
 	}
-
 	defer pipe.Close()
 
-	frameSize := 640 * 480 * 3 // 921,600 bytes for BGR24 640x480
-	frameCount := 0
-
-	// Buffer for one full frame
+	const frameSize = 640 * 480 * 3 // 921,600 bytes for BGR24 640x480
 	fullFrame := make([]byte, frameSize)
-	bytesRead := 0
+	buffer := make([]byte, frameSize)
+	totalBytes := 0
+	// Slice to store all frames
 
 	for {
-		// Temporary buffer for partial reads
-		chunk := make([]byte, 65536) // 64KB chunks
-		n, err := pipe.Read(chunk)
-		if err == io.EOF {
-			break
-		}
+		bytesRead, err := pipe.Read(buffer[totalBytes:])
 		if err != nil {
-			log.Fatalf("Error reading from command output: %v", err)
+			if err.Error() == "EOF" {
+				if totalBytes > 0 {
+					fmt.Println("Incomplete frame at EOF:", totalBytes, "bytes")
+				}
+				break
+			}
+			panic(err)
 		}
 
-		// Assemble chunks into full frame
-		copy(fullFrame[bytesRead:], chunk[:n])
-		bytesRead += n
+		fmt.Println("Read", bytesRead, "bytes")
+		totalBytes += bytesRead
 
-		if bytesRead >= frameSize {
-			// Store completed frame
+		// Keep reading until we have a complete frame
+		if totalBytes >= frameSize {
+			// Copy complete frame
+			copy(fullFrame, buffer[:frameSize])
 			frameCopy := make([]byte, frameSize)
-			copy(frameCopy, fullFrame[:frameSize])
-			fr.OutputChannel <- frameCopy
-			frameCount++
-			fmt.Printf("Captured frame %d, size: %d bytes\n", frameCount, frameSize)
+			copy(frameCopy, fullFrame)
 
-			// Handle leftovers for next frame
-			leftover := bytesRead - frameSize
-			if leftover > 0 {
-				temp := make([]byte, frameSize)
-				copy(temp, fullFrame[frameSize:bytesRead])
-				fullFrame = temp
-			} else {
-				fullFrame = make([]byte, frameSize)
+			compressedCopy, err := Compress(frameCopy)
+			if err != nil {
+				panic(err)
 			}
-			bytesRead = leftover
+
+			fr.OutputChannel <- compressedCopy //send compressed data
+
+			// Shift remaining bytes (if any) to start of buffer
+			remaining := totalBytes - frameSize
+			if remaining > 0 {
+				copy(buffer, buffer[frameSize:totalBytes])
+			}
+			totalBytes = remaining
+
+			fmt.Println("Sent complete frame")
 		}
 	}
 

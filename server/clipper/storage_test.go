@@ -5,6 +5,8 @@ import (
 	"io"
 	"log"
 	"main/clipper"
+	"main/rawframe"
+	"os"
 	"os/exec"
 	"testing"
 	"time"
@@ -12,7 +14,9 @@ import (
 
 func Test_store(t *testing.T) {
 
-	packets, err := createRtpsample()
+	fmt.Println("starting")
+
+	packets, err := createFrameSample()
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -22,7 +26,7 @@ func Test_store(t *testing.T) {
 
 }
 
-func createRtpsample() (frames [][]byte, err error) {
+func createFrameSample() (frames [][]byte, err error) {
 	// Adjusted FFmpeg command for 640x480
 	cmd := exec.Command("ffmpeg", "-f", "dshow", "-i", "video=FHD Camera", "-pix_fmt", "bgr24", "-s", "640x480", "-f", "rawvideo", "pipe:1")
 
@@ -66,7 +70,14 @@ func createRtpsample() (frames [][]byte, err error) {
 			// Store completed frame
 			frameCopy := make([]byte, frameSize)
 			copy(frameCopy, fullFrame[:frameSize])
-			frames = append(frames, frameCopy)
+
+			compressed, err := rawframe.Compress(frameCopy)
+			if err != nil {
+				panic(err)
+			}
+
+			fmt.Println("appendingasasas as")
+			frames = append(frames, compressed)
 			frameCount++
 			fmt.Printf("Captured frame %d, size: %d bytes\n", frameCount, frameSize)
 
@@ -91,4 +102,12 @@ func createRtpsample() (frames [][]byte, err error) {
 
 	fmt.Printf("Total frames captured: %d\n", frameCount)
 	return frames, nil
+}
+
+func TestDeleteWebm(t *testing.T) {
+	err := os.Remove("temp.webm")
+	if err != nil {
+		panic(err)
+	}
+
 }

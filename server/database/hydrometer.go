@@ -61,7 +61,7 @@ var (
 func NewHydrometerNetwork() (hn HydrometerNetwork) {
 
 	// init db connection
-	db, err := connect()
+	db, err := Connect()
 	if err != nil {
 		panic(err)
 	}

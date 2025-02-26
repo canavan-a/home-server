@@ -3,9 +3,8 @@ package clipper
 import (
 	"fmt"
 	"main/clipper/fixedsizequeue"
+	"slices"
 	"sync"
-
-	"github.com/pion/rtp"
 )
 
 // 3 ish packets per frame
@@ -26,20 +25,20 @@ var (
 // Clip Farmer
 type Clipper struct {
 	Mutex              sync.Mutex
-	PacketChannel      chan rtp.Packet
-	Clip               []rtp.Packet
-	PreQueue           *fixedsizequeue.FixedQueue[rtp.Packet]
+	PacketChannel      chan []byte
+	Clip               [][]byte // compressed bytes
+	PreQueue           *fixedsizequeue.FixedQueue[[]byte]
 	Clipping           bool
 	FramesToKill       int
 	FramesToStart      int
-	ClipStorageChannel chan []rtp.Packet
+	ClipStorageChannel chan [][]byte
 }
 
-func NewClipper(clipStorageChannel chan []rtp.Packet) *Clipper {
+func NewClipper(clipStorageChannel chan [][]byte) *Clipper {
 	return &Clipper{
 		Mutex:              sync.Mutex{},
-		PacketChannel:      make(chan rtp.Packet),
-		PreQueue:           fixedsizequeue.CreateFixedQueue[rtp.Packet](DEFAULT_PREQUEUE_SIZE),
+		PacketChannel:      make(chan []byte),
+		PreQueue:           fixedsizequeue.CreateFixedQueue[[]byte](DEFAULT_PREQUEUE_SIZE),
 		ClipStorageChannel: clipStorageChannel,
 	}
 
@@ -63,7 +62,7 @@ func (c *Clipper) ReceiveEntity(y, x int) { // pass this function to the tracker
 			// stop the clipper
 			c.Clipping = false
 			// clear the old clip
-			c.Clip = []rtp.Packet{}
+			c.Clip = [][]byte{}
 		}
 		c.Mutex.Unlock()
 
@@ -76,7 +75,7 @@ func (c *Clipper) ReceiveEntity(y, x int) { // pass this function to the tracker
 		c.Mutex.Lock()
 		if !c.Clipping && c.FramesToStart >= FRAMES_TO_START {
 			fmt.Println("Clipper starting")
-			c.Clip = append([]rtp.Packet{}, c.PreQueue.CopyOut()...)
+			c.Clip = slices.Clone(c.PreQueue.CopyOut())
 			c.Clipping = true
 		}
 		c.Mutex.Unlock()
@@ -89,7 +88,7 @@ func (c *Clipper) ReceiveEntity(y, x int) { // pass this function to the tracker
 
 			c.ClipStorageChannel <- c.Clip
 			c.Clipping = false
-			c.Clip = []rtp.Packet{}
+			c.Clip = [][]byte{}
 
 			// do not adjust frame counts so we can just continue and get the next clip right after
 
@@ -101,11 +100,11 @@ func (c *Clipper) ReceiveEntity(y, x int) { // pass this function to the tracker
 }
 
 func (c *Clipper) Run() {
-	for packet := range c.PacketChannel {
+	for frame := range c.PacketChannel {
 		c.Mutex.Lock()
-		c.PreQueue.Add(packet)
+		c.PreQueue.Add(frame)
 		if c.Clipping {
-			c.Clip = append(c.Clip, packet)
+			c.Clip = append(c.Clip, frame)
 		}
 		c.Mutex.Unlock()
 	}

@@ -14,7 +14,7 @@ func TestRawFrameReading(t *testing.T) {
 
 	frameReader := rawframe.NewFrameReader("/tmp/raw_frame", dataChannel)
 
-	frameReader.Run()
+	go frameReader.Run()
 
 	frames := [][]byte{}
 
@@ -23,7 +23,7 @@ func TestRawFrameReading(t *testing.T) {
 	for frame := range dataChannel {
 		fmt.Println("frame aquired")
 		frames = append(frames, frame)
-		if time.Since(start) < 5*time.Second {
+		if time.Since(start) > 5*time.Second {
 			break
 		}
 	}

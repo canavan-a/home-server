@@ -11,6 +11,7 @@ import (
 	"log"
 	"main/clipper"
 	"main/database"
+	"main/rawframe"
 	"main/tracker"
 	"net"
 	"net/http"
@@ -56,9 +57,12 @@ func main() {
 
 	go func() {
 		fmt.Println("starting video stream")
-		err := StreamReader("video", "0.0.0.0", 5005, clipMaker.PacketChannel)
+		err := StreamReader("video", "0.0.0.0", 5005)
 		panic(err)
 	}()
+
+	frameReader := rawframe.NewFrameReader("/tmp/raw_frame", clipMaker.PacketChannel)
+	go frameReader.Run()
 
 	tk := tracker.NewTracker("/tmp/json_pipe", TrackerRunner, clipMaker.ReceiveEntity)
 	go tk.Run()
@@ -147,6 +151,33 @@ func main() {
 	}
 
 	r.Run(":5000")
+}
+
+func HandleListClips(c *gin.Context) {
+	clips, err := clipper.ListClips()
+	if err != nil {
+		c.JSON(400, "databse error")
+		return
+	}
+	c.JSON(200, clips)
+}
+
+func HandleDownloadClip(c *gin.Context) {
+	id := c.Query("id")
+
+	idValue, err := strconv.Atoi(id)
+	if err != nil {
+		c.JSON(400, "id conversion error")
+		return
+	}
+
+	clip, err := clipper.DownloadClip(idValue)
+	if err != nil {
+		c.JSON(400, "databse error")
+		return
+	}
+
+	c.Data(200, "video/webm", clip)
 }
 
 type IceServerResponse struct {
