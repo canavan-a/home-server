@@ -117,10 +117,14 @@ func ConvertFileToWebm(rawFilename, outputFilename string) error {
 
 	cmd := exec.Command(
 		"ffmpeg", "-f", "rawvideo", "-pix_fmt",
-		"bgr24", "-s", "640x480", "-i",
+		"bgr24", "-s", "640x480",
+		"-framerate", "10", "-i",
 		rawFilename,
 		"-c:v", "libvpx", "-crf", "10", "-b:v", "1M",
-		outputFilename)
+		"-auto-alt-ref", "0", // Ensures better seek support
+		"-movflags", "faststart", // Moves metadata to beginning for faster seeking
+		outputFilename,
+	)
 	err := cmd.Start()
 	if err != nil {
 		return err

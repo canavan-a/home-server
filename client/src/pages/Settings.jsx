@@ -1,6 +1,7 @@
 import {
   faCab,
   faCamera,
+  faClapperboard,
   faCode,
   faDoorOpen,
   faLeaf,
@@ -53,6 +54,14 @@ export const Settings = () => {
               }}
             >
               Camera <FontAwesomeIcon icon={faCamera} />
+            </button>
+            <button
+              className="btn btn-glass bg-white text-black w-full"
+              onClick={() => {
+                navigate("/clips");
+              }}
+            >
+              Clips <FontAwesomeIcon icon={faClapperboard} />
             </button>
             <button
               className="btn btn-glass bg-green-600 w-full"
