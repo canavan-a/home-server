@@ -42,7 +42,6 @@ func (fr *FrameReader) Run() {
 			panic(err)
 		}
 
-		fmt.Println("Read", bytesRead, "bytes")
 		totalBytes += bytesRead
 
 		// Keep reading until we have a complete frame
