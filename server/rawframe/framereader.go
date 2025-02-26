@@ -65,7 +65,6 @@ func (fr *FrameReader) Run() {
 			}
 			totalBytes = remaining
 
-			fmt.Println("Sent complete frame")
 		}
 	}
 
