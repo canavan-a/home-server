@@ -99,6 +99,8 @@ func main() {
 			clp.GET("/toggle", MakeClipperToggleRoute(&tk, clipMaker))
 			clp.GET("/status", MakeClipperStatusRoute(&tk))
 			clp.GET("/clipping", MakeClipperClippingRoute(clipMaker))
+			clp.GET("/list", HandleListClips)
+			clp.GET("/download", HandleDownloadClip)
 		}
 
 		hyd := api.Group("/hydrometer")
