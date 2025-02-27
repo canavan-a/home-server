@@ -51,12 +51,7 @@ func (fr *FrameReader) Run() {
 			frameCopy := make([]byte, frameSize)
 			copy(frameCopy, fullFrame)
 
-			compressedCopy, err := Compress(frameCopy)
-			if err != nil {
-				panic(err)
-			}
-
-			fr.OutputChannel <- compressedCopy //send compressed data
+			fr.OutputChannel <- frameCopy //send compressed data
 
 			// Shift remaining bytes (if any) to start of buffer
 			remaining := totalBytes - frameSize

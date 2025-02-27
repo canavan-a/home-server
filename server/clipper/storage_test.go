@@ -5,7 +5,6 @@ import (
 	"io"
 	"log"
 	"main/clipper"
-	"main/rawframe"
 	"os"
 	"os/exec"
 	"testing"
@@ -14,46 +13,53 @@ import (
 
 func Test_store(t *testing.T) {
 
-	fmt.Println("starting")
+	fmt.Println("start ewewee  wqw w q Sdsdsfsfd dsd")
 
 	packets, err := createFrameSample()
 	if err != nil {
 		t.Error(err.Error())
 	}
 
-	clipper.Store(packets)
+	fmt.Println(len(packets))
+
+	err = clipper.Store(packets)
+	if err != nil {
+		panic(err)
+	}
 	//create some rtp packets
 
 }
 
 func createFrameSample() (frames [][]byte, err error) {
-	// Adjusted FFmpeg command for 640x480
+	// FFmpeg command for 640x480 BGR24 raw video
 	cmd := exec.Command("ffmpeg", "-f", "dshow", "-i", "video=FHD Camera", "-pix_fmt", "bgr24", "-s", "640x480", "-f", "rawvideo", "pipe:1")
 
-	// Create a buffer to hold the output
+	// Set up stdout pipe
 	cmdOut, err := cmd.StdoutPipe()
 	if err != nil {
 		log.Fatalf("Error creating StdoutPipe: %v", err)
 	}
 
-	// Start the command
-	err = cmd.Start()
-	if err != nil {
+	// Start FFmpeg
+	if err = cmd.Start(); err != nil {
 		log.Fatalf("Error starting command: %v", err)
 	}
+	defer func() {
+		if err := cmd.Process.Kill(); err != nil {
+			log.Printf("Warning: failed to kill FFmpeg: %v", err)
+		}
+	}()
 
-	// Define buffer to hold frame data
-	frameSize := 640 * 480 * 3 // 921,600 bytes for BGR24 640x480
+	// Frame size: 640 * 480 * 3 (BGR24) = 921,600 bytes
+	const frameSize = 640 * 480 * 3
 	frameCount := 0
 
-	// Buffer for one full frame
-	fullFrame := make([]byte, frameSize)
-	bytesRead := 0
+	// Buffer for assembling frames
+	fullFrame := make([]byte, 0, frameSize) // Start empty, capacity = frameSize
+	chunk := make([]byte, 65536)            // 64KB chunks
 
 	start := time.Now()
 	for time.Since(start) < 5*time.Second {
-		// Temporary buffer for partial reads
-		chunk := make([]byte, 65536) // 64KB chunks
 		n, err := cmdOut.Read(chunk)
 		if err == io.EOF {
 			break
@@ -62,42 +68,21 @@ func createFrameSample() (frames [][]byte, err error) {
 			log.Fatalf("Error reading from command output: %v", err)
 		}
 
-		// Assemble chunks into full frame
-		copy(fullFrame[bytesRead:], chunk[:n])
-		bytesRead += n
+		// Append chunk to fullFrame
+		fullFrame = append(fullFrame, chunk[:n]...)
 
-		if bytesRead >= frameSize {
-			// Store completed frame
+		// Process all complete frames in the buffer
+		for len(fullFrame) >= frameSize {
 			frameCopy := make([]byte, frameSize)
 			copy(frameCopy, fullFrame[:frameSize])
 
-			compressed, err := rawframe.Compress(frameCopy)
-			if err != nil {
-				panic(err)
-			}
-
-			fmt.Println("appendingasasas as")
-			frames = append(frames, compressed)
+			frames = append(frames, frameCopy)
 			frameCount++
 			fmt.Printf("Captured frame %d, size: %d bytes\n", frameCount, frameSize)
 
-			// Handle leftovers for next frame
-			leftover := bytesRead - frameSize
-			if leftover > 0 {
-				temp := make([]byte, frameSize)
-				copy(temp, fullFrame[frameSize:bytesRead])
-				fullFrame = temp
-			} else {
-				fullFrame = make([]byte, frameSize)
-			}
-			bytesRead = leftover
+			// Remove the processed frame, keep leftovers
+			fullFrame = fullFrame[frameSize:]
 		}
-	}
-
-	// Stop the command
-	err = cmd.Process.Kill()
-	if err != nil {
-		log.Fatalf("Error stopping command: %v", err)
 	}
 
 	fmt.Printf("Total frames captured: %d\n", frameCount)

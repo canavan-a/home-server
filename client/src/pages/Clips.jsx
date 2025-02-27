@@ -80,7 +80,7 @@ export const Clips = () => {
             )}
             <div
               className={`${
-                selected ? "max-h-60" : "max-h-90"
+                selected ? "max-h-60" : "max-h-96"
               } overflow-auto overflow-y-scroll flex-col scrollbar-none`}
             >
               {clipList.map((value) => (

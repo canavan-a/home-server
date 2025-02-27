@@ -76,7 +76,7 @@ func Store(frames [][]byte) error {
 	if err != nil {
 		return err
 	}
-	defer os.Remove("temp.webm")
+	// defer os.Remove("temp.webm")
 
 	webmFile, err := os.Open(outputFilename)
 	if err != nil {
@@ -121,6 +121,7 @@ func ConvertFileToWebm(rawFilename, outputFilename string) error {
 		"-framerate", "10", "-i",
 		rawFilename,
 		"-c:v", "libvpx", "-crf", "10", "-b:v", "1M",
+		"-g", "3", // Ensure keyframes are inserted every 10 frames
 		"-auto-alt-ref", "0", // Ensures better seek support
 		"-movflags", "faststart", // Moves metadata to beginning for faster seeking
 		outputFilename,
@@ -145,16 +146,13 @@ func SaveToRawFile(frames [][]byte, filename string) error {
 	expectedSize := 640 * 480 * 3 // 921,600 bytes for BGR24 640x480
 
 	for i, frame := range frames {
-		decompressed, err := rawframe.Decompress(frame)
-		if err != nil {
-			return err
-		}
-		fmt.Println("Frame", i, "length:", len(decompressed))
-		if len(decompressed) != expectedSize {
+
+		fmt.Println("Frame", i, "length:", len(frame))
+		if len(frame) != expectedSize {
 			return fmt.Errorf("frame %d has invalid size: got %d, expected %d", i, len(frame), expectedSize)
 		}
 
-		buffer.Write(decompressed)
+		buffer.Write(frame)
 	}
 
 	err := os.WriteFile(filename, buffer.Bytes(), 0644)
