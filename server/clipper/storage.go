@@ -99,9 +99,11 @@ func Store(frames [][]byte) error {
 		return err
 	}
 
+	now := time.Now()
+
 	txn := DB.Begin()
 	clipID, err := database.InsertClip(txn, database.Clip{
-		Timestamp: time.Now(),
+		Timestamp: now,
 		Clip:      compressed,
 	})
 	if err != nil {
@@ -110,7 +112,7 @@ func Store(frames [][]byte) error {
 	txn.Commit()
 
 	uri := fmt.Sprintf("https://aidan.house/api/clipper/download?id=%d&doorCode=%s", clipID, os.Getenv("SECRET_DOOR_CODE"))
-	mailer.Notify(mailer.MakeClipBody(uri))
+	mailer.Notify(mailer.MakeClipBody(uri, now.Format("January 2, 2006 15:04:05")))
 
 	// store this in database
 	return nil

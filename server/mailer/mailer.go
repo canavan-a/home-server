@@ -8,18 +8,23 @@ import (
 )
 
 func Notify(content string) error {
-	err := SendEmail("aidan.canavan3@gmail.com", []byte(content))
+
+	email := GenerateEmailContent("New Clip", content)
+
+	err := SendEmail("aidan.canavan3@gmail.com", email)
 
 	return err
 }
 
-func MakeClipBody(uri string) string {
+func MakeClipBody(uri string, timestamp string) string {
 	return fmt.Sprintf(`
-	<div>
-		<h3>Click here to see clip</h3>
-		<a href="%s">%s</a>
-	</div>
-	`, uri, uri)
+	<html>
+	  <body>
+		<h1>New Clip Generated at %s</h1>
+		<p>Click <a href="%s" style="color:blue; text-decoration:none;">here</a> to view the clip.</p>
+	  </body>
+	</html>
+	`, timestamp, uri)
 
 }
 
