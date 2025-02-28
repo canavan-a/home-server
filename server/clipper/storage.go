@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"main/database"
+	"main/mailer"
 	"main/rawframe"
 	"os"
 	"os/exec"
@@ -99,7 +100,7 @@ func Store(frames [][]byte) error {
 	}
 
 	txn := DB.Begin()
-	err = database.InsertClip(txn, database.Clip{
+	clipID, err := database.InsertClip(txn, database.Clip{
 		Timestamp: time.Now(),
 		Clip:      compressed,
 	})
@@ -107,6 +108,9 @@ func Store(frames [][]byte) error {
 		return err
 	}
 	txn.Commit()
+
+	uri := fmt.Sprintf("https://aidan.house/api/clipper/download?id=%d&doorCode=%s", clipID, os.Getenv("SECRET_DOOR_CODE"))
+	mailer.Notify(mailer.MakeClipBody(uri))
 
 	// store this in database
 	return nil

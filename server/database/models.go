@@ -51,9 +51,13 @@ func GetSpacedReadings(db *gorm.DB, plantID int, count int, startTime time.Time)
 	return readings, nil
 }
 
-func InsertClip(db *gorm.DB, clip Clip) (err error) {
+func InsertClip(db *gorm.DB, clip Clip) (id uint, err error) {
 	err = db.Create(&clip).Error
-	return
+	if err != nil {
+		return
+	}
+
+	return clip.ID, err
 }
 
 func ListClips(db *gorm.DB) (clips []Clip, err error) {
