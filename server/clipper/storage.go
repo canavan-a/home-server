@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"time"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -64,20 +65,23 @@ func DownloadClip(id int) (webmData []byte, err error) {
 
 func Store(frames [][]byte) error {
 
-	rawFilename := "temp.raw"
+	randomValue := uuid.NewString()
+
+	rawFilename := fmt.Sprintf("%s.raw", randomValue)
+
 	err := SaveToRawFile(frames, rawFilename)
 	if err != nil {
 		return err
 	}
-	defer os.Remove("temp.raw")
+	defer os.Remove(rawFilename)
 
-	outputFilename := "temp.webm"
+	outputFilename := fmt.Sprintf("%s.webm", randomValue)
 
 	err = ConvertFileToWebm(rawFilename, outputFilename)
 	if err != nil {
 		return err
 	}
-	defer os.Remove("temp.webm")
+	defer os.Remove(outputFilename)
 
 	webmFile, err := os.Open(outputFilename)
 	if err != nil {
@@ -172,9 +176,11 @@ func SaveToRawFile(frames [][]byte, filename string) error {
 
 func (csd *ClipStorageDevice) Run() {
 	for frames := range csd.StorageChannel {
-		err := Store(frames)
-		if err != nil {
-			fmt.Println("Error storing frames")
-		}
+		go func() {
+			err := Store(frames)
+			if err != nil {
+				fmt.Println("Error storing frames")
+			}
+		}()
 	}
 }

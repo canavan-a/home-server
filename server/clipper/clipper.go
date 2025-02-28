@@ -13,7 +13,7 @@ import (
 var (
 	DEFAULT_PREQUEUE_SIZE = 9 * 5 // roughly 9 seconds pre clip
 
-	MAX_CLIP_SIZE = 15 * 3 * 60 // roughly 3 minutes of video
+	MAX_CLIP_SIZE = 9 * 5 * 20 // roughly
 
 	// need 5 consecutive frames with entity to start recording
 	FRAMES_TO_START = 4
@@ -84,7 +84,7 @@ func (c *Clipper) ReceiveEntity(y, x int) { // pass this function to the tracker
 		// if clips gets too large save and break
 		if len(c.Clip) > MAX_CLIP_SIZE {
 			// clip is too big, save
-			fmt.Println("Clip has reached maximum size")
+			fmt.Println("Clip has reached maximum size: MAXIMUM SIZE!!!!!")
 
 			c.ClipStorageChannel <- c.Clip
 			c.Clipping = false

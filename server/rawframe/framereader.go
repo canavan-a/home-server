@@ -39,7 +39,7 @@ func (fr *FrameReader) Run() {
 				}
 				break
 			}
-			panic(err)
+			continue
 		}
 
 		totalBytes += bytesRead
