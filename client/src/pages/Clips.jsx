@@ -14,6 +14,39 @@ export const Clips = () => {
 
   const [selected, setSelected] = useState(null);
 
+  const [clipData, setClipData] = useState(null);
+
+  const [clipLoading, setClipLoading] = useState(false);
+
+  const [clipCache, setClipCache] = useState({});
+
+  useEffect(() => {
+    if (selected) {
+      if (clipCache[selected]) {
+        setClipData(clipCache[selected]);
+      } else {
+        setClipData(null);
+        setClipLoading(true);
+        axios
+          .get(
+            `https://aidan.house/api/clipper/download?id=${selected}&doorCode=${password}`,
+            { responseType: "blob" }
+          )
+          .then((response) => {
+            const blobUrl = URL.createObjectURL(response.data);
+            console.log(blobUrl);
+            setClipCache({ ...clipCache, [selected.toString()]: blobUrl });
+            setClipData(blobUrl);
+            setClipLoading(false);
+          })
+          .catch((error) => {
+            setClipLoading(false);
+            console.log(error);
+          });
+      }
+    }
+  }, [selected]);
+
   const getClipList = () => {
     setLoading(true);
     axios
@@ -71,12 +104,25 @@ export const Clips = () => {
               <div className="flex-grow"></div>
             </div>
             <div className="text-center flex p-2"></div>
+
             {selected && (
-              <video
-                muted={true}
-                controls
-                src={`https://aidan.house/api/clipper/download?id=${selected}&doorCode=${password}`}
-              />
+              <>
+                {clipLoading && (
+                  <div className="w-full flex">
+                    <div className="flex-grow"></div>
+                    <span className="loading loading-infinity loading-lg"></span>
+                    <div className="flex-grow"></div>
+                  </div>
+                )}
+                {clipData && (
+                  <video
+                    muted={true}
+                    controls={true}
+                    autoPlay={true}
+                    src={clipData}
+                  />
+                )}
+              </>
             )}
             <div
               className={`${
