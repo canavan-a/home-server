@@ -20,7 +20,8 @@ func MakeClipBody(uri string, timestamp string) string {
 	return fmt.Sprintf(`
 	<html>
 	  <body>
-		<h1>New Clip Generated at %s</h1>
+		<h1>New Clip Generated at</h1>
+		<h3>%s</h3>
 		<p>Click <a href="%s" style="color:blue; text-decoration:none;">here</a> to view the clip.</p>
 	  </body>
 	</html>

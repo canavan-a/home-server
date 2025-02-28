@@ -11,7 +11,7 @@ import (
 // 15 ish FPS
 // 10 seconds of prequeue
 var (
-	DEFAULT_PREQUEUE_SIZE = 15 * 5 // roughly 10 seconds pre clip
+	DEFAULT_PREQUEUE_SIZE = 9 * 5 // roughly 9 seconds pre clip
 
 	MAX_CLIP_SIZE = 15 * 3 * 60 // roughly 3 minutes of video
 
