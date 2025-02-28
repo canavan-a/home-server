@@ -76,7 +76,7 @@ func Store(frames [][]byte) error {
 	if err != nil {
 		return err
 	}
-	// defer os.Remove("temp.webm")
+	defer os.Remove("temp.webm")
 
 	webmFile, err := os.Open(outputFilename)
 	if err != nil {
@@ -121,9 +121,10 @@ func ConvertFileToWebm(rawFilename, outputFilename string) error {
 		"-framerate", "10", "-i",
 		rawFilename,
 		"-c:v", "libvpx", "-crf", "10", "-b:v", "1M",
-		"-g", "3", // Ensure keyframes are inserted every 10 frames
-		"-auto-alt-ref", "0", // Ensures better seek support
-		"-movflags", "faststart", // Moves metadata to beginning for faster seeking
+		"-g", "3",
+		"-auto-alt-ref", "0",
+		"-movflags", "faststart",
+		"-metadata:s:v:0", "alpha_mode=1",
 		outputFilename,
 	)
 	err := cmd.Start()
