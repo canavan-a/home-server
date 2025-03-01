@@ -106,7 +106,6 @@ const PlantRow = (props) => {
           value.PushStack.length
       )
     : 0;
-
   return (
     <div
       key={value.ID}
@@ -121,7 +120,9 @@ const PlantRow = (props) => {
         }
       }}
     >
-      <div className="font-mono ">{value.Name}</div>
+      <div className="font-mono ">
+        {value.Name} {value.Connected ? "" : "(disconnected)"}
+      </div>
       <div className="flex-grow"></div>
       <div
         className={`font-mono ${

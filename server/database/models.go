@@ -7,10 +7,11 @@ import (
 )
 
 type Reading struct {
-	ID        uint      `gorm:"primaryKey"`
-	PlantID   int       `gorm:"not null"`
-	Timestamp time.Time `gorm:"not null"`
-	Value     int       `gorm:"not null"`
+	ID          uint      `gorm:"primaryKey"`
+	PlantID     int       `gorm:"not null"`
+	Timestamp   time.Time `gorm:"not null"`
+	Temperature float32   `gorm:"not null"`
+	Value       int       `gorm:"not null"`
 }
 
 type Clip struct {

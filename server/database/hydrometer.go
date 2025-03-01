@@ -86,9 +86,17 @@ func NewHydrometerNetwork() (hn HydrometerNetwork) {
 		Connected:      false,
 		PushStack:      NewPushStack(PUSH_STACK_SIZE),
 	}
+	h3 := Hydrometer{
+		ID:             2,
+		IP:             "192.168.1.164",
+		Name:           "Money Tree 2",
+		WaterThreshold: 2100,
+		Connected:      false,
+		PushStack:      NewPushStack(PUSH_STACK_SIZE),
+	}
 
 	return HydrometerNetwork{
-		Nodes: []Hydrometer{h0, h1},
+		Nodes: []Hydrometer{h0, h1, h3},
 		Mutex: sync.Mutex{},
 	}
 
@@ -158,9 +166,10 @@ func (h *Hydrometer) Poll(mut *sync.Mutex) {
 
 	// store item
 	reading := Reading{
-		PlantID:   h.ID,
-		Timestamp: time.Now(),
-		Value:     h.PushStack.Average(),
+		PlantID:     h.ID,
+		Timestamp:   time.Now(),
+		Temperature: h.GetTemperature(),
+		Value:       h.PushStack.Average(),
 	}
 
 	go StoreReading(reading)
@@ -223,5 +232,37 @@ func HandleGraphData(c *gin.Context) {
 	txn.Commit()
 
 	c.JSON(200, readings)
+
+}
+
+func (h *Hydrometer) GetTemperature() (temp float32) {
+	resp, err := http.Get("http://" + h.IP + "/temp")
+	if err != nil {
+		return
+	}
+
+	if resp.StatusCode != 200 {
+		return
+	}
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	fmt.Println(data)
+
+	defer resp.Body.Close()
+	strValue := string(data)
+
+	fmt.Println(strValue)
+
+	temp64, err := (strconv.ParseFloat(strValue, 32))
+	if err != nil {
+		return
+	}
+
+	temp = float32(temp64)
+	return
 
 }
