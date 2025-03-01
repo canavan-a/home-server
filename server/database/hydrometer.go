@@ -129,15 +129,20 @@ func (h *Hydrometer) Poll(mut *sync.Mutex) {
 
 	for {
 		resp, err = http.Get("http://" + h.IP + "/hydrometer")
-		if resp.StatusCode != 200 {
-			fmt.Println("error occured fetching", err)
+		if err != nil {
 			retryCount -= 1
 		} else {
-			mut.Lock()
-			h.Connected = true
-			mut.Unlock()
-			break
+
+			if resp.StatusCode != 200 {
+				retryCount -= 1
+			} else {
+				mut.Lock()
+				h.Connected = true
+				mut.Unlock()
+				break
+			}
 		}
+
 		if retryCount == 0 {
 			mut.Lock()
 
