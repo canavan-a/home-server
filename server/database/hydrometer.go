@@ -194,8 +194,9 @@ func StoreReading(reading Reading) {
 func (hn *HydrometerNetwork) CreateHandler() func(c *gin.Context) {
 
 	return func(c *gin.Context) {
-
+		hn.Mutex.Lock()
 		c.JSON(200, hn.Nodes)
+		hn.Mutex.Unlock()
 	}
 
 }
