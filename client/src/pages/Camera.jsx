@@ -12,12 +12,6 @@ import axios from "axios";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const STUN_SERVERS = [
-  "stun:stun.l.google.com:19302",
-  "stun:stun1.l.google.com:19302",
-  "stun:stun2.l.google.com:19302",
-];
-
 export const Camera = () => {
   const navigate = useNavigate();
 
@@ -79,8 +73,16 @@ export const Camera = () => {
       const start = async () => {
         const servers = {
           iceServers: [
+            { urls: "stun:ice.aidan.house" },
             {
-              urls: [...STUN_SERVERS],
+              urls: "turn:ice.aidan.house",
+              username: "aidan",
+              credential: "88" + password,
+            },
+            {
+              urls: "turn:ice.aidan.house?transport=tcp",
+              username: "aidan",
+              credential: "88" + password,
             },
           ],
         };

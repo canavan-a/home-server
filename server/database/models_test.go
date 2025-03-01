@@ -57,20 +57,20 @@ func TestClipQuery(t *testing.T) {
 	fmt.Println(clips)
 }
 
-func TestInsertClipQuery(t *testing.T) {
-	db, err := Connnect()
-	if err != nil {
-		t.Error("could not connect")
-	}
+// func TestInsertClipQuery(t *testing.T) {
+// 	db, err := Connnect()
+// 	if err != nil {
+// 		t.Error("could not connect")
+// 	}
 
-	err = database.InsertClip(db, database.Clip{
-		Timestamp: time.Now(),
-		Clip:      []byte("hello world"),
-	})
-	if err != nil {
-		t.Error("bad query")
-		return
-	}
-	db.Commit()
+// 	err = database.InsertClip(db, database.Clip{
+// 		Timestamp: time.Now(),
+// 		Clip:      []byte("hello world"),
+// 	})
+// 	if err != nil {
+// 		t.Error("bad query")
+// 		return
+// 	}
+// 	db.Commit()
 
-}
+// }

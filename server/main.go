@@ -1156,10 +1156,26 @@ func handleRelayServer(c *gin.Context) {
 func initPeerConnection(clientId string, offer webrtc.SessionDescription, rtcId string) (*webrtc.PeerConnection, error) {
 	configuration := webrtc.Configuration{
 		ICEServers: []webrtc.ICEServer{
+			// {
+			// 	URLs: []string{"stun:stun.l.google.com:19302"}, // Google's public STUN server
+			// },
 			{
-				URLs: []string{"stun:stun.l.google.com:19302"}, // Google's public STUN server
+				URLs: []string{"stun:ice.aidan.house"},
+			},
+			{
+				URLs:           []string{"turn:ice.aidan.house"},
+				Username:       "aidan",
+				Credential:     "88" + os.Getenv("SECRET_DOOR_CODE"),
+				CredentialType: webrtc.ICECredentialTypePassword,
+			},
+			{
+				URLs:           []string{"turn:ice.aidan.house?transport=tcp"},
+				Username:       "aidan",
+				Credential:     "88" + os.Getenv("SECRET_DOOR_CODE"),
+				CredentialType: webrtc.ICECredentialTypePassword,
 			},
 		},
+		ICETransportPolicy: webrtc.ICETransportPolicyAll,
 	}
 
 	peerConnection, err := webrtc.NewPeerConnection(configuration)
