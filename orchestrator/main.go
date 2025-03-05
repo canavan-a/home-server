@@ -80,7 +80,7 @@ func signalRestart() {
 
 func Notify(content string) error {
 
-	email := GenerateEmailContent("New Clip", content)
+	email := GenerateEmailContent("Memory Overflow", content)
 
 	err := SendEmail("aidan.canavan3@gmail.com", email)
 
