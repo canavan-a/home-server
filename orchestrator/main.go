@@ -20,9 +20,12 @@ func main() {
 		if err != nil {
 			fmt.Println("failed")
 			failCount += 1
+		} else {
+			failCount = 0
 		}
 
 		if failCount == 5 {
+			fmt.Println("restarting services")
 			restartProcesses()
 			failCount = 0
 		}
@@ -49,16 +52,10 @@ func healthCheckServer() error {
 }
 
 func restartProcesses() {
-	ffmpegCmd := exec.Command("tmux", "send-keys", "-t", "ffmpeg", `ffmpeg -f rawvideo 
-											-pix_fmt bgr24 -s 640x480 
-											-r 30 -i /tmp/video_pipe2 
-											-c:v vp8 -b:v 200k -g 15 
-											-an -s 480x360 -filter:v 
-											"drawtext=text='%{localtime}':x=10:y=10:fontcolor=white:fontsize=14:box=1:boxcolor=black@0.5"
-											 -preset ultrafast -f rtp rtp://127.0.0.1:5005`)
+	ffmpegCmd := exec.Command("tmux", "send-keys", "-t", "ffmpeg", `ffmpeg -f rawvideo -pix_fmt bgr24 -s 640x480 -r 30 -i /tmp/video_pipe2 -c:v vp8 -b:v 200k -g 15 -an -s 480x360 -filter:v "drawtext=text='%{localtime}':x=10:y=10:fontcolor=white:fontsize=14:box=1:boxcolor=black@0.5" -preset ultrafast -f rtp rtp://127.0.0.1:5005`, "C-m")
 	ffmpegCmd.Start()
-	mobilenetCmd := exec.Command("tmux", "send-keys", "-t", "mobilenet", "python3 opencv_object_detection.py")
+	mobilenetCmd := exec.Command("tmux", "send-keys", "-t", "mobilenet", "python3 opencv_object_detection.py", "C-m")
 	mobilenetCmd.Start()
-	serverCmd := exec.Command("tmux", "send-keys", "-t", "server", "./myprogram")
+	serverCmd := exec.Command("tmux", "send-keys", "-t", "server", "./myprogram", "C-m")
 	serverCmd.Start()
 }
