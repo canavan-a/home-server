@@ -257,12 +257,8 @@ func (h *Hydrometer) GetTemperature() (temp float32) {
 		return
 	}
 
-	fmt.Println(data)
-
 	defer resp.Body.Close()
 	strValue := string(data)
-
-	fmt.Println(strValue)
 
 	temp64, err := (strconv.ParseFloat(strValue, 32))
 	if err != nil {

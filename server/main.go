@@ -17,6 +17,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"runtime/pprof"
 	"strconv"
 	"strings"
 	"sync"
@@ -82,6 +83,8 @@ func main() {
 
 	api := r.Group("/api")
 	{
+		api.GET("/heap", MiddlewareAuthenticate, writeHeapProfile)
+
 		trk := api.Group("/tracker", MiddlewareAuthenticate)
 		{
 			trk.GET("/toggle", MakeToggleTrackerRoute(&tk))
@@ -153,6 +156,21 @@ func main() {
 	}
 
 	r.Run(":5000")
+}
+
+func captureHeapProfile(filename string) {
+	os.Remove(filename)
+	f, err := os.Create(filename)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+	pprof.WriteHeapProfile(f)
+}
+
+func writeHeapProfile(c *gin.Context) {
+	captureHeapProfile("heap.pprof")
+	c.JSON(200, "success")
 }
 
 func HandleListClips(c *gin.Context) {
