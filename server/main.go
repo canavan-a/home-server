@@ -83,6 +83,7 @@ func main() {
 
 	api := r.Group("/api")
 	{
+		api.GET("/health", func(c *gin.Context) { c.JSON(200, "ok") })
 		api.GET("/heap", MiddlewareAuthenticate, writeHeapProfile)
 
 		trk := api.Group("/tracker", MiddlewareAuthenticate)
