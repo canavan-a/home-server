@@ -3,7 +3,6 @@ package clipper
 import (
 	"fmt"
 	"main/clipper/fixedsizequeue"
-	"slices"
 	"sync"
 )
 
@@ -75,7 +74,7 @@ func (c *Clipper) ReceiveEntity(y, x int) { // pass this function to the tracker
 		c.Mutex.Lock()
 		if !c.Clipping && c.FramesToStart >= FRAMES_TO_START {
 			fmt.Println("Clipper starting")
-			c.Clip = slices.Clone(c.PreQueue.CopyOut())
+			c.Clip = c.PreQueue.CopyOut()
 			c.Clipping = true
 		}
 		c.Mutex.Unlock()

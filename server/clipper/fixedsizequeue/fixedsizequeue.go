@@ -13,14 +13,16 @@ func CreateFixedQueue[T any](size int) *FixedQueue[T] {
 }
 
 func (fq *FixedQueue[T]) Add(value T) {
-	for i := range fq.data {
-		if i == fq.size-1 {
-			break
-		}
-		fq.data[i] = fq.data[i+1]
-	}
 
-	fq.data[fq.size-1] = value
+	fq.data = append(fq.data[1:], value)
+	// for i := range fq.data {
+	// 	if i == fq.size-1 {
+	// 		break
+	// 	}
+	// 	fq.data[i] = fq.data[i+1]
+	// }
+
+	// fq.data[fq.size-1] = value
 }
 
 func (fq *FixedQueue[T]) CopyOut() []T {
