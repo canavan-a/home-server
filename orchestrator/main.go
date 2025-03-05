@@ -8,10 +8,15 @@ import (
 	"os"
 	"os/exec"
 	"time"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
-
+	err := godotenv.Load()
+	if err != nil {
+		panic("Error loading .env file")
+	}
 	fmt.Println("starting orchestrator")
 
 	var failCount int
