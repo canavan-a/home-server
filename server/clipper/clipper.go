@@ -3,6 +3,7 @@ package clipper
 import (
 	"fmt"
 	"main/clipper/fixedsizequeue"
+	"slices"
 	"sync"
 )
 
@@ -25,7 +26,7 @@ var (
 type Clipper struct {
 	Mutex              sync.Mutex
 	PacketChannel      chan []byte
-	Clip               [][]byte
+	Clip               [][]byte // compressed bytes
 	PreQueue           *fixedsizequeue.FixedQueue[[]byte]
 	Clipping           bool
 	FramesToKill       int
@@ -74,7 +75,7 @@ func (c *Clipper) ReceiveEntity(y, x int) { // pass this function to the tracker
 		c.Mutex.Lock()
 		if !c.Clipping && c.FramesToStart >= FRAMES_TO_START {
 			fmt.Println("Clipper starting")
-			c.Clip = c.PreQueue.CopyOut()
+			c.Clip = slices.Clone(c.PreQueue.CopyOut())
 			c.Clipping = true
 		}
 		c.Mutex.Unlock()
@@ -100,7 +101,6 @@ func (c *Clipper) ReceiveEntity(y, x int) { // pass this function to the tracker
 
 func (c *Clipper) Run() {
 	for frame := range c.PacketChannel {
-		fmt.Println("PacketChannel backlog:", len(c.PacketChannel))
 		c.Mutex.Lock()
 		c.PreQueue.Add(frame)
 		if c.Clipping {
