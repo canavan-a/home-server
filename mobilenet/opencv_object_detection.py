@@ -133,7 +133,7 @@ while True:
     json_pipe.flush()
 
     # Display frame
-    resized_frame = cv2.resize(frame, (640, 480))
+    resized_frame = frame
 
     pipe.write(resized_frame.tobytes())
     rf_pipe.write(resized_frame.tobytes())

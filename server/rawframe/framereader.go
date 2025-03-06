@@ -24,7 +24,7 @@ func (fr *FrameReader) Run() {
 	}
 	defer pipe.Close()
 
-	const frameSize = 640 * 480 * 3 // 921,600 bytes for BGR24 640x480
+	const frameSize = 1280 * 720 * 3 // 921,600 bytes for BGR24 640x480
 	buffer := make([]byte, frameSize)
 	totalBytes := 0
 	// Slice to store all frames
