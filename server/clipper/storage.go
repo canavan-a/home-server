@@ -179,6 +179,7 @@ func (csd *ClipStorageDevice) Run() {
 		go func() {
 			err := Store(frames)
 			if err != nil {
+				fmt.Println(err)
 				fmt.Println("Error storing frames")
 			}
 		}()
