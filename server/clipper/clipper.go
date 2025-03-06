@@ -10,15 +10,15 @@ import (
 // 15 ish FPS
 // 10 seconds of prequeue
 var (
-	DEFAULT_PREQUEUE_SIZE = 9 * 5 // roughly 9 seconds pre clip
+	DEFAULT_PREQUEUE_SIZE = 20 * 5 // roughly 9 seconds pre clip
 
-	MAX_CLIP_SIZE = 9 * 5 * 20 // roughly
+	MAX_CLIP_SIZE = 20 * 5 * 20 // roughly
 
 	// need 5 consecutive frames with entity to start recording
-	FRAMES_TO_START = 4
+	FRAMES_TO_START = 7
 
 	// need 90 consecutive frames WITHOUT entity to end recording
-	FRAMES_TO_KILL = 20
+	FRAMES_TO_KILL = 27
 )
 
 // Clip Farmer
