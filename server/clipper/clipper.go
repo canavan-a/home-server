@@ -18,7 +18,7 @@ var (
 	FRAMES_TO_START = 7
 
 	// need 90 consecutive frames WITHOUT entity to end recording
-	FRAMES_TO_KILL = 27
+	FRAMES_TO_KILL = 45
 )
 
 // Clip Farmer
