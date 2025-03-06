@@ -127,7 +127,7 @@ func ConvertFileToWebm(rawFilename, outputFilename string) error {
 
 	cmd := exec.Command(
 		"ffmpeg", "-f", "rawvideo", "-pix_fmt",
-		"bgr24", "-s", "1280x720 ",
+		"bgr24", "-s", "1280x720",
 		"-framerate", "16", "-i",
 		rawFilename,
 		"-c:v", "libvpx", "-crf", "10", "-b:v", "1M",
