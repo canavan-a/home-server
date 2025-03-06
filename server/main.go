@@ -198,7 +198,15 @@ func HandleDownloadClip(c *gin.Context) {
 		return
 	}
 
-	c.Data(200, "video/webm", clip)
+	c.Header("Content-Type", "video/webm")
+	c.Header("Content-Length", strconv.Itoa(len(clip)))
+
+	reader := bytes.NewReader(clip)
+	_, err = io.Copy(c.Writer, reader)
+	if err != nil {
+		c.Error(err)
+	}
+
 }
 
 type IceServerResponse struct {
