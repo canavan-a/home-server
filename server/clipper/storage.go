@@ -127,7 +127,7 @@ func ConvertFileToWebm(rawFilename, outputFilename string) error {
 
 	cmd := exec.Command(
 		"ffmpeg", "-f", "rawvideo", "-pix_fmt",
-		"bgr24", "-s", "640x480",
+		"bgr24", "-s", "1280x720 ",
 		"-framerate", "16", "-i",
 		rawFilename,
 		"-c:v", "libvpx", "-crf", "10", "-b:v", "1M",
@@ -154,7 +154,7 @@ func SaveToRawFile(frames [][]byte, filename string) error {
 	// ffmpeg -f rawvideo -pix_fmt bgr24 -s 640x480 -i test.raw -c:v libvpx -crf 10 -b:v 1M output.webm
 
 	var buffer bytes.Buffer
-	expectedSize := 640 * 480 * 3 // 921,600 bytes for BGR24 640x480
+	expectedSize := 1280 * 720 * 3 // 921,600 bytes for BGR24 640x480
 
 	for i, frame := range frames {
 
