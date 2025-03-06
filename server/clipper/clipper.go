@@ -39,7 +39,6 @@ func NewClipper(clipStorageChannel chan [][]byte) *Clipper {
 		PacketChannel:      make(chan []byte),
 		PreQueue:           fixedsizequeue.CreateFixedQueue[[]byte](DEFAULT_PREQUEUE_SIZE),
 		ClipStorageChannel: clipStorageChannel,
-		Clipping:           true,
 	}
 
 }
