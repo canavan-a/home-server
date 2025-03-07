@@ -6,7 +6,6 @@ import (
 	"io"
 	"main/database"
 	"main/mailer"
-	"main/rawframe"
 	"os"
 	"os/exec"
 	"time"
@@ -53,10 +52,7 @@ func DownloadClip(id int) (webmData []byte, err error) {
 		return nil, err
 	}
 
-	webmData, err = rawframe.Decompress(clip.Clip)
-	if err != nil {
-		return nil, err
-	}
+	webmData = clip.Clip
 
 	txn.Commit()
 
@@ -98,17 +94,12 @@ func Store(frames [][]byte) error {
 		return err
 	}
 
-	compressed, err := rawframe.Compress(rawData)
-	if err != nil {
-		return err
-	}
-
 	now := time.Now()
 
 	txn := DB.Begin()
 	clipID, err := database.InsertClip(txn, database.Clip{
 		Timestamp: now,
-		Clip:      compressed,
+		Clip:      rawData,
 	})
 	if err != nil {
 		return err
@@ -130,7 +121,7 @@ func ConvertFileToWebm(rawFilename, outputFilename string) error {
 		"bgr24", "-s", "1280x720",
 		"-framerate", "16", "-i",
 		rawFilename,
-		"-c:v", "libvpx", "-crf", "10", "-b:v", "1M",
+		"-c:v", "libvpx", "-crf", "10", "-b:v", "3M",
 		"-g", "3",
 		"-auto-alt-ref", "0",
 		"-movflags", "faststart",
