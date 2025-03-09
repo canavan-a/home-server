@@ -15,7 +15,7 @@ import (
 )
 
 type ClipStorageDevice struct {
-	StorageChannel chan [][]byte
+	StorageChannel chan string
 }
 
 var (
@@ -32,7 +32,7 @@ func NewClipStorageDevice() *ClipStorageDevice {
 	DB = db
 
 	return &ClipStorageDevice{
-		StorageChannel: make(chan [][]byte),
+		StorageChannel: make(chan string),
 	}
 }
 
@@ -59,21 +59,13 @@ func DownloadClip(id int) (webmData []byte, err error) {
 	return
 }
 
-func Store(frames [][]byte) error {
+func Store(filePath string) error {
 
 	randomValue := uuid.NewString()
 
-	rawFilename := fmt.Sprintf("%s.raw", randomValue)
-
-	err := SaveToRawFile(frames, rawFilename)
-	if err != nil {
-		return err
-	}
-	defer os.Remove(rawFilename)
-
 	outputFilename := fmt.Sprintf("%s.webm", randomValue)
 
-	err = ConvertFileToWebm(rawFilename, outputFilename)
+	err := ConvertFileToWebm(filePath, outputFilename)
 	if err != nil {
 		return err
 	}

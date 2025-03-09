@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"main/clipper/fixedsizequeue"
 	"sync"
+
+	"github.com/google/uuid"
 )
 
 // 3 ish packets per frame
@@ -30,10 +32,12 @@ type Clipper struct {
 	Clipping           bool
 	FramesToKill       int
 	FramesToStart      int
-	ClipStorageChannel chan [][]byte
+	ClipStorageChannel chan string
+
+	CurrentFile string
 }
 
-func NewClipper(clipStorageChannel chan [][]byte) *Clipper {
+func NewClipper(clipStorageChannel chan string) *Clipper {
 	return &Clipper{
 		Mutex:              sync.Mutex{},
 		PacketChannel:      make(chan []byte),
@@ -57,11 +61,10 @@ func (c *Clipper) ReceiveEntity(y, x int) { // pass this function to the tracker
 			fmt.Println("Clipper done, saving")
 
 			// stopre the clip
-			c.ClipStorageChannel <- c.Clip
+			c.ClipStorageChannel <- c.CurrentFile
 			// stop the clipper
 			c.Clipping = false
 			// clear the old clip
-			c.Clip = [][]byte{}
 		}
 		c.Mutex.Unlock()
 
@@ -74,23 +77,13 @@ func (c *Clipper) ReceiveEntity(y, x int) { // pass this function to the tracker
 		c.Mutex.Lock()
 		if !c.Clipping && c.FramesToStart >= FRAMES_TO_START {
 			fmt.Println("Clipper starting")
-			c.Clip = c.PreQueue.CopyOut()
+			c.CurrentFile = "clips/" + uuid.NewString() + ".raw"
+			preData := c.PreQueue.CopyOut()
+			err := SaveToRawFile(preData, c.CurrentFile)
+			if err != nil {
+				panic(err)
+			}
 			c.Clipping = true
-		}
-		c.Mutex.Unlock()
-
-		c.Mutex.Lock()
-		// if clips gets too large save and break
-		if len(c.Clip) > MAX_CLIP_SIZE {
-			// clip is too big, save
-			fmt.Println("Clip has reached maximum size: MAXIMUM SIZE!!!!!")
-
-			c.ClipStorageChannel <- c.Clip
-			c.Clipping = false
-			c.Clip = [][]byte{}
-
-			// do not adjust frame counts so we can just continue and get the next clip right after
-
 		}
 		c.Mutex.Unlock()
 
@@ -103,7 +96,8 @@ func (c *Clipper) Run() {
 		c.Mutex.Lock()
 		c.PreQueue.Add(frame)
 		if c.Clipping {
-			c.Clip = append(c.Clip, frame)
+			SaveToRawFile([][]byte{frame}, c.CurrentFile)
+			// c.Clip = append(c.Clip, frame)
 		}
 		c.Mutex.Unlock()
 	}

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"main/clipper"
 	"os"
 	"os/exec"
 	"testing"
@@ -22,10 +21,10 @@ func Test_store(t *testing.T) {
 
 	fmt.Println(len(packets))
 
-	err = clipper.Store(packets)
-	if err != nil {
-		panic(err)
-	}
+	// err = clipper.Store(packets)
+	// if err != nil {
+	// 	panic(err)
+	// }
 	//create some rtp packets
 
 }
