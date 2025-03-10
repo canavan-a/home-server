@@ -59,16 +59,23 @@ func DownloadClip(id int) (webmData []byte, err error) {
 
 func Store(filePath string) error {
 
+	now := time.Now()
+
 	randomValue := uuid.NewString()
+
+	outputFilenameTemp := fmt.Sprintf("temp-webm-clips/%s.webm", randomValue)
 
 	outputFilename := fmt.Sprintf("webm-clips/%s.webm", randomValue)
 
-	err := ConvertFileToWebm(filePath, outputFilename)
+	err := ConvertFileToWebm(filePath, outputFilenameTemp)
 	if err != nil {
 		return err
 	}
 
-	now := time.Now()
+	err = os.Rename(outputFilenameTemp, outputFilename)
+	if err != nil {
+		return err
+	}
 
 	uri := fmt.Sprintf("https://aidan.house/api/clipper/download?name=%s&doorCode=%s", randomValue+".webm", os.Getenv("SECRET_DOOR_CODE"))
 	mailer.Notify(mailer.MakeClipBody(uri, now.Format("January 2, 2006 15:04:05")))
