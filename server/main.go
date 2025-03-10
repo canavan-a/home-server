@@ -175,38 +175,68 @@ func writeHeapProfile(c *gin.Context) {
 }
 
 func HandleListClips(c *gin.Context) {
-	clips, err := clipper.ListClips()
+
+	clips, err := os.ReadDir("webm-clips")
 	if err != nil {
-		c.JSON(400, "databse error")
+		c.JSON(400, "could not generate file list")
 		return
 	}
-	c.JSON(200, clips)
+
+	var output []database.Clip
+
+	for i, clip := range clips {
+
+		info, err := clip.Info()
+		if err != nil {
+			c.JSON(400, "could not get clip info")
+			return
+		}
+
+		output = append(output, database.Clip{
+			ID:        uint(i),
+			Name:      clip.Name(),
+			Timestamp: info.ModTime(),
+		})
+	}
+
+	c.JSON(200, output)
 }
 
+var (
+	fileLocks = make(map[string]*sync.Mutex)
+	mapLock   sync.Mutex
+)
+
 func HandleDownloadClip(c *gin.Context) {
-	id := c.Query("id")
+	name := c.Query("name")
 
-	idValue, err := strconv.Atoi(id)
+	mapLock.Lock()
+
+	if fileLocks[name] == nil {
+		fileLocks[name] = &sync.Mutex{}
+	}
+	fileLocks[name].Lock()
+	mapLock.Unlock()
+	defer fileLocks[name].Unlock()
+
+	file, err := os.Open("webm-clips/" + name)
 	if err != nil {
-		c.JSON(400, "id conversion error")
+		c.JSON(400, "file open error")
 		return
 	}
 
-	clip, err := clipper.DownloadClip(idValue)
+	stat, err := file.Stat()
 	if err != nil {
-		c.JSON(400, "databse error")
+		c.JSON(400, "file stat error")
 		return
 	}
+
+	defer file.Close()
 
 	c.Header("Content-Type", "video/webm")
-	c.Header("Content-Length", strconv.Itoa(len(clip)))
+	c.Header("Content-Length", strconv.FormatInt(stat.Size(), 10))
 
-	reader := bytes.NewReader(clip)
-	_, err = io.Copy(c.Writer, reader)
-	if err != nil {
-		c.Error(err)
-	}
-
+	http.ServeContent(c.Writer, c.Request, name, stat.ModTime(), file)
 }
 
 type IceServerResponse struct {

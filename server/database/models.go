@@ -15,6 +15,7 @@ type Reading struct {
 }
 
 type Clip struct {
+	Name      string
 	ID        uint      `gorm:"primaryKey"`
 	Timestamp time.Time `gorm:"not null"`
 	Clip      []byte    `gorm:"not null"`

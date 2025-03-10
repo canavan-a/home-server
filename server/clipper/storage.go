@@ -1,9 +1,7 @@
 package clipper
 
 import (
-	"bytes"
 	"fmt"
-	"io"
 	"main/database"
 	"main/mailer"
 	"os"
@@ -15,7 +13,7 @@ import (
 )
 
 type ClipStorageDevice struct {
-	StorageChannel chan [][]byte
+	StorageChannel chan string
 }
 
 var (
@@ -32,7 +30,7 @@ func NewClipStorageDevice() *ClipStorageDevice {
 	DB = db
 
 	return &ClipStorageDevice{
-		StorageChannel: make(chan [][]byte),
+		StorageChannel: make(chan string),
 	}
 }
 
@@ -59,54 +57,27 @@ func DownloadClip(id int) (webmData []byte, err error) {
 	return
 }
 
-func Store(frames [][]byte) error {
-
-	randomValue := uuid.NewString()
-
-	rawFilename := fmt.Sprintf("%s.raw", randomValue)
-
-	err := SaveToRawFile(frames, rawFilename)
-	if err != nil {
-		return err
-	}
-	defer os.Remove(rawFilename)
-
-	outputFilename := fmt.Sprintf("%s.webm", randomValue)
-
-	err = ConvertFileToWebm(rawFilename, outputFilename)
-	if err != nil {
-		return err
-	}
-	defer os.Remove(outputFilename)
-
-	webmFile, err := os.Open(outputFilename)
-	if err != nil {
-		return err
-	}
-
-	rawData, err := io.ReadAll(webmFile)
-	if err != nil {
-		return err
-	}
-
-	err = webmFile.Close()
-	if err != nil {
-		return err
-	}
+func Store(filePath string) error {
 
 	now := time.Now()
 
-	txn := DB.Begin()
-	clipID, err := database.InsertClip(txn, database.Clip{
-		Timestamp: now,
-		Clip:      rawData,
-	})
+	randomValue := uuid.NewString()
+
+	outputFilenameTemp := fmt.Sprintf("temp-webm-clips/%s.webm", randomValue)
+
+	outputFilename := fmt.Sprintf("webm-clips/%s.webm", randomValue)
+
+	err := ConvertFileToWebm(filePath, outputFilenameTemp)
 	if err != nil {
 		return err
 	}
-	txn.Commit()
 
-	uri := fmt.Sprintf("https://aidan.house/api/clipper/download?id=%d&doorCode=%s", clipID, os.Getenv("SECRET_DOOR_CODE"))
+	err = os.Rename(outputFilenameTemp, outputFilename)
+	if err != nil {
+		return err
+	}
+
+	uri := fmt.Sprintf("https://aidan.house/api/clipper/download?name=%s&doorCode=%s", randomValue+".webm", os.Getenv("SECRET_DOOR_CODE"))
 	mailer.Notify(mailer.MakeClipBody(uri, now.Format("January 2, 2006 15:04:05")))
 
 	// store this in database
@@ -142,24 +113,19 @@ func ConvertFileToWebm(rawFilename, outputFilename string) error {
 }
 
 func SaveToRawFile(frames [][]byte, filename string) error {
-	// ffmpeg -f rawvideo -pix_fmt bgr24 -s 640x480 -i test.raw -c:v libvpx -crf 10 -b:v 1M output.webm
-
-	var buffer bytes.Buffer
-	expectedSize := 1280 * 720 * 3 // 921,600 bytes for BGR24 640x480
-
-	for i, frame := range frames {
-
-		fmt.Println("Frame", i, "length:", len(frame))
-		if len(frame) != expectedSize {
-			return fmt.Errorf("frame %d has invalid size: got %d, expected %d", i, len(frame), expectedSize)
-		}
-
-		buffer.Write(frame)
-	}
-
-	err := os.WriteFile(filename, buffer.Bytes(), 0644)
+	// Open the file in append mode, create it if it doesn't exist
+	file, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
-		return err
+		return fmt.Errorf("could not open or create file: %v", err)
+	}
+	defer file.Close()
+
+	// Iterate through the frames and append to the file
+	for _, frame := range frames {
+		_, err := file.Write(frame)
+		if err != nil {
+			return fmt.Errorf("could not write frame to file: %v", err)
+		}
 	}
 
 	return nil
