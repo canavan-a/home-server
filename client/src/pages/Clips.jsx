@@ -132,7 +132,7 @@ export const Clips = () => {
                       }
                     }}
                   >
-                    <div className="flex-grow">{index}</div>
+                    <div className="flex-grow">{clipList.length - index}</div>
                     <div className="flex-shrink">
                       {formattedDate(new Date(value.Timestamp))}
                     </div>
