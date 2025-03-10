@@ -23,30 +23,10 @@ export const Clips = () => {
   useEffect(() => {
     console.log(selected);
     if (selected) {
-      if (clipCache[selected]) {
-        console.log("cached data!!");
-        setClipData(clipCache[selected]);
-      } else {
-        console.log("fethcing");
-        setClipData(null);
-        setClipLoading(true);
-        axios
-          .get(
-            `https://aidan.house/api/clipper/download?name=${selected}&doorCode=${password}`,
-            { responseType: "blob" }
-          )
-          .then((response) => {
-            const blobUrl = URL.createObjectURL(response.data);
-            console.log(blobUrl);
-            setClipCache({ ...clipCache, [selected.toString()]: blobUrl });
-            setClipData(blobUrl);
-            setClipLoading(false);
-          })
-          .catch((error) => {
-            setClipLoading(false);
-            console.log(error);
-          });
-      }
+      console.log("fethcing");
+      setClipData(
+        `https://aidan.house/api/clipper/download?name=${selected}&doorCode=${password}`
+      );
     }
   }, [selected]);
 
@@ -137,7 +117,7 @@ export const Clips = () => {
                   ...v,
                   CaptureDate: new Date(v.Timestamp),
                 }))
-                .sort((a, b) => a.CaptureDate - b.CaptureDate)
+                .sort((a, b) => b.CaptureDate - a.CaptureDate)
                 .map((value) => (
                   <button
                     key={value.Name}
