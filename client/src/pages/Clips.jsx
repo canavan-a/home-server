@@ -21,15 +21,18 @@ export const Clips = () => {
   const [clipCache, setClipCache] = useState({});
 
   useEffect(() => {
+    console.log(selected);
     if (selected) {
       if (clipCache[selected]) {
+        console.log("cached data!!");
         setClipData(clipCache[selected]);
       } else {
+        console.log("fethcing");
         setClipData(null);
         setClipLoading(true);
         axios
           .get(
-            `https://aidan.house/api/clipper/download?id=${selected}&doorCode=${password}`,
+            `https://aidan.house/api/clipper/download?name=${selected}&doorCode=${password}`,
             { responseType: "blob" }
           )
           .then((response) => {
@@ -129,27 +132,33 @@ export const Clips = () => {
                 selected ? "max-h-60" : "max-h-96"
               } overflow-auto overflow-y-scroll flex-col scrollbar-none`}
             >
-              {clipList.map((value) => (
-                <button
-                  key={value.ID}
-                  className={`flex mb-2 btn ${
-                    selected == value.ID ? "btn-info" : "btn-glass"
-                  } w-full`}
-                  onClick={() => {
-                    if (selected == value.ID) {
-                      setSelected(null);
-                    } else {
-                      setSelected(value.ID);
-                    }
-                  }}
-                >
-                  <div className="flex-grow">{value.ID}</div>
-                  <div className="flex-shrink">
-                    {formattedDate(new Date(value.Timestamp))}
-                  </div>
-                  <div className="flex-grow"></div>
-                </button>
-              ))}
+              {clipList
+                .map((v) => ({
+                  ...v,
+                  CaptureDate: new Date(v.Timestamp),
+                }))
+                .sort((a, b) => a.CaptureDate - b.CaptureDate)
+                .map((value) => (
+                  <button
+                    key={value.Name}
+                    className={`flex mb-2 btn ${
+                      selected == value.Name ? "btn-info" : "btn-glass"
+                    } w-full`}
+                    onClick={() => {
+                      if (selected == value.Name) {
+                        setSelected(null);
+                      } else {
+                        setSelected(value.Name);
+                      }
+                    }}
+                  >
+                    <div className="flex-grow">{value.ID}</div>
+                    <div className="flex-shrink">
+                      {formattedDate(new Date(value.Timestamp))}
+                    </div>
+                    <div className="flex-grow"></div>
+                  </button>
+                ))}
             </div>
             <div className="text-center flex p-2 ">
               <div className="flex-grow"></div>

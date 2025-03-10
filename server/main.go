@@ -225,23 +225,18 @@ func HandleDownloadClip(c *gin.Context) {
 		return
 	}
 
-	clip, err := io.ReadAll(file)
+	stat, err := file.Stat()
 	if err != nil {
-		c.JSON(400, "invalid byte read")
+		c.JSON(400, "file stat error")
 		return
 	}
 
 	defer file.Close()
 
 	c.Header("Content-Type", "video/webm")
-	c.Header("Content-Length", strconv.Itoa(len(clip)))
+	c.Header("Content-Length", strconv.FormatInt(stat.Size(), 10))
 
-	reader := bytes.NewReader(clip)
-	_, err = io.Copy(c.Writer, reader)
-	if err != nil {
-		c.Error(err)
-	}
-
+	http.ServeContent(c.Writer, c.Request, name, stat.ModTime(), file)
 }
 
 type IceServerResponse struct {
