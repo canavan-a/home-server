@@ -107,18 +107,17 @@ func ConvertFileToWebm(rawFilename, outputFilename string) error {
 
 func SaveToRawFile(frames [][]byte, filename string) error {
 	// Open the file in append mode, create it if it doesn't exist
-	file, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
-		return fmt.Errorf("failed to open file: %w", err)
+		return fmt.Errorf("could not open or create file: %v", err)
 	}
 	defer file.Close()
 
-	// Iterate over frames and write each one to the file
-	for i, frame := range frames {
-		// Write the raw frame data directly to the file
+	// Iterate through the frames and append to the file
+	for _, frame := range frames {
 		_, err := file.Write(frame)
 		if err != nil {
-			return fmt.Errorf("failed to write frame %d: %w", i, err)
+			return fmt.Errorf("could not write frame to file: %v", err)
 		}
 	}
 
