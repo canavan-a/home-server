@@ -1,7 +1,6 @@
 package clipper
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"main/database"
@@ -134,24 +133,20 @@ func ConvertFileToWebm(rawFilename, outputFilename string) error {
 }
 
 func SaveToRawFile(frames [][]byte, filename string) error {
-	// ffmpeg -f rawvideo -pix_fmt bgr24 -s 640x480 -i test.raw -c:v libvpx -crf 10 -b:v 1M output.webm
-
-	var buffer bytes.Buffer
-	expectedSize := 1280 * 720 * 3 // 921,600 bytes for BGR24 640x480
-
-	for i, frame := range frames {
-
-		fmt.Println("Frame", i, "length:", len(frame))
-		if len(frame) != expectedSize {
-			return fmt.Errorf("frame %d has invalid size: got %d, expected %d", i, len(frame), expectedSize)
-		}
-
-		buffer.Write(frame)
-	}
-
-	err := os.WriteFile(filename, buffer.Bytes(), 0644)
+	// Open the file in append mode, create it if it doesn't exist
+	file, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to open file: %w", err)
+	}
+	defer file.Close()
+
+	// Iterate over frames and write each one to the file
+	for i, frame := range frames {
+		// Write the raw frame data directly to the file
+		_, err := file.Write(frame)
+		if err != nil {
+			return fmt.Errorf("failed to write frame %d: %w", i, err)
+		}
 	}
 
 	return nil
