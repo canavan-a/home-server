@@ -2,7 +2,6 @@ package clipper
 
 import (
 	"fmt"
-	"io"
 	"main/database"
 	"main/mailer"
 	"os"
@@ -62,42 +61,16 @@ func Store(filePath string) error {
 
 	randomValue := uuid.NewString()
 
-	outputFilename := fmt.Sprintf("%s.webm", randomValue)
+	outputFilename := fmt.Sprintf("webm-clips/%s.webm", randomValue)
 
 	err := ConvertFileToWebm(filePath, outputFilename)
-	if err != nil {
-		return err
-	}
-	defer os.Remove(outputFilename)
-
-	webmFile, err := os.Open(outputFilename)
-	if err != nil {
-		return err
-	}
-
-	rawData, err := io.ReadAll(webmFile)
-	if err != nil {
-		return err
-	}
-
-	err = webmFile.Close()
 	if err != nil {
 		return err
 	}
 
 	now := time.Now()
 
-	txn := DB.Begin()
-	clipID, err := database.InsertClip(txn, database.Clip{
-		Timestamp: now,
-		Clip:      rawData,
-	})
-	if err != nil {
-		return err
-	}
-	txn.Commit()
-
-	uri := fmt.Sprintf("https://aidan.house/api/clipper/download?id=%d&doorCode=%s", clipID, os.Getenv("SECRET_DOOR_CODE"))
+	uri := fmt.Sprintf("https://aidan.house/api/clipper/download?name=%s&doorCode=%s", randomValue+".webm", os.Getenv("SECRET_DOOR_CODE"))
 	mailer.Notify(mailer.MakeClipBody(uri, now.Format("January 2, 2006 15:04:05")))
 
 	// store this in database

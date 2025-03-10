@@ -77,7 +77,7 @@ func (c *Clipper) ReceiveEntity(y, x int) { // pass this function to the tracker
 		c.Mutex.Lock()
 		if !c.Clipping && c.FramesToStart >= FRAMES_TO_START {
 			fmt.Println("Clipper starting")
-			c.CurrentFile = "clips/" + uuid.NewString() + ".raw"
+			c.CurrentFile = "raw-clips/" + uuid.NewString() + ".raw"
 			preData := c.PreQueue.CopyOut()
 			err := SaveToRawFile(preData, c.CurrentFile)
 			if err != nil {
