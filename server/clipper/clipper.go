@@ -96,7 +96,11 @@ func (c *Clipper) Run() {
 		c.Mutex.Lock()
 		c.PreQueue.Add(frame)
 		if c.Clipping {
-			SaveToRawFile([][]byte{frame}, c.CurrentFile)
+			err := SaveToRawFile([][]byte{frame}, c.CurrentFile)
+			if err != nil {
+				fmt.Println(err)
+				panic(err)
+			}
 			// c.Clip = append(c.Clip, frame)
 		}
 		c.Mutex.Unlock()
