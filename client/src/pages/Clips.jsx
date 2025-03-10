@@ -118,7 +118,7 @@ export const Clips = () => {
                   CaptureDate: new Date(v.Timestamp),
                 }))
                 .sort((a, b) => b.CaptureDate - a.CaptureDate)
-                .map((value) => (
+                .map((value, index) => (
                   <button
                     key={value.Name}
                     className={`flex mb-2 btn ${
@@ -132,7 +132,7 @@ export const Clips = () => {
                       }
                     }}
                   >
-                    <div className="flex-grow">{value.ID}</div>
+                    <div className="flex-grow">{index}</div>
                     <div className="flex-shrink">
                       {formattedDate(new Date(value.Timestamp))}
                     </div>
