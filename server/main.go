@@ -10,6 +10,7 @@ import (
 	"io"
 	"log"
 	"main/clipper"
+	credentialer "main/creds"
 	"main/database"
 	"main/rawframe"
 	"main/tracker"
@@ -49,6 +50,8 @@ func main() {
 	if err != nil {
 		panic("Error loading .env file")
 	}
+
+	credsGenerator := credentialer.NewCreds()
 
 	device := clipper.NewClipStorageDevice()
 	go device.Run()
@@ -105,6 +108,12 @@ func main() {
 			clp.GET("/clipping", MakeClipperClippingRoute(clipMaker))
 			clp.GET("/list", HandleListClips)
 			clp.GET("/download", HandleDownloadClip)
+		}
+
+		tempLink := api.Group("/templink")
+		{
+			tempLink.GET("/generate", credsGenerator.CreateEntryHandler())
+			tempLink.GET("/view", credsGenerator.CreateMiddleware(), HandleDownloadClip)
 		}
 
 		hyd := api.Group("/hydrometer")
