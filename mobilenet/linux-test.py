@@ -37,6 +37,7 @@ while True:
     if not ret:
         print("Failed to grab frame")
         break
+    print("FRAME CAPTURED!!")
     pipe.write(frame.tobytes())
 
 
