@@ -6,7 +6,7 @@ import json
 fifo_path = '/tmp/video_pipe2'
 
 
-cap = cv2.VideoCapture(2)  # /dev/video0
+cap = cv2.VideoCapture(0)  # /dev/video0
 cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))  # Force MJPG mode
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)  # Try 1280x720 for balance
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
