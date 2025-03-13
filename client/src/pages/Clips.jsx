@@ -62,7 +62,7 @@ export const Clips = () => {
       second: "2-digit",
     }).format(date);
 
-  const USE_COUNT = 2;
+  const USE_COUNT = 6;
 
   const [copied, setCopied] = useState(null);
 
