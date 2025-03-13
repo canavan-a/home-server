@@ -1,4 +1,4 @@
-import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
+import { faArrowLeft, faCopy } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import axios from "axios";
 import { useEffect, useState } from "react";
@@ -61,6 +61,29 @@ export const Clips = () => {
       minute: "2-digit",
       second: "2-digit",
     }).format(date);
+
+  const USE_COUNT = 2;
+
+  const [copied, setCopied] = useState(null);
+
+  const fetchTemplink = (id) => {
+    console.log(id.Name);
+    setCopied(null);
+    axios
+      .get(
+        `https://aidan.house/api/templink/generate?doorCode=${password}&count=${USE_COUNT}`
+      )
+      .then((response) => {
+        navigator.clipboard
+          .writeText(
+            `https://aidan.house/api/templink/view?name=${id.Name}&cred=${response.data}`
+          )
+          .then((res) => {
+            setCopied(id.Name);
+          });
+        console.log(response.data);
+      });
+  };
   return (
     <>
       <div className="w-full h-screen flex items-center justify-center">
@@ -110,7 +133,7 @@ export const Clips = () => {
             <div
               className={`${
                 selected ? "max-h-60" : "max-h-96"
-              } overflow-auto overflow-y-scroll flex-col scrollbar-none`}
+              } overflow-auto w-full overflow-x-clip overflow-y-scroll flex-col scrollbar-none`}
             >
               {clipList
                 .map((v) => ({
@@ -119,25 +142,35 @@ export const Clips = () => {
                 }))
                 .sort((a, b) => b.CaptureDate - a.CaptureDate)
                 .map((value, index) => (
-                  <button
-                    key={value.Name}
-                    className={`flex mb-2 btn ${
-                      selected == value.Name ? "btn-info" : "btn-glass"
-                    } w-full`}
-                    onClick={() => {
-                      if (selected == value.Name) {
-                        setSelected(null);
-                      } else {
-                        setSelected(value.Name);
-                      }
-                    }}
-                  >
-                    <div className="flex-grow">{clipList.length - index}</div>
-                    <div className="flex-shrink">
-                      {formattedDate(new Date(value.Timestamp))}
-                    </div>
-                    <div className="flex-grow"></div>
-                  </button>
+                  <div className="flex">
+                    <button
+                      className={`btn mr-1 ${
+                        copied == value.Name ? "btn-info" : "btn-glass"
+                      } `}
+                      onClick={() => fetchTemplink(value)}
+                    >
+                      <FontAwesomeIcon icon={faCopy} />
+                    </button>
+                    <button
+                      key={value.Name}
+                      className={`flex flex-grow mb-2 btn ${
+                        selected == value.Name ? "btn-info" : "btn-glass"
+                      } w-full`}
+                      onClick={() => {
+                        if (selected == value.Name) {
+                          setSelected(null);
+                        } else {
+                          setSelected(value.Name);
+                        }
+                      }}
+                    >
+                      <div className="flex-grow">{clipList.length - index}</div>
+                      <div className="flex-shrink">
+                        {formattedDate(new Date(value.Timestamp))}
+                      </div>
+                      <div className="flex-grow"></div>
+                    </button>
+                  </div>
                 ))}
             </div>
             <div className="text-center flex p-2 ">

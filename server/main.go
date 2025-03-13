@@ -112,7 +112,7 @@ func main() {
 
 		tempLink := api.Group("/templink")
 		{
-			tempLink.GET("/generate", credsGenerator.CreateEntryHandler())
+			tempLink.GET("/generate", MiddlewareAuthenticate, credsGenerator.CreateEntryHandler())
 			tempLink.GET("/view", credsGenerator.CreateMiddleware(), HandleDownloadClip)
 		}
 

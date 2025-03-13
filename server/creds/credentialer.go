@@ -68,7 +68,9 @@ func (c *Credentialer) CreateMiddleware() func(*gin.Context) {
 		cred := context.Query("cred")
 		validated := c.ValidateDecrement(cred)
 		if !validated {
+			context.JSON(404, "access expired")
 			context.Abort()
+
 			return
 		}
 		context.Next()
