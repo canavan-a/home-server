@@ -64,7 +64,7 @@ func restartProcesses() {
 	ffmpegCmd.Start()
 	mobilenetCmd := exec.Command("tmux", "send-keys", "-t", "mobilenet", "python3 opencv_object_detection.py", "C-m")
 	mobilenetCmd.Start()
-	serverCmd := exec.Command("tmux", "send-keys", "-t", "server", "systemd-run --scope -p MemoryMax=4G ./myprogram", "C-m", "aidan", "C-m")
+	serverCmd := exec.Command("tmux", "send-keys", "-t", "server", "sudo systemd-run --scope -p MemoryMax=4G ./myprogram", "C-m", "aidan", "C-m")
 	serverCmd.Start()
 }
 
