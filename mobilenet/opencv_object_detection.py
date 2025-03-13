@@ -27,6 +27,11 @@ cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)  # Try 1280x720 for balance
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 cap.set(cv2.CAP_PROP_FPS, 30)
 
+if not cap.isOpened():
+    print("Error: Could not open video stream.")
+else:
+    print("Video stream is open.")
+
 if not os.path.exists(fifo_path):
     print("making pipe")
     os.mkfifo(fifo_path)
