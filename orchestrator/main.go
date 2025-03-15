@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"net/http"
 	"net/smtp"
 	"os"
 	"os/exec"
@@ -19,53 +18,89 @@ func main() {
 	}
 	fmt.Println("starting orchestrator")
 
-	var failCount int
-
 	for {
-		fmt.Println("polling server")
-		err := healthCheckServer()
-		if err != nil {
-			fmt.Println("failed")
-			failCount += 1
-		} else {
-			failCount = 0
-		}
-
-		if failCount == 5 {
-			fmt.Println("restarting services")
-			signalRestart()
-			restartProcesses()
-			failCount = 0
-		}
-
-		time.Sleep(time.Second * 3)
-
+		fmt.Println("")
+		restartProcesses()
+		time.Sleep(2 * time.Second)
 	}
 
 }
 
-func healthCheckServer() error {
+// func healthCheckServer() error {
 
-	resp, err := http.Get("http://localhost:5000/api/health")
-	if err != nil {
-		return err
-	}
+// 	resp, err := http.Get("http://localhost:5000/api/health")
+// 	if err != nil {
+// 		return err
+// 	}
 
-	if resp.StatusCode != 200 {
-		return errors.New("failed request")
-	}
+// 	if resp.StatusCode != 200 {
+// 		return errors.New("failed request")
+// 	}
 
-	return nil
+// 	return nil
 
-}
+// }
 
 func restartProcesses() {
+	errorChan := make(chan string)
+
 	ffmpegCmd := exec.Command("tmux", "send-keys", "-t", "ffmpeg", `ffmpeg -f rawvideo -pix_fmt bgr24 -s 1280x720 -r 30 -i /tmp/video_pipe2 -c:v vp8 -b:v 3M -g 15 -an -filter:v "drawtext=text='%{localtime}':x=10:y=10:fontcolor=white:fontsize=14:box=1:boxcolor=black@0.5" -preset ultrafast -f rtp rtp://127.0.0.1:5005`, "C-m")
-	ffmpegCmd.Start()
 	mobilenetCmd := exec.Command("tmux", "send-keys", "-t", "mobilenet", "python3 opencv_object_detection.py", "C-m")
-	mobilenetCmd.Start()
 	serverCmd := exec.Command("tmux", "send-keys", "-t", "server", "sudo systemd-run --scope -p MemoryMax=4G ./myprogram", "C-m", "aidan", "C-m")
-	serverCmd.Start()
+
+	go SpawnTmuxProcess(ffmpegCmd, "ffmpeg", errorChan)
+	go SpawnTmuxProcess(mobilenetCmd, "mobilenet", errorChan)
+	go SpawnTmuxProcess(serverCmd, "server", errorChan)
+
+	failurePoint := <-errorChan
+	if len(failurePoint) != 0 {
+		fmt.Println("failurePoint is: ", failurePoint)
+		// kill the rest of the processes
+		killPaneProcess("ffmpeg")
+		killPaneProcess("mobilenet")
+		killPaneProcess("server")
+	}
+
+}
+
+func SpawnTmuxProcess(command *exec.Cmd, tmuxWindowName string, channel chan string) {
+	err := command.Start()
+	if err != nil {
+		channel <- tmuxWindowName
+	}
+
+	time.Sleep(time.Second * 1)
+	fmt.Println("spawning new process defined by tmux window: ", tmuxWindowName)
+	for {
+		status := getPaneStatus(tmuxWindowName)
+		if !status {
+			channel <- tmuxWindowName
+			break
+		}
+	}
+
+}
+
+func getPaneStatus(paneName string) (active bool) {
+	statusCommand := exec.Command(fmt.Sprintf(`tmux list-panes -t %s -F "#{pane_pid}" | xargs -I{} ps --ppid {} --no-headers`, paneName))
+
+	data, err := statusCommand.Output()
+	if err != nil {
+		return
+	}
+
+	if len(data) != 0 {
+		return true
+	}
+
+	return
+
+}
+
+func killPaneProcess(paneName string) {
+	command := exec.Command("tmux", "send-keys", "-t", paneName, "C-c")
+	command.Run()
+
 }
 
 func signalRestart() {
