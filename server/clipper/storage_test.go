@@ -30,7 +30,7 @@ func Test_store(t *testing.T) {
 }
 
 func createFrameSample() (frames [][]byte, err error) {
-	// FFmpeg command for 640x480 BGR24 raw video
+
 	cmd := exec.Command("ffmpeg", "-f", "dshow", "-i", "video=FHD Camera", "-pix_fmt", "bgr24", "-s", "640x480", "-f", "rawvideo", "pipe:1")
 
 	// Set up stdout pipe

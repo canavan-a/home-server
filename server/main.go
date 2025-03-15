@@ -84,6 +84,10 @@ func main() {
 	hn := database.NewHydrometerNetwork()
 	hn.StartPolling()
 
+	r.GET("/center", func(c *gin.Context) {
+		c.JSON(200, "camera centered")
+	})
+
 	api := r.Group("/api")
 	{
 		api.GET("/health", func(c *gin.Context) { c.JSON(200, "ok") })
