@@ -83,8 +83,7 @@ func SpawnTmuxProcess(command *exec.Cmd, tmuxWindowName string, channel chan str
 }
 
 func getPaneStatus(paneName string) (active bool) {
-	statusCommand := exec.Command(fmt.Sprintf(`tmux list-panes -t %s -F "#{pane_pid}" | xargs -I{} ps --ppid {} --no-headers`, paneName))
-
+	statusCommand := exec.Command(`tmux`, `list-panes`, `-t`, paneName, `-F`, `"#{pane_pid}"`, `|`, `xargs`, `-I{}`, `ps`, `--ppid`, `{}`, `--no-headers`)
 	data, err := statusCommand.Output()
 	if err != nil {
 		return
