@@ -69,11 +69,12 @@ func SpawnTmuxProcess(command *exec.Cmd, tmuxWindowName string, channel chan str
 		channel <- tmuxWindowName
 	}
 
-	time.Sleep(time.Second * 1)
+	time.Sleep(time.Second * 3)
 	fmt.Println("spawning new process defined by tmux window: ", tmuxWindowName)
 	for {
 		status := getPaneStatus(tmuxWindowName)
 		if !status {
+			fmt.Println(tmuxWindowName, " failed!!!!!!")
 			channel <- tmuxWindowName
 			break
 		}
@@ -88,6 +89,8 @@ func getPaneStatus(paneName string) (active bool) {
 	if err != nil {
 		return
 	}
+
+	fmt.Println(string(data))
 
 	if len(data) != 0 {
 		return true
