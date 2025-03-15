@@ -86,12 +86,15 @@ func getPaneStatus(paneName string) (active bool) {
 	statusCommand := exec.Command(`tmux`, `list-panes`, `-t`, paneName, `-F`, `"#{pane_pid}"`, `|`, `xargs`, `-I{}`, `ps`, `--ppid`, `{}`, `--no-headers`)
 	data, err := statusCommand.Output()
 	if err != nil {
+		fmt.Println("command error")
 		return
+
 	}
 
 	fmt.Println(string(data))
 
 	if len(data) != 0 {
+		fmt.Println("no output atytached")
 		return true
 	}
 
