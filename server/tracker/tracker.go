@@ -28,7 +28,7 @@ func NewTracker(fifoPath string, actions ...func(int, int)) (t Tracker) {
 	t.FifoPath = fifoPath
 	t.Actions = actions
 	t.Active = false
-	t.AciveClipping = true
+	t.AciveClipping = false
 	return
 }
 
