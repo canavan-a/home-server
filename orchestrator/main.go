@@ -26,23 +26,39 @@ func main() {
 
 }
 
-// func healthCheckServer() error {
+var BUFFER_TIME = time.Second * 8
 
-// 	resp, err := http.Get("http://localhost:5000/api/health")
-// 	if err != nil {
-// 		return err
-// 	}
+type Notifier struct {
+	Start time.Time
+	Kill  bool
+}
 
-// 	if resp.StatusCode != 200 {
-// 		return errors.New("failed request")
-// 	}
+func newNotifier() (notifier *Notifier) {
+	return &Notifier{
+		Start: time.Now(),
+	}
+}
 
-// 	return nil
+func (n *Notifier) Run() {
+
+	for time.Since(n.Start) < BUFFER_TIME {
+		if n.Kill {
+			return
+		}
+	}
+
+	signalRestart()
+
+}
 
 // }
 
 func restartProcesses() {
 	errorChan := make(chan string)
+
+	notifier := newNotifier()
+
+	go notifier.Run()
 
 	ffmpegCmd := exec.Command("tmux", "send-keys", "-t", "ffmpeg", `ffmpeg -f rawvideo -pix_fmt bgr24 -s 1280x720 -r 30 -i /tmp/video_pipe2 -c:v vp8 -b:v 3M -g 15 -an -filter:v "drawtext=text='%{localtime}':x=10:y=10:fontcolor=white:fontsize=14:box=1:boxcolor=black@0.5" -preset ultrafast -f rtp rtp://127.0.0.1:5005`, "C-m")
 	mobilenetCmd := exec.Command("tmux", "send-keys", "-t", "mobilenet", "python3 opencv_object_detection.py", "C-m")
@@ -54,6 +70,7 @@ func restartProcesses() {
 
 	failurePoint := <-errorChan
 	if len(failurePoint) != 0 {
+		notifier.Kill = true
 		fmt.Println("failurePoint is: ", failurePoint)
 		// kill the rest of the processes
 		killPaneProcess("ffmpeg")

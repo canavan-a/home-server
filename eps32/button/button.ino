@@ -1,9 +1,33 @@
-#include <HTTPClient.h>
 #include <WiFi.h>
 #include "config.h" 
+#include <WebServer.h>
+
+WebServer server(80); 
 
 
-const char* serverName = "http://192.168.1.166:5000/center";
+int prevValue = 0;
+
+int state = 0;
+
+void handleToggle(){
+    if (state == 0){
+        state = 1;
+      } else{
+        state = 0; 
+    }
+    server.send(200, "text/plain", "toggled");
+}
+
+void handleToggleEndpoint(){
+    if (state == 0){
+        state = 1;
+      } else{
+        state = 0; 
+    }
+    server.send(200, "text/plain", "toggled");
+}
+
+
 
 void setup() {
     Serial.begin(115200);
@@ -19,32 +43,36 @@ void setup() {
   Serial.print("IP Address: ");
   Serial.println(WiFi.localIP());
 
-
+  server.on("/toggle", handleToggleEndpoint);
 
   pinMode(33, INPUT);
+  pinMode(14, OUTPUT);
 }
 
-int prevValue = 0;
+
+
+
+
 void loop() {
   int touchState = digitalRead(33);  // Read touch state
   
   if (touchState != prevValue){
     if (touchState){
       Serial.println("button pressed");
-      HTTPClient http;
+     
+      Serial.println(WiFi.localIP());
 
-      http.begin(serverName);
-
-      int httpCode = http.GET();
-
-      String payload = http.getString();
-
-      Serial.println(payload);
-
-      http.end();
-    }
+      handleToggle();
+    } 
   }
 
+  if (state == 0){
+      digitalWrite(14, HIGH);
+  } else{
+      digitalWrite(14, LOW);
+  }
+
+  server.handleClient(); 
+
   prevValue= touchState;
-  
 }
