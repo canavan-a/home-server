@@ -1,6 +1,6 @@
 # home-server
 
-aidan.home
+aidan.house
 
 ## upload the ino file from raspi to the arduino
 
