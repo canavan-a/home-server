@@ -14,7 +14,7 @@ import (
 var (
 	DEFAULT_PREQUEUE_SIZE = 20 * 5 // roughly 9 seconds pre clip
 
-	MAX_CLIP_SIZE = 20 * 5 * 20 // roughly
+	MAX_CLIP_SIZE = 20 * 5 * 40 // roughly
 
 	// need 5 consecutive frames with entity to start recording
 	FRAMES_TO_START = 7
@@ -34,6 +34,8 @@ type Clipper struct {
 	FramesToStart      int
 	ClipStorageChannel chan string
 
+	ClipLength int
+
 	CurrentFile string
 }
 
@@ -49,6 +51,17 @@ func NewClipper(clipStorageChannel chan string) *Clipper {
 
 func (c *Clipper) ReceiveEntity(y, x int) { // pass this function to the tracker
 
+	c.Mutex.Lock()
+	if c.ClipLength > MAX_CLIP_SIZE {
+		c.ClipLength = 0
+
+		c.ClipStorageChannel <- c.CurrentFile
+		// stop the clipper
+		c.Clipping = false
+
+	}
+	c.Mutex.Unlock()
+
 	// only detected on non zero values
 	if x+y == 0 {
 		c.Mutex.Lock()
@@ -59,13 +72,14 @@ func (c *Clipper) ReceiveEntity(y, x int) { // pass this function to the tracker
 		c.Mutex.Lock()
 		if c.FramesToKill >= FRAMES_TO_KILL && c.Clipping { // break the clip
 			fmt.Println("Clipper done, saving")
-
+			c.ClipLength = 0
 			// stopre the clip
 			c.ClipStorageChannel <- c.CurrentFile
 			// stop the clipper
 			c.Clipping = false
 			// clear the old clip
 		}
+
 		c.Mutex.Unlock()
 
 	} else {
@@ -76,6 +90,7 @@ func (c *Clipper) ReceiveEntity(y, x int) { // pass this function to the tracker
 
 		c.Mutex.Lock()
 		if !c.Clipping && c.FramesToStart >= FRAMES_TO_START {
+			c.ClipLength = 0
 			fmt.Println("Clipper starting")
 			c.CurrentFile = "raw-clips/" + uuid.NewString() + ".raw"
 			preData := c.PreQueue.CopyOut()
@@ -96,6 +111,7 @@ func (c *Clipper) Run() {
 		c.Mutex.Lock()
 		c.PreQueue.Add(frame)
 		if c.Clipping {
+			c.ClipLength++
 			err := SaveToRawFile([][]byte{frame}, c.CurrentFile)
 			if err != nil {
 				fmt.Println(err)

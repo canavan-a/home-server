@@ -76,6 +76,10 @@ func Store(filePath string) error {
 	if err != nil {
 		return err
 	}
+	err = os.Remove(filePath)
+	if err != nil {
+		return err
+	}
 
 	uri := fmt.Sprintf("https://aidan.house/api/clipper/download?name=%s&doorCode=%s", randomValue+".webm", os.Getenv("SECRET_DOOR_CODE"))
 	mailer.Notify(mailer.MakeClipBody(uri, now.Format("January 2, 2006 15:04:05")))
