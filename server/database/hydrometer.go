@@ -81,7 +81,7 @@ func NewHydrometerNetwork() (hn HydrometerNetwork) {
 	h1 := Hydrometer{
 		ID:             1,
 		IP:             "192.168.1.161",
-		Name:           "Money Tree",
+		Name:           "Wandering Jew ✡",
 		WaterThreshold: 2100,
 		Connected:      false,
 		PushStack:      NewPushStack(PUSH_STACK_SIZE),
