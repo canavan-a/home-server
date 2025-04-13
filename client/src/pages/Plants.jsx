@@ -227,14 +227,17 @@ const PlantCard = (props) => {
         <TimeFrameButton value={24 * 7} hours={hours} setHours={setHours}>
           1 week
         </TimeFrameButton>
+        <TimeFrameButton value={24 * 3} hours={hours} setHours={setHours}>
+          3 days
+        </TimeFrameButton>
+        <TimeFrameButton value={24 * 2} hours={hours} setHours={setHours}>
+          2 days
+        </TimeFrameButton>
         <TimeFrameButton value={24} hours={hours} setHours={setHours}>
           24 hours
         </TimeFrameButton>
         <TimeFrameButton value={12} hours={hours} setHours={setHours}>
           12 hours
-        </TimeFrameButton>
-        <TimeFrameButton value={3} hours={hours} setHours={setHours}>
-          3 hours
         </TimeFrameButton>
         <TimeFrameButton value={1} hours={hours} setHours={setHours}>
           1 hour
