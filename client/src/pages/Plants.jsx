@@ -106,6 +106,11 @@ const PlantRow = (props) => {
           value.PushStack.length
       )
     : 0;
+
+  const upperBound = value.WaterThreshold - value.WaterMinimum;
+
+  const adjustedValue = averageValue - value.WaterThreshold;
+
   return (
     <div
       key={value.ID}
@@ -129,7 +134,7 @@ const PlantRow = (props) => {
           averageValue > value.WaterThreshold && "text-error font-bold"
         }`}
       >
-        {parseInt(100 * (averageValue / value.WaterThreshold))}%
+        {parseInt(100 * (adjustedValue / upperBound))}%
       </div>
     </div>
   );

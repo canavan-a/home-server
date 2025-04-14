@@ -44,6 +44,7 @@ type Hydrometer struct {
 	IP             string
 	Name           string
 	WaterThreshold int
+	WaterMinimum   int
 	CurrentValue   int
 	Connected      bool
 	PushStack      PushStack
@@ -75,6 +76,7 @@ func NewHydrometerNetwork() (hn HydrometerNetwork) {
 		IP:             "192.168.1.160",
 		Name:           "Dieffenbachia",
 		WaterThreshold: 1450,
+		WaterMinimum:   1100,
 		Connected:      false,
 		PushStack:      NewPushStack(PUSH_STACK_SIZE),
 	}
@@ -83,6 +85,7 @@ func NewHydrometerNetwork() (hn HydrometerNetwork) {
 		IP:             "192.168.1.161",
 		Name:           "Wandering Jew ✡",
 		WaterThreshold: 1450,
+		WaterMinimum:   1100,
 		Connected:      false,
 		PushStack:      NewPushStack(PUSH_STACK_SIZE),
 	}
@@ -91,6 +94,7 @@ func NewHydrometerNetwork() (hn HydrometerNetwork) {
 		IP:             "192.168.1.164",
 		Name:           "Monstera",
 		WaterThreshold: 1450,
+		WaterMinimum:   1100,
 		Connected:      false,
 		PushStack:      NewPushStack(PUSH_STACK_SIZE),
 	}
