@@ -107,9 +107,15 @@ const PlantRow = (props) => {
       )
     : 0;
 
-  const upperBound = value.WaterThreshold - value.WaterMinimum;
+  function toPercent(reading, low = 1100, high = 1450) {
+    return Math.min(100, Math.max(0, ((reading - low) / (high - low)) * 100));
+  }
 
-  const adjustedValue = averageValue - value.WaterThreshold;
+  const percent = toPercent(
+    averageValue,
+    value.WaterMinimum,
+    value.WaterThreshold
+  );
 
   return (
     <div
@@ -134,7 +140,7 @@ const PlantRow = (props) => {
           averageValue > value.WaterThreshold && "text-error font-bold"
         }`}
       >
-        {parseInt(100 * (adjustedValue / upperBound))}%
+        {Math.round(percent)}%
       </div>
     </div>
   );
