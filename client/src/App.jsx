@@ -50,7 +50,7 @@ function App() {
         <Routes>
           <Route path="/settings" element={<Settings />} />
           <Route path="/camera" element={<Camera />} />
-          <Route path="/clips" element={<Clips />} />
+          <Route path="/clips/:id?" element={<Clips />} />
           <Route path="/onetimecode" element={<OneTime />} />
           <Route path="/camconfig" element={<CamConfig />} />
           <Route path="/plants" element={<Plants />} />

@@ -81,7 +81,7 @@ func Store(filePath string) error {
 		return err
 	}
 
-	uri := fmt.Sprintf("https://aidan.house/api/clipper/download?name=%s&doorCode=%s", randomValue+".webm", os.Getenv("SECRET_DOOR_CODE"))
+	uri := fmt.Sprintf("https://aidan.house/clips/%s.webm", randomValue)
 	mailer.Notify(mailer.MakeClipBody(uri, now.Format("January 2, 2006 15:04:05")))
 
 	// store this in database

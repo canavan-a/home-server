@@ -2,11 +2,13 @@ import { faArrowLeft, faCopy } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import axios from "axios";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 export const Clips = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  const params = useParams();
 
   const [password, setPassword] = useState(null);
 
@@ -19,6 +21,8 @@ export const Clips = () => {
   const [clipLoading, setClipLoading] = useState(false);
 
   const [clipCache, setClipCache] = useState({});
+
+  console.log(params.id);
 
   useEffect(() => {
     console.log(selected);
@@ -84,6 +88,12 @@ export const Clips = () => {
         console.log(response.data);
       });
   };
+
+  useEffect(() => {
+    if (params.id) {
+      setSelected(params.id);
+    }
+  }, [clipList]);
   return (
     <>
       <div className="w-full h-screen flex items-center justify-center">
