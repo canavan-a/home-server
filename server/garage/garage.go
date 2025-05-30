@@ -2,6 +2,7 @@ package garage
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -22,6 +23,7 @@ func triggerGarage() error {
 
 	resp, err := http.Get("http://" + GARAGE_ESP32_IP + "/trigger")
 	if err != nil {
+		fmt.Println("bad api call")
 		return err
 	}
 
