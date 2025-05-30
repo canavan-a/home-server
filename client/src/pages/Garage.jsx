@@ -19,7 +19,9 @@ export const Garage = () => {
 
   const doOpen = () => {
     axios
-      .post(`https://aidan.house/api/garage/trigger?code=${password}`)
+      .post(`https://aidan.house/api/garage/trigger`, {
+        doorCode: password,
+      })
       .then((response) => {})
       .catch((err) => {
         // alert("could not get status");
