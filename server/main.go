@@ -12,6 +12,7 @@ import (
 	"main/clipper"
 	credentialer "main/creds"
 	"main/database"
+	"main/garage"
 	"main/rawframe"
 	"main/tracker"
 	"net"
@@ -160,6 +161,10 @@ func main() {
 		rtc := api.Group("/rtc", MiddlewareAuthenticate)
 		{
 			rtc.GET("/stunturn", handleCloudflareStunTurn)
+		}
+		garageGroup := api.Group("/garage", MiddlewareAuthenticate)
+		{
+			garageGroup.POST("/trigger", garage.HandleTriggerGarage)
 		}
 
 		//MiddlewareAuthenticate

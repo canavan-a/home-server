@@ -7,6 +7,7 @@ import {
   faLeaf,
   faRightFromBracket,
   faTerminal,
+  faWarehouse,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useNavigate } from "react-router-dom";
@@ -70,6 +71,14 @@ export const Settings = () => {
               }}
             >
               Plants <FontAwesomeIcon icon={faLeaf} />
+            </button>
+            <button
+              className="btn btn-glass bg-slate-600 w-full"
+              onClick={() => {
+                navigate("/garage");
+              }}
+            >
+              Garage <FontAwesomeIcon icon={faWarehouse} />
             </button>
             <button
               className="btn btn-glass w-full"
