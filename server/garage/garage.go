@@ -21,7 +21,7 @@ const GARAGE_ESP32_IP = "192.168.1.165"
 
 func triggerGarage() error {
 
-	resp, err := http.Get("http://" + GARAGE_ESP32_IP + "/trigger")
+	resp, err := http.Get("http://" + GARAGE_ESP32_IP + "/change")
 	if err != nil {
 		fmt.Println("bad api call")
 		return err
