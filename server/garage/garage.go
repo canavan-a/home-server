@@ -11,7 +11,7 @@ import (
 func HandleTriggerGarage(c *gin.Context) {
 	err := triggerGarage()
 	if err != nil {
-		c.JSON(400, "bad request")
+		c.JSON(400, err.Error())
 		return
 	}
 	c.JSON(200, "triggered")
