@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBars } from "@fortawesome/free-solid-svg-icons";
 
 export const Login = () => {
-  const LOCK_COLOR = "#FFFFFF";
+  const LOCK_COLOR = "currentColor";
 
   const navigate = useNavigate();
   const [password, setPassword] = useState("");
@@ -127,7 +127,6 @@ export const Login = () => {
                         width="200"
                         height="200px"
                         viewBox="0 0 16 16"
-                        fill="none"
                         xmlns="http://www.w3.org/2000/svg"
                       >
                         <path
@@ -145,7 +144,6 @@ export const Login = () => {
                           width="200px"
                           height="200px"
                           viewBox="0 0 16 16"
-                          fill="none"
                           xmlns="http://www.w3.org/2000/svg"
                         >
                           <path

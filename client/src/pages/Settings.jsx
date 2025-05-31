@@ -49,7 +49,7 @@ export const Settings = () => {
               One Time Code <FontAwesomeIcon icon={faDoorOpen} />
             </button>
             <button
-              className="btn btn-glass bg-red-400 w-full"
+              className="btn btn-glass text-black bg-red-400 w-full"
               onClick={() => {
                 navigate("/camera");
               }}
@@ -65,7 +65,7 @@ export const Settings = () => {
               Clips <FontAwesomeIcon icon={faClapperboard} />
             </button>
             <button
-              className="btn btn-glass bg-green-600 w-full"
+              className="btn btn-glass text-black bg-green-600 w-full"
               onClick={() => {
                 navigate("/plants");
               }}
