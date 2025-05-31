@@ -5,6 +5,7 @@
 #include "config.h" // un and pw
 
 #define RELAY_PIN 33
+#define MAG_PIN 16
 
 WebServer server(80);
 
@@ -23,7 +24,13 @@ void handleMac()
     server.send(200, "text/plain", String(WiFi.macAddress()));
 }
 
-void openGarage(){
+void handleGarage()
+{
+    server.send(200, "text/plain", String(digitalRead(MAG_PIN)));
+}
+
+void openGarage()
+{
     digitalWrite(RELAY_PIN, HIGH);
     delay(100);
     digitalWrite(RELAY_PIN, LOW);
@@ -35,18 +42,19 @@ void handleTriggerStateChange()
     server.send(200, "text/plain", "done");
 }
 
-void onReceive(const esp_now_recv_info_t *info, const uint8_t *data, int len) {
-  Serial.print("Received from: ");
-  char macStr[18];
-  snprintf(macStr, sizeof(macStr), "%02X:%02X:%02X:%02X:%02X:%02X",
-           info->src_addr[0], info->src_addr[1], info->src_addr[2],
-           info->src_addr[3], info->src_addr[4], info->src_addr[5]);
-  Serial.println(macStr);
+void onReceive(const esp_now_recv_info_t *info, const uint8_t *data, int len)
+{
+    Serial.print("Received from: ");
+    char macStr[18];
+    snprintf(macStr, sizeof(macStr), "%02X:%02X:%02X:%02X:%02X:%02X",
+             info->src_addr[0], info->src_addr[1], info->src_addr[2],
+             info->src_addr[3], info->src_addr[4], info->src_addr[5]);
+    Serial.println(macStr);
 
-  Serial.print("Data: ");
-  Serial.write(data, len);
-  Serial.println();
-  openGarage();
+    Serial.print("Data: ");
+    Serial.write(data, len);
+    Serial.println();
+    openGarage();
 }
 
 void setup()
@@ -66,11 +74,14 @@ void setup()
     server.on("/", handleRoot);
     server.on("/ip", handleIp);
     server.on("/mac", handleMac);
+    server.on("/garage", handleGarage);
 
     server.on("/change", handleTriggerStateChange);
     server.begin();
     ArduinoOTA.setPassword("aidan");
     ArduinoOTA.begin();
+
+    pinMode(MAG_PIN, INPUT_PULLUP);
 
     pinMode(RELAY_PIN, OUTPUT);
     digitalWrite(RELAY_PIN, LOW);
@@ -83,5 +94,4 @@ void loop()
 {
     server.handleClient();
     ArduinoOTA.handle();
-
 }

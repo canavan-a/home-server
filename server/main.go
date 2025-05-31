@@ -165,6 +165,7 @@ func main() {
 		garageGroup := api.Group("/garage", MiddlewareAuthenticate)
 		{
 			garageGroup.POST("/trigger", garage.HandleTriggerGarage)
+			garageGroup.GET("/status", garage.HandleGarageStatus)
 		}
 
 		//MiddlewareAuthenticate
