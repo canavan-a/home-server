@@ -9,6 +9,7 @@ export const Garage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [open, setOpen] = useState(true);
   const [password, setPassword] = useState(null);
+  const [doorStatus, setDoorStatus] = useState(0);
 
   useEffect(() => {
     setPassword(localStorage.getItem("pw"));
@@ -17,7 +18,21 @@ export const Garage = () => {
     }
   }, [password]);
 
+  const checkGarageStatus = () => {
+    axios
+      .get(`https://aidan.house/api/garage/status?doorCode=${password}`)
+      .then((response) => {
+        console.log("RES", response);
+        setDoorStatus(response.data);
+        setIsLoading(false);
+      })
+      .catch((err) => {
+        // alert("could not get status");
+      });
+  };
+
   const doOpen = () => {
+    setIsLoading(true);
     axios
       .post(`https://aidan.house/api/garage/trigger`, {
         doorCode: password,
@@ -27,6 +42,22 @@ export const Garage = () => {
         // alert("could not get status");
       });
   };
+
+  useEffect(() => {
+    setIsLoading(true);
+    let interv = undefined;
+    if (password) {
+      checkGarageStatus();
+      interv = setInterval(() => {
+        checkGarageStatus();
+      }, 500);
+    }
+
+    return () => {
+      clearInterval(interv);
+    };
+  }, [password]);
+
   return (
     <div className="w-full h-screen flex items-center justify-center">
       <div className="absolute top-4 right-4 flex ">
@@ -47,14 +78,16 @@ export const Garage = () => {
               onClick={doOpen}
               className=" text-center w-full flex flex-col items-center justify-center space-y-4"
             >
-              {open ? (
+              {doorStatus != 1 ? (
                 <GarageAlertIcon size={200} />
               ) : (
                 <GarageLockIcon size={200} />
               )}
             </div>
           ) : (
-            <span className="loading loading-infinity loading-lg"></span>
+            <div className="flex justify-center items-center w-full h-full">
+              <span className="loading loading-infinity loading-lg"></span>
+            </div>
           )}
         </div>
       </div>
