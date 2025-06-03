@@ -10,6 +10,7 @@ export const Garage = () => {
   const [open, setOpen] = useState(true);
   const [password, setPassword] = useState(null);
   const [doorStatus, setDoorStatus] = useState(0);
+  const [doorStatusOpen, setDoorStatusOpen] = useState(0);
 
   useEffect(() => {
     setPassword(localStorage.getItem("pw"));
@@ -24,6 +25,19 @@ export const Garage = () => {
       .then((response) => {
         console.log("RES", response);
         setDoorStatus(response.data);
+        setIsLoading(false);
+      })
+      .catch((err) => {
+        // alert("could not get status");
+      });
+  };
+
+  const checkGarageStatusOpen = () => {
+    axios
+      .get(`https://aidan.house/api/garage/status_open?doorCode=${password}`)
+      .then((response) => {
+        console.log("RES", response);
+        setDoorStatusOpen(response.data);
         setIsLoading(false);
       })
       .catch((err) => {
@@ -48,8 +62,10 @@ export const Garage = () => {
     let interv = undefined;
     if (password) {
       checkGarageStatus();
+      checkGarageStatusOpen();
       interv = setInterval(() => {
         checkGarageStatus();
+        checkGarageStatusOpen();
       }, 500);
     }
 
@@ -78,10 +94,14 @@ export const Garage = () => {
               onClick={doOpen}
               className=" text-center w-full flex flex-col items-center justify-center space-y-4"
             >
-              {doorStatus != 1 ? (
-                <GarageAlertIcon size={200} />
+              {doorStatus == 0 && doorStatusOpen == 0 ? (
+                <MovingIcon size={200} />
               ) : (
-                <GarageLockIcon size={200} />
+                <>
+                  <>{doorStatus == 1 && <GarageLockIcon size={200} />}</>
+                  <>{doorStatusOpen == 1 && <GarageAlertIcon size={200} />}</>
+                </>
+                // <GarageLockIcon size={200} />
               )}
             </div>
           ) : (
@@ -136,3 +156,41 @@ export const GarageLockIcon = ({
     />
   </svg>
 );
+
+export const MovingIcon = ({ size = 24, color = "currentColor", ...props }) => (
+  <svg
+    aria-hidden="true"
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={color}
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <path d="M17.651 7.65a7.131 7.131 0 0 0-12.68 3.15M18.001 4v4h-4m-7.652 8.35a7.13 7.13 0 0 0 12.68-3.15M6 20v-4h4" />
+  </svg>
+);
+
+{
+  /* <svg
+  className="w-6 h-6 text-gray-800 dark:text-white"
+  aria-hidden="true"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  fill="none"
+  viewBox="0 0 24 24"
+>
+  <path
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth="2"
+    d="M17.651 7.65a7.131 7.131 0 0 0-12.68 3.15M18.001 4v4h-4m-7.652 8.35a7.13 7.13 0 0 0 12.68-3.15M6 20v-4h4"
+  />
+</svg>; */
+}
