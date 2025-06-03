@@ -166,6 +166,7 @@ func main() {
 		{
 			garageGroup.POST("/trigger", garage.HandleTriggerGarage)
 			garageGroup.GET("/status", garage.HandleGarageStatus)
+			garageGroup.GET("/status_open", garage.HandleGarageStatusOpen)
 		}
 
 		//MiddlewareAuthenticate

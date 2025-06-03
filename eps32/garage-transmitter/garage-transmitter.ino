@@ -19,7 +19,8 @@ void setup()
     esp_now_add_peer(&peerInfo);
 }
 
-void publishAction() {
+void publishAction()
+{
     const char *msg = "trigger";
     esp_now_send(peerAddress, (uint8_t *)msg, strlen(msg));
 }
@@ -30,11 +31,10 @@ void loop()
 {
     bool updatedState = digitalRead(BUTTON_PIN);
 
-    if  (updatedState == true && state == false){
+    if (updatedState == true && state == false)
+    {
         publishAction();
     }
 
     state = updatedState;
-    
 }
-

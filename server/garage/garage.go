@@ -20,7 +20,16 @@ func HandleTriggerGarage(c *gin.Context) {
 }
 
 func HandleGarageStatus(c *gin.Context) {
-	value, err := viewGarageStatus()
+	value, err := viewGarageStatus(false)
+	if err != nil {
+		c.JSON(400, "issue making request")
+		return
+	}
+
+	c.JSON(200, value)
+}
+func HandleGarageStatusOpen(c *gin.Context) {
+	value, err := viewGarageStatus(true)
 	if err != nil {
 		c.JSON(400, "issue making request")
 		return
@@ -47,9 +56,16 @@ func triggerGarage() error {
 
 }
 
-func viewGarageStatus() (int, error) {
+func viewGarageStatus(openStatus bool) (int, error) {
 	// status based off magnet trigger
-	resp, err := http.Get("http://" + GARAGE_ESP32_IP + "/garage")
+
+	uri := "http://" + GARAGE_ESP32_IP + "/garage"
+
+	if openStatus {
+		uri += "_open"
+	}
+
+	resp, err := http.Get(uri)
 	if err != nil {
 		fmt.Println("bad api call")
 		return 0, err

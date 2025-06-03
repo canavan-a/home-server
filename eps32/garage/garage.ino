@@ -6,12 +6,13 @@
 
 #define RELAY_PIN 33
 #define MAG_PIN 16
+#define OPEN_MAG_PIN 27
 
 WebServer server(80);
 
 void handleRoot()
 {
-    server.send(200, "text/plain", "Hello, Garage!");
+    server.send(200, "text/plain", "Hello, Garage! v1.1");
 }
 
 void handleIp()
@@ -27,6 +28,11 @@ void handleMac()
 void handleGarage()
 {
     server.send(200, "text/plain", String(digitalRead(MAG_PIN)));
+}
+
+void handleGarageOpen()
+{
+    server.send(200, "text/plain", String(digitalRead(OPEN_MAG_PIN)));
 }
 
 void openGarage()
@@ -75,6 +81,7 @@ void setup()
     server.on("/ip", handleIp);
     server.on("/mac", handleMac);
     server.on("/garage", handleGarage);
+    server.on("/garage_open", handleGarageOpen);
 
     server.on("/change", handleTriggerStateChange);
     server.begin();
@@ -82,6 +89,7 @@ void setup()
     ArduinoOTA.begin();
 
     pinMode(MAG_PIN, INPUT_PULLUP);
+    pinMode(OPEN_MAG_PIN, INPUT_PULLUP);
 
     pinMode(RELAY_PIN, OUTPUT);
     digitalWrite(RELAY_PIN, LOW);
