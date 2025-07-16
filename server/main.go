@@ -115,6 +115,12 @@ func main() {
 			clp.GET("/download", HandleDownloadClip)
 		}
 
+		clipNotifier := api.Group("/clipper_notifier", MiddlewareAuthenticate)
+		{
+			clipNotifier.GET("/toggle", HandleToggleNotifyClips(device))
+			clipNotifier.GET("/status", HandleNotifyClipsStatus(device))
+		}
+
 		tempLink := api.Group("/templink")
 		{
 			tempLink.GET("/generate", MiddlewareAuthenticate, credsGenerator.CreateEntryHandler())
@@ -177,6 +183,22 @@ func main() {
 	}
 
 	r.Run(":5000")
+}
+
+func HandleToggleNotifyClips(csd *clipper.ClipStorageDevice) func(c *gin.Context) {
+
+	return func(c *gin.Context) {
+		csd.ToggleEmailClip()
+		c.JSON(200, "toggled")
+	}
+}
+
+func HandleNotifyClipsStatus(csd *clipper.ClipStorageDevice) func(c *gin.Context) {
+
+	return func(c *gin.Context) {
+		status := csd.GetEmailClipStatus()
+		c.JSON(200, gin.H{"status": status})
+	}
 }
 
 func captureHeapProfile(filename string) {

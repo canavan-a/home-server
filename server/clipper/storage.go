@@ -6,6 +6,7 @@ import (
 	"main/mailer"
 	"os"
 	"os/exec"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -14,6 +15,8 @@ import (
 
 type ClipStorageDevice struct {
 	StorageChannel chan string
+	EmailClip      bool
+	EmailClipMutex sync.Mutex
 }
 
 var (
@@ -31,6 +34,8 @@ func NewClipStorageDevice() *ClipStorageDevice {
 
 	return &ClipStorageDevice{
 		StorageChannel: make(chan string),
+		EmailClip:      true,
+		EmailClipMutex: sync.Mutex{},
 	}
 }
 
@@ -57,7 +62,7 @@ func DownloadClip(id int) (webmData []byte, err error) {
 	return
 }
 
-func Store(filePath string) error {
+func (csd *ClipStorageDevice) Store(filePath string) error {
 
 	now := time.Now()
 
@@ -81,8 +86,13 @@ func Store(filePath string) error {
 		return err
 	}
 
-	uri := fmt.Sprintf("https://aidan.house/clips/%s.webm", randomValue)
-	mailer.Notify(mailer.MakeClipBody(uri, now.Format("January 2, 2006 15:04:05")))
+	csd.EmailClipMutex.Lock()
+	defer csd.EmailClipMutex.Unlock()
+
+	if csd.EmailClip {
+		uri := fmt.Sprintf("https://aidan.house/clips/%s.webm", randomValue)
+		mailer.Notify(mailer.MakeClipBody(uri, now.Format("January 2, 2006 15:04:05")))
+	}
 
 	// store this in database
 	return nil
@@ -138,11 +148,23 @@ func SaveToRawFile(frames [][]byte, filename string) error {
 func (csd *ClipStorageDevice) Run() {
 	for frames := range csd.StorageChannel {
 		go func() {
-			err := Store(frames)
+			err := csd.Store(frames)
 			if err != nil {
 				fmt.Println(err)
 				fmt.Println("Error storing frames")
 			}
 		}()
 	}
+}
+
+func (csd *ClipStorageDevice) ToggleEmailClip() {
+	csd.EmailClipMutex.Lock()
+	defer csd.EmailClipMutex.Unlock()
+	csd.EmailClip = !csd.EmailClip
+}
+
+func (csd *ClipStorageDevice) GetEmailClipStatus() bool {
+	csd.EmailClipMutex.Lock()
+	defer csd.EmailClipMutex.Unlock()
+	return csd.EmailClip
 }
