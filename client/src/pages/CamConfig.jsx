@@ -52,11 +52,36 @@ export const CamConfig = () => {
       });
   };
 
+  const [emailNotifierActive, setEmailNotifierActive] = useState(false);
+
+  const getEmailNotifierStatus = () => {
+    axios
+      .get(
+        `https://aidan.house/api/clipper_notifier/status?doorCode=${password}`
+      )
+      .then((response) => {
+        setEmailNotifierActive(response.data.status);
+      })
+      .catch((error) => {});
+  };
+
+  const toggleEmailNotification = () => {
+    axios
+      .get(
+        `https://aidan.house/api/clipper_notifier/toggle?doorCode=${password}`
+      )
+      .then((response) => {
+        getEmailNotifierStatus();
+      })
+      .catch((error) => {});
+  };
+
   useEffect(() => {
     setPassword(localStorage.getItem("pw"));
     if (password != null) {
       getSpeed();
       getClipFarmStatus();
+      getEmailNotifierStatus();
     }
   }, [password]);
 
@@ -127,6 +152,15 @@ export const CamConfig = () => {
                 onClick={toggleClipFarmStatus}
               >
                 clip farm: {clipFarmStatus ? "active" : "disabled"}
+              </button>
+              <button
+                className={`btn ml-3 ${
+                  emailNotifierActive ? "btn-success" : "btn-error"
+                }`}
+                onClick={toggleEmailNotification}
+              >
+                clip notifications:{" "}
+                {emailNotifierActive ? "active" : "disabled"}
               </button>
               <div className="flex-grow"></div>
             </div>
