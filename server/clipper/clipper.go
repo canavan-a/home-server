@@ -37,6 +37,7 @@ type Clipper struct {
 	ClipLength int
 
 	CurrentFile string
+	AreaMinimum int
 }
 
 func NewClipper(clipStorageChannel chan string) *Clipper {
@@ -49,7 +50,7 @@ func NewClipper(clipStorageChannel chan string) *Clipper {
 
 }
 
-func (c *Clipper) ReceiveEntity(y, x int) { // pass this function to the tracker
+func (c *Clipper) ReceiveEntity(y, x, area int) { // pass this function to the tracker
 
 	c.Mutex.Lock()
 	if c.ClipLength > MAX_CLIP_SIZE {
@@ -60,10 +61,11 @@ func (c *Clipper) ReceiveEntity(y, x int) { // pass this function to the tracker
 		c.Clipping = false
 
 	}
+	AreaMinimum := c.AreaMinimum
 	c.Mutex.Unlock()
 
 	// only detected on non zero values
-	if x+y == 0 {
+	if x+y == 0 || area < AreaMinimum {
 		c.Mutex.Lock()
 		c.FramesToKill += 1
 		c.FramesToStart = 0
@@ -83,6 +85,7 @@ func (c *Clipper) ReceiveEntity(y, x int) { // pass this function to the tracker
 		c.Mutex.Unlock()
 
 	} else {
+
 		c.Mutex.Lock()
 		c.FramesToKill = 0
 		c.FramesToStart += 1

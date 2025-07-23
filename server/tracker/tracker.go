@@ -18,17 +18,19 @@ type TrackerPacket struct {
 
 type Tracker struct {
 	FifoPath      string
-	Actions       []func(y, x int)
+	Actions       []func(y, x, area int)
 	Active        bool
 	AciveClipping bool
 	Mutex         sync.Mutex
+	AreaChannel   chan int
 }
 
-func NewTracker(fifoPath string, actions ...func(int, int)) (t Tracker) {
+func NewTracker(fifoPath string, actions ...func(int, int, int)) (t Tracker) {
 	t.FifoPath = fifoPath
 	t.Actions = actions
 	t.Active = false
 	t.AciveClipping = true
+	t.AreaChannel = make(chan int, 100)
 	return
 }
 
@@ -60,15 +62,17 @@ func (t *Tracker) Run() {
 
 		var packets []TrackerPacket
 		_ = json.Unmarshal([]byte(line), &packets)
+		area := CalculateArea(packets)
 		y, x := calclulateCenter(packets)
 		for i, action := range t.Actions {
 			if i == 0 && t.Active { // movement tracking
-				action(y, x)
+				action(y, x, area)
 
 			} else if i == 1 && t.AciveClipping { // clip farming
-				action(y, x)
+				action(y, x, area)
 			}
 		}
+		t.AreaChannel <- area
 
 	}
 
@@ -96,4 +100,29 @@ func (tp TrackerPacket) Center() (y, x int) {
 	x = (tp.XMax + tp.XMin) / 2
 	y = (tp.YMax + tp.YMin) / 2
 	return
+}
+
+func CalculateArea(packets []TrackerPacket) (sum int) {
+	for _, packet := range packets {
+		sum += packet.Area()
+	}
+	return
+}
+
+func (tp TrackerPacket) Area() int {
+	xlen := tp.XMax - tp.XMin
+	ylen := tp.YMax - tp.YMin
+	return xlen * ylen
+}
+
+func (t *Tracker) AreaSubscriber(action func(int)) {
+	for range 10 {
+		go func() {
+			for {
+				area := <-t.AreaChannel
+				action(area)
+			}
+		}()
+
+	}
 }

@@ -14,6 +14,7 @@ import (
 	"main/database"
 	"main/garage"
 	"main/rawframe"
+	"main/sockstreamer"
 	"main/tracker"
 	"net"
 	"net/http"
@@ -52,6 +53,8 @@ func main() {
 		panic("Error loading .env file")
 	}
 
+	socketStreamer := sockstreamer.NewSocketStreamer()
+
 	credsGenerator := credentialer.NewCreds()
 
 	device := clipper.NewClipStorageDevice()
@@ -71,6 +74,10 @@ func main() {
 
 	tk := tracker.NewTracker("/tmp/json_pipe", TrackerRunner, clipMaker.ReceiveEntity)
 	go tk.Run()
+
+	tk.AreaSubscriber(func(i int) {
+		socketStreamer.Send([]byte(strconv.Itoa(i)))
+	})
 
 	config := cors.DefaultConfig()
 	config.AllowOrigins = []string{"*"}
@@ -113,6 +120,7 @@ func main() {
 			clp.GET("/clipping", MakeClipperClippingRoute(clipMaker))
 			clp.GET("/list", HandleListClips)
 			clp.GET("/download", HandleDownloadClip)
+			clp.GET("/area_subscribe", socketStreamer.ListenRoute)
 		}
 
 		clipNotifier := api.Group("/clipper_notifier", MiddlewareAuthenticate)
@@ -702,7 +710,7 @@ var (
 	ShareTimeLock           sync.Mutex
 )
 
-func TrackerRunner(y, x int) {
+func TrackerRunner(y, x, area int) {
 	// center coords
 	// only tracking off x coord
 
