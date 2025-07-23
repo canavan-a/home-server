@@ -121,6 +121,8 @@ func main() {
 			clp.GET("/list", HandleListClips)
 			clp.GET("/download", HandleDownloadClip)
 			clp.GET("/area_subscribe", socketStreamer.ListenRoute)
+			clp.GET("/area_min", clipMaker.HandleGetAreaMinimum)
+			clp.GET("/set_area_min", clipMaker.HandleUpdateAreaMinimum)
 		}
 
 		clipNotifier := api.Group("/clipper_notifier", MiddlewareAuthenticate)

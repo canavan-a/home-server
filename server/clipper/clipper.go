@@ -3,8 +3,10 @@ package clipper
 import (
 	"fmt"
 	"main/clipper/fixedsizequeue"
+	"strconv"
 	"sync"
 
+	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
 
@@ -124,4 +126,42 @@ func (c *Clipper) Run() {
 		}
 		c.Mutex.Unlock()
 	}
+}
+
+func (c *Clipper) UpdateAreaMinimum(newArea int) {
+	c.Mutex.Lock()
+	c.AreaMinimum = newArea
+	c.Mutex.Unlock()
+}
+
+func (c *Clipper) GetAreaValue() int {
+	c.Mutex.Lock()
+	value := c.AreaMinimum
+	c.Mutex.Unlock()
+
+	return value
+}
+
+func (cl *Clipper) HandleUpdateAreaMinimum(c *gin.Context) {
+	area := c.Query("area")
+	if area == "" {
+		c.JSON(400, "bad area value")
+		return
+	}
+
+	value, err := strconv.Atoi(area)
+	if err != nil {
+		c.JSON(400, "could not parse valid int")
+		return
+	}
+
+	cl.UpdateAreaMinimum(value)
+	c.JSON(200, "done")
+
+}
+
+func (cl *Clipper) HandleGetAreaMinimum(c *gin.Context) {
+	value := cl.GetAreaValue()
+
+	c.JSON(200, value)
 }
