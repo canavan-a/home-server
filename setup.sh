@@ -4,11 +4,11 @@
 # ASSUMES EVERYTHING IS PRE BUILT
 
 # set up tmux windows
-tmux new-session -d -s client -c /client
-tmux new-session -d -s server -c /server
+tmux new-session -d -s client -c "$(pwd)/client"
+tmux new-session -d -s server -c "$(pwd)/server"
 tmux new-session -d -s ffmpeg 
-tmux new-session -d -s mobilenet -c /mobilenet
-tmux new-session -d -s orch -c /orchestrator
+tmux new-session -d -s mobilenet -c "$(pwd)/mobilenet"
+tmux new-session -d -s orch -c "$(pwd)/orchestrator"
 
 echo "Tmux sessions created"
 
