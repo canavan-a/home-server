@@ -83,7 +83,7 @@ func NewHydrometerNetwork() (hn HydrometerNetwork) {
 	h1 := Hydrometer{
 		ID:             1,
 		IP:             "192.168.1.161",
-		Name:           "Wandering Jew ✡",
+		Name:           "Tradescantia zebrina",
 		WaterThreshold: 1450,
 		WaterMinimum:   1100,
 		Connected:      false,
