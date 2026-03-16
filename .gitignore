@@ -2,3 +2,4 @@ build/
 Makefile
 *.pt
 *.onnx
+*.exe
