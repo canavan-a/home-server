@@ -1,3 +1,7 @@
+if(DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
+    set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
+endif()
+
 cmake_minimum_required(VERSION 3.10)
 project(main)
 
@@ -9,4 +13,7 @@ add_compile_options(-Wall)
 find_package(OpenCV REQUIRED)
 
 add_executable(main main.cpp)
+
+target_include_directories(main PRIVATE libs/seriallib/lib)
+
 target_link_libraries(main ${OpenCV_LIBS})

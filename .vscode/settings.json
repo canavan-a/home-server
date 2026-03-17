@@ -14,5 +14,6 @@
         "ranges": "cpp",
         "span": "cpp",
         "text_encoding": "cpp"
-    }
+    },
+    "cmake.sourceDirectory": "C:/Projects/home-server/better-video-pipeline"
 }

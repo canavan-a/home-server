@@ -1,5 +1,10 @@
 #include <iostream>
 #include <memory>
+#include <thread>
+#include <serialib.h>
+#include <opencv2/opencv.hpp>
+
+#include "constants.h"
 #include "ringbuffer.h"
 
 struct Frame
@@ -19,6 +24,11 @@ int main()
 
     rb.push(std::move(f1));
     rb.push(std::move(f2));
+
+    std::cout << "OpenCV version: " << CV_VERSION << std::endl;
+
+    serialib serial;
+    serial.openDevice("COM3", 115200);
 
     return 0;
 }
