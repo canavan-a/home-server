@@ -14,6 +14,6 @@ find_package(OpenCV REQUIRED)
 
 add_executable(main main.cpp)
 
-target_include_directories(main PRIVATE libs/seriallib/lib)
+target_include_directories(main PRIVATE libs/serialib/lib)
 
 target_link_libraries(main ${OpenCV_LIBS})
