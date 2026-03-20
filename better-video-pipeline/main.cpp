@@ -9,6 +9,8 @@
 #include "config.h"
 #include "logger.h"
 
+#define nl "\n"
+
 struct Frame
 {
 
@@ -27,12 +29,14 @@ struct Streamer
     std::shared_ptr<RingBuffer<T, N>> buffer;
     std::thread t;
 
-    streamer(std::shared_ptr<RingBuffer<T, N>> buf) : buffer{buf}, t([this]()
-                                                                     { this->run(); })
+    Streamer(std::shared_ptr<RingBuffer<T, N>> buf) : buffer{buf}, t([this]()
+                                                                     { 
+                                                                        this->run();
+                                                                         return; })
     {
     }
 
-    ~CameraStreamer()
+    virtual ~Streamer()
     {
         if (t.joinable())
         {
@@ -46,14 +50,12 @@ private:
 
 struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
 {
-    CameraStreamer() : Steamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>{} {}
+    CameraStreamer() : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>{} {}
 
     void run() override
     {
 
-        while
-        {
-        }
+        std::cout << "hello world I am a Camera streamer" << nl;
     }
 };
 
