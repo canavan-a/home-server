@@ -12,7 +12,7 @@ add_compile_options(-Wall)
 
 find_package(OpenCV REQUIRED)
 
-add_executable(main main.cpp)
+add_executable(main main.cpp libs/serialib/lib/serialib.cpp)
 
 target_include_directories(main PRIVATE libs/serialib/lib)
 

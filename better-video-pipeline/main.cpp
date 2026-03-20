@@ -6,11 +6,55 @@
 
 #include "constants.h"
 #include "ringbuffer.h"
+#include "config.h"
+#include "logger.h"
 
 struct Frame
 {
 
     Frame() {}
+};
+
+template <typename T>
+using Result = std::expected<T, std::string>;
+
+using Err = std::unexpected<std::string>;
+
+template <typename T, size_t N>
+struct Streamer
+{
+
+    std::shared_ptr<RingBuffer<T, N>> buffer;
+    std::thread t;
+
+    streamer(std::shared_ptr<RingBuffer<T, N>> buf) : buffer{buf}, t([this]()
+                                                                     { this->run(); })
+    {
+    }
+
+    ~CameraStreamer()
+    {
+        if (t.joinable())
+        {
+            t.join();
+        }
+    }
+
+private:
+    virtual void run() = 0;
+};
+
+struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
+{
+    CameraStreamer() : Steamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>{} {}
+
+    void run() override
+    {
+
+        while
+        {
+        }
+    }
 };
 
 int main()
@@ -28,7 +72,19 @@ int main()
     std::cout << "OpenCV version: " << CV_VERSION << std::endl;
 
     serialib serial;
-    serial.openDevice("COM3", 115200);
+    auto res = serial.openDevice("COM3", 115200);
+
+    Logger<DEBUG> log{};
+
+    log.info("res is: " + res);
+
+    log.debug("hello world");
+
+    log.warn("hello world");
+
+    log.info("hello world");
+
+    log.error("hello world");
 
     return 0;
 }
