@@ -50,11 +50,10 @@ private:
 
 struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
 {
-    CameraStreamer() : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>{} {}
+    CameraStreamer(std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> buffer) : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>{buffer} {}
 
     void run() override
     {
-
         std::cout << "hello world I am a Camera streamer" << nl;
     }
 };
