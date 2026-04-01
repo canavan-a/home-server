@@ -10,6 +10,17 @@
             "cStandard": "c23",
             "cppStandard": "gnu++23",
             "configurationProvider": "ms-vscode.cmake-tools"
+        },
+        {
+            "name": "esp32",
+            "includePath": [
+                "${env:USERPROFILE}\\AppData\\Local\\Arduino15\\packages\\esp32\\hardware\\esp32\\3.3.7\\cores\\esp32",
+                "${env:USERPROFILE}\\AppData\\Local\\Arduino15\\packages\\esp32\\hardware\\esp32\\3.3.7\\libraries\\**"
+            ],
+            "intelliSenseMode": "gcc-arm",
+            "cStandard": "c11",
+            "cppStandard": "gnu++17",
+            "compilerPath": "${env:USERPROFILE}\\AppData\\Local\\Arduino15\\packages\\esp32\\tools\\esp-x32\\2511\\bin\\xtensa-esp32-elf-gcc.exe"
         }
     ],
     "version": 4
