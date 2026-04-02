@@ -47,6 +47,12 @@ struct Streamer
         }
     }
 
+    void wait()
+    {
+        if (t.joinable())
+            t.join();
+    }
+
 private:
     virtual void run() = 0;
 };
@@ -75,6 +81,7 @@ struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
                 logger.debug("captured empty frame");
                 continue;
             }
+            logger.info("pushing frame");
             this->buffer->push(frame);
         }
     }
@@ -120,6 +127,8 @@ int main()
     auto rb = std::make_shared<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>>();
 
     auto cameraStreamer = CameraStreamer<config::LOG_LEVEL>(rb);
+    // cameraStreamer->wait();
+    cameraStreamer.start();
 
     return 0;
 }
