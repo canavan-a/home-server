@@ -16,6 +16,6 @@ namespace config
     const int CAMERA_INPUT{0};
 #else
     const std::string CAMERA_INPUT{"/dev/video0"};
-    constexpr auto CAMERA_BACKEND = cv : CAP_V4L2;
+    constexpr auto CAMERA_BACKEND = cv::CAP_V4L2;
 #endif
 }
