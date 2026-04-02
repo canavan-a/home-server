@@ -55,7 +55,7 @@ template <LogLevel L = LogLevel::INFO>
 struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
 {
     Logger<L> logger{};
-    cv::VideoCapture cap{env::CAMERA_INPUT};
+    cv::VideoCapture cap{config::CAMERA_INPUT, config::CAMERA_BACKEND};
 
     CameraStreamer(std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> buffer) : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>{buffer}
     {
@@ -103,7 +103,7 @@ int main()
     std::cout << "OpenCV version: " << CV_VERSION << std::endl;
 
     serialib serial;
-    auto res = serial.openDevice(env::COMPORT, env::BAUDRATE);
+    auto res = serial.openDevice(config::COMPORT, config::BAUDRATE);
 
     Logger<DEBUG> log{};
 
