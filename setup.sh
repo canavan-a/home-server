@@ -34,6 +34,10 @@ mkfifo /tmp/video_pipe2
 mkfifo /tmp/json_pipe
 mkfifo /tmp/raw_frame
 
+chmod 666 /tmp/video_pipe2
+chmod 666 /tmp/json_pipe
+chmod 666 /tmp/raw_frame
+
 echo "Pipes created"
 
 # setup orch
