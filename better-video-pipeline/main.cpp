@@ -3,7 +3,7 @@
 #include <thread>
 #include <serialib.h>
 #include <opencv2/opencv.hpp>
-#include <std::chrono>
+#include <chrono>
 
 #include "constants.h"
 #include "ringbuffer.h"
