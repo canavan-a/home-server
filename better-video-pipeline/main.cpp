@@ -71,6 +71,11 @@ struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
         cap.set(cv::CAP_PROP_FRAME_HEIGHT, 1080);
         cap.set(cv::CAP_PROP_FPS, 30);
 
+        double fps = cap.get(cv::CAP_PROP_FPS);
+        double width = cap.get(cv::CAP_PROP_FRAME_WIDTH);
+        double height = cap.get(cv::CAP_PROP_FRAME_HEIGHT);
+        double fourcc = cap.get(cv::CAP_PROP_FOURCC);
+
         logger.info("FPS: " + std::to_string(fps));
         logger.info("Width: " + std::to_string(width));
         logger.info("Height: " + std::to_string(height));
