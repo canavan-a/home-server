@@ -3,6 +3,7 @@
 #include <thread>
 #include <serialib.h>
 #include <opencv2/opencv.hpp>
+#include <std::chrono>
 
 #include "constants.h"
 #include "ringbuffer.h"
@@ -69,6 +70,15 @@ struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
         cap.set(cv::CAP_PROP_FRAME_WIDTH, 1920);
         cap.set(cv::CAP_PROP_FRAME_HEIGHT, 1080);
         cap.set(cv::CAP_PROP_FPS, 30);
+
+        logger.info("FPS: " + std::to_string(fps));
+        logger.info("Width: " + std::to_string(width));
+        logger.info("Height: " + std::to_string(height));
+        auto countdown = std::vector{3, 2, 1};
+        std::ranges::for_each(countdown, [this](auto &v)
+                              { 
+                                std::this_thread::sleep_for(std::chrono::milliseconds(300));
+                                    logger.info(v); });
     }
 
     void run() override
