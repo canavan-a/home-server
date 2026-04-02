@@ -65,10 +65,19 @@ struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
 
     CameraStreamer(std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> buffer) : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>{buffer}
     {
+        cap.set(cv::CAP_PROP_FOURCC, cv::VideoWriter('M', 'J', 'P', 'G'));
+        cap.set(cv::CAP_PROP_FRAME_WIDTH, 1920);
+        cap.set(cv::CAP_PROP_FRAME_HEIGHT, 1080);
+        cap.set(cv::CAP_PROP_FPS, 30);
     }
 
     void run() override
     {
+        if (!cap.isOpened())
+        {
+            logger.error("camera is in use by another process");
+            return
+        }
         std::cout << "hello world I am a Camera streamer" << nl;
         auto count{0};
         for (;;)
@@ -97,15 +106,6 @@ struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
 
 int main()
 {
-
-    auto f1 = std::make_shared<Frame>();
-
-    auto f2 = std::make_shared<Frame>();
-
-    RingBuffer<std::shared_ptr<Frame>, 10> buffy{};
-
-    buffy.push(std::move(f1));
-    buffy.push(std::move(f2));
 
     std::cout << "OpenCV version: " << CV_VERSION << std::endl;
 
