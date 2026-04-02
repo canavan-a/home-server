@@ -76,7 +76,7 @@ struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
         if (!cap.isOpened())
         {
             logger.error("camera is in use by another process");
-            return
+            return;
         }
         std::cout << "hello world I am a Camera streamer" << nl;
         auto count{0};
