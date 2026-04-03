@@ -5,7 +5,7 @@
             "includePath": [
                 "${env:VCPKG_ROOT}/installed/x64-windows/include",
                 "${workspaceFolder}/better-video-pipeline/libs/serialib/lib",
-                "${workspaceFolder}/better-video-pipeline/libs/libcoral"
+                "${workspaceFolder}/better-video-pipeline/buildheaders"
             ],
             "intelliSenseMode": "windows-msvc-x64",
             "cStandard": "c23",

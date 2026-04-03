@@ -11,9 +11,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_compile_options(-Wall)
 
 find_package(OpenCV REQUIRED)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(ADAPTER REQUIRED adapter)
 
 add_executable(main main.cpp libs/serialib/lib/serialib.cpp)
 
-target_include_directories(main PRIVATE libs/serialib/lib)
+target_include_directories(main PRIVATE libs/serialib/lib ${ADAPTER_INCLUDE_DIRS})
 
-target_link_libraries(main ${OpenCV_LIBS} coral edgetpu)
+target_link_libraries(main ${OpenCV_LIBS} edgetpu ${ADAPTER_LIBRARIES})
