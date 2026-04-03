@@ -79,6 +79,17 @@ struct RingBuffer
         return item;
     }
 
+    Result<T> peek()
+    {
+        std::lock_guard<std::mutex> lock(this->mtx);
+        if (this->isEmpty())
+            return Err{"buffer is empty"};
+
+        T item = data[start];
+
+        return item;
+    }
+
 private:
     bool isEmpty()
     {

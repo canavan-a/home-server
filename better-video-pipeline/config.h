@@ -5,7 +5,7 @@
 
 namespace config
 {
-    constexpr size_t CAMERA_FRAME_BUFFER_SIZE{10};
+    constexpr size_t CAMERA_FRAME_BUFFER_SIZE{3};
     constexpr LogLevel LOG_LEVEL{DEBUG};
 
     const char *COMPORT{"COM3"};

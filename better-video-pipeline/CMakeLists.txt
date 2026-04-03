@@ -16,4 +16,4 @@ add_executable(main main.cpp libs/serialib/lib/serialib.cpp)
 
 target_include_directories(main PRIVATE libs/serialib/lib)
 
-target_link_libraries(main ${OpenCV_LIBS})
+target_link_libraries(main ${OpenCV_LIBS} coral edgetpu)

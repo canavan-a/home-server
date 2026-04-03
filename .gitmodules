@@ -1,3 +1,6 @@
 [submodule "better-video-pipeline/libs/serialib"]
 	path = better-video-pipeline/libs/serialib
 	url = https://github.com/imabot2/serialib
+[submodule "better-video-pipeline/libs/libcoral"]
+	path = better-video-pipeline/libs/libcoral
+	url = https://github.com/google-coral/libcoral

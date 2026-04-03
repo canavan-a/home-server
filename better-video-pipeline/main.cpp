@@ -82,7 +82,7 @@ struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
         auto countdown = std::vector{3, 2, 1};
         std::ranges::for_each(countdown, [this](auto &v)
                               { 
-                                std::this_thread::sleep_for(std::chrono::milliseconds(300));
+                                std::this_thread::sleep_for(std::chrono::milliseconds(800));
                                     logger.info(v); });
     }
 
@@ -116,6 +116,43 @@ struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
             t.join();
 
         cap.release();
+    }
+};
+
+template <LogLevel L = LogLevel::INFO>
+struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
+{
+
+    Logger<L> logger{};
+    // inference result buffer or eat the io overhead..... ??
+
+    InferenceConsumer(std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> buffer) : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>{buffer}
+    {
+        logger.info("inference consumer constructed");
+    }
+
+    void run() override
+    {
+        logger.info("started inference consumer process");
+        for (;;)
+        {
+            auto value = this->buffer->peek();
+
+            if (!value)
+            {
+                logger.debug("empty frame buffer");
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                logger.debug("waited on empty frame");
+                continue;
+            }
+            logger.debug("running inference for frame");
+        }
+    }
+
+    ~InferenceConsumer()
+    {
+        if (t.joinable())
+            t.join();
     }
 };
 
