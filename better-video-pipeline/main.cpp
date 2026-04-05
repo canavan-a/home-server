@@ -187,7 +187,7 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
             auto results = coral::GetDetectionResults(*interpreter, 0.5f);
             for (auto &obj : results)
             {
-                logger.info("detected id=" + std::to_string(obj.id) + " score=", std::to_string(obj.score));
+                logger.info("detected id=" + std::to_string(obj.id) + " score=" + std::to_string(obj.score));
             }
 
             logger.debug("running inference for frame");
