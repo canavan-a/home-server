@@ -5,7 +5,7 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/imgproc.hpp>
 #include <chrono>
-#include <condition_variable>
+#include <semaphore>
 #include <mutex>
 
 // coral and tflite imports
@@ -68,7 +68,7 @@ private:
 template <LogLevel L = LogLevel::INFO>
 struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
 {
-    std::shared_ptr<std::condition_variable> cameraStreamReady{};
+    std::shared_ptr<std::binary_semaphore> cameraStreamReady{};
     Logger<L> logger{};
     cv::VideoCapture cap{config::CAMERA_INPUT, config::CAMERA_BACKEND};
 
@@ -104,7 +104,7 @@ struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
         }
         std::cout << "hello world I am a Camera streamer" << nl;
         auto count{0};
-        cameraStreamReady->notify_all();
+        cameraStreamReady->release();
         for (;;)
         {
             std::cout << ++count << nl;
@@ -133,7 +133,7 @@ template <LogLevel L = LogLevel::INFO>
 struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
 {
 
-    std::shared_ptr<std::condition_variable> cameraStreamReady{};
+    std::shared_ptr<std::binary_semaphore> cameraStreamReady{};
     Logger<L> logger{};
     // inference result buffer or eat the io overhead..... ??
 
@@ -141,7 +141,7 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
     std::shared_ptr<edgetpu::EdgeTpuContext> tpu_context;
     std::unique_ptr<tflite::Interpreter> interpreter;
 
-    InferenceConsumer(std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> buffer, std::shared_ptr<std::condition_variable> csReady) : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>{buffer}, cameraStreamReady{csReady}
+    InferenceConsumer(std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> buffer, std::shared_ptr<std::binary_semaphore> csReady) : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>{buffer}, cameraStreamReady{csReady}
     {
         model = coral::LoadModelOrDie(config::OBJECT_DETECTION_MODEL_PATH);
         tpu_context = coral::GetEdgeTpuContextOrDie("usb");
@@ -158,7 +158,7 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
     void run() override
     {
         logger.info("waiting for camera stream to start");
-        cameraStreamReady->wait();
+        cameraStreamReady->acquire();
         logger.info("started inference consumer process");
         for (;;)
         {
