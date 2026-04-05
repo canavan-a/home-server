@@ -1,7 +1,5 @@
 build/
 Makefile
-*.pt
-*.onnx
 *.exe
 constants.h
 /build

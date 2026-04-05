@@ -4,9 +4,11 @@
 #include <serialib.h>
 #include <opencv2/opencv.hpp>
 #include <opencv2/imgproc.hpp>
+#include <opencv2/dnn.hpp>
 #include <chrono>
 #include <semaphore>
 #include <mutex>
+#include <fstream>
 
 // coral and tflite imports
 #include "coral/detection/adapter.h"
@@ -134,24 +136,19 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
 
     std::shared_ptr<std::binary_semaphore> cameraStreamReady{};
     Logger<L> logger{};
+    cv::dnn::Net net;
     // inference result buffer or eat the io overhead..... ??
-
-    std::unique_ptr<tflite::FlatBufferModel> model;
-    std::shared_ptr<edgetpu::EdgeTpuContext> tpu_context;
-    std::unique_ptr<tflite::Interpreter> interpreter;
 
     InferenceConsumer(std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> buffer, std::shared_ptr<std::binary_semaphore> csReady) : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>{buffer}, cameraStreamReady{csReady}
     {
-        model = coral::LoadModelOrDie(config::OBJECT_DETECTION_MODEL_PATH);
-        tpu_context = coral::GetEdgeTpuContextOrDie("usb");
-        if (!tpu_context)
+        auto res = LoadModel();
+        if (!res)
         {
-            logger.error("could not get edgetpu context ");
-            std::exit(1);
+            logger.error("issue loading in model");
+            logger.error(res.error());
+            exit(1);
         }
-        interpreter = coral::MakeEdgeTpuInterpreterOrDie(*model, tpu_context.get());
-        interpreter->AllocateTensors();
-        logger.info("inference consumer constructed");
+        logger.info("model loaded");
     }
 
     void run() override
@@ -171,26 +168,69 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
                 logger.debug("waited on empty frame");
                 continue;
             }
-            cv::Mat frame{peekValue.value()};
-            logger.info("resizing frame");
-            cv::Mat resized;
-            cv::resize(frame, resized, cv::Size(320, 320));
-            cv::cvtColor(resized, resized, cv::COLOR_BGR2RGB);
-            logger.info("creating input buffer");
-            auto *input = interpreter->typed_input_tensor<uint8_t>(0);
-            std::memcpy(input, resized.data, resized.total() * resized.elemSize());
 
-            logger.info("invoking request");
-            interpreter->Invoke();
-
-            auto results = coral::GetDetectionResults(*interpreter, 0.5f);
-            for (auto &obj : results)
+            Result<cv::Mat> result = computeInference(peekValue.value());
+            if (!result)
             {
-                logger.info("detected id=" + std::to_string(obj.id) + " score=" + std::to_string(obj.score));
+                logger.error("error computing inference");
+                logger.error(result.error());
+                continue;
+            }
+            logger.info("inference computed successfully");
+            // logger.info(result.value().)
+        }
+    }
+
+    Result<cv::Mat> computeInference(const cv::Mat &frame)
+    {
+        try
+        {
+            cv::Mat blob = cv::dnn::blobFromImage(frame, 1 / 255.0, cv::Size(640, 640), cv::Scalar(), true);
+            net.setInput(blob);
+            cv::Mat output = net.forward();
+            return output;
+        }
+        catch (const std::exception &e)
+        {
+            return Err{e.what()};
+        }
+    }
+
+    Result<void> LoadModel()
+    {
+        switch (config::MODEL_FORMAT)
+        {
+        case config::ModelFormat::ONNX:
+            std::string onnxPath{config::MODEL_DIR + "/" + config::MODEL_NAME + ".onnx"};
+            if (!std::filesystem::exists(onnxPath))
+            {
+                return Err{"onnx file not found"};
+            }
+            net = cv::dnn::readNetFromONNX(onnxPath);
+
+            break;
+        case config::ModelFormat::VINO:
+
+            std::string vinoBin{config::MODEL_DIR + "/" + config::MODEL_NAME + ".bin"};
+            std::string vinoXml{config::MODEL_DIR + "/" + config::MODEL_NAME + ".xml"};
+
+            if (!std::filesystem::exists(vinoBin))
+            {
+                return Err{"openvino bin file not found"};
+            }
+            if (!std::filesystem::exists(vinoXml))
+            {
+                return Err{"openvino xml file not found"};
             }
 
-            logger.debug("running inference for frame");
+            net = cv::dnn::readNetFromModelOptimizer(vinoXml, vinoBin);
+
+            break;
+        default:
+            return Err{"invalid model type"};
         }
+
+        return {};
     }
 
     ~InferenceConsumer()
