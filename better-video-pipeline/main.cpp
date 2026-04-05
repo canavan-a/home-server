@@ -73,7 +73,7 @@ struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
     cv::VideoCapture cap{config::CAMERA_INPUT, config::CAMERA_BACKEND};
 
     CameraStreamer(std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> buffer) : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>{buffer},
-                                                                                                    std::make_shared<std::binary_semaphore>{}
+                                                                                                    std::make_shared<std::binary_semaphore>(0)
     {
         cap.set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'));
         cap.set(cv::CAP_PROP_FRAME_WIDTH, 1920);
@@ -137,7 +137,7 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
     Logger<L> logger{};
     // inference result buffer or eat the io overhead..... ??
 
-    std::unique_ptr<tflite::FlatFufferModel> model;
+    std::unique_ptr<tflite::FlatBufferModel> model;
     std::shared_ptr<edgetpu::EdgeTpuContext> tpu_context;
     std::unique_ptr<tflite::Interpreter> interpreter;
 
@@ -148,7 +148,7 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
         if (!tpu_context)
         {
             logger.error("could not get edgetpu context ");
-            std::exit();
+            std::exit(1);
         }
         interpreter = coral::MakeEdgeTpuInterpreterOrDie(*model, tpu_context.get());
         interpreter->AllocateTensors();
