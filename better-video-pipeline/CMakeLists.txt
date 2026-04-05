@@ -26,12 +26,11 @@ target_link_libraries(main
     glog
     ${ADAPTER_LIBRARIES}
     absl_strings
+    absl_strings_internal
     absl_str_format_internal
     absl_base
     absl_raw_logging_internal
     absl_int128
     absl_spinlock_wait
     absl_throw_delegate
-    absl_strings_internal
-    absl_cord_internal
 )
