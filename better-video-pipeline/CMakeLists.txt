@@ -23,7 +23,7 @@ link_directories(/usr/local/lib)
 target_link_libraries(main 
     ${OpenCV_LIBS} 
     edgetpu 
-    glog
+    /usr/local/lib/libglog.a
     ${ADAPTER_LIBRARIES}
     absl_strings
     absl_strings_internal
