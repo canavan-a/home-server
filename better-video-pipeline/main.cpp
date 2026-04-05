@@ -248,6 +248,7 @@ int main()
 {
 
     std::cout << "OpenCV version: " << CV_VERSION << std::endl;
+    std::cout << cv::getBuildInformation() << std::endl;
 
     serialib serial;
     auto res = serial.openDevice(config::COMPORT, config::BAUDRATE);
