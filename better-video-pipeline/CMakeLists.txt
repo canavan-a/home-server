@@ -32,4 +32,6 @@ target_link_libraries(main
     absl_int128
     absl_spinlock_wait
     absl_throw_delegate
+    absl_strings_internal
+    absl_cord_internal
 )
