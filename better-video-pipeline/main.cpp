@@ -73,7 +73,7 @@ struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
     cv::VideoCapture cap{config::CAMERA_INPUT, config::CAMERA_BACKEND};
 
     CameraStreamer(std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> buffer) : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>{buffer},
-                                                                                                    std::make_shared<std::condition_variable>{}
+                                                                                                    std::make_shared<std::binary_semaphore>{}
     {
         cap.set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'));
         cap.set(cv::CAP_PROP_FRAME_WIDTH, 1920);
