@@ -8,6 +8,7 @@
 #include <chrono>
 #include <semaphore>
 #include <mutex>
+#include <filesystem>
 #include <fstream>
 
 // coral and tflite imports
