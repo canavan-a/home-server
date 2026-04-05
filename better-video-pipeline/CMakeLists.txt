@@ -18,4 +18,18 @@ add_executable(main main.cpp libs/serialib/lib/serialib.cpp)
 
 target_include_directories(main PRIVATE libs/serialib/lib ${ADAPTER_INCLUDE_DIRS})
 
-target_link_libraries(main ${OpenCV_LIBS} edgetpu glog ${ADAPTER_LIBRARIES})
+link_directories(/usr/local/lib)
+
+target_link_libraries(main 
+    ${OpenCV_LIBS} 
+    edgetpu 
+    glog
+    ${ADAPTER_LIBRARIES}
+    absl_strings
+    absl_str_format_internal
+    absl_base
+    absl_raw_logging_internal
+    absl_int128
+    absl_spinlock_wait
+    absl_throw_delegate
+)
