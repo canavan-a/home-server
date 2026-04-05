@@ -3,7 +3,14 @@
 #include <thread>
 #include <serialib.h>
 #include <opencv2/opencv.hpp>
+#include <opencv2/imgproc.hpp>
 #include <chrono>
+#include <condition_variable>
+#include <mutex>
+
+// coral and tflite imports
+#include "coral/detection/adapter.h"
+#include "coral/tflite_utils.h"
 
 #include "constants.h"
 #include "ringbuffer.h"
@@ -61,10 +68,12 @@ private:
 template <LogLevel L = LogLevel::INFO>
 struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
 {
+    std::shared_ptr<std::condition_variable> cameraStreamReady{};
     Logger<L> logger{};
     cv::VideoCapture cap{config::CAMERA_INPUT, config::CAMERA_BACKEND};
 
-    CameraStreamer(std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> buffer) : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>{buffer}
+    CameraStreamer(std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> buffer) : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>{buffer},
+                                                                                                    std::make_shared<std::condition_variable>{}
     {
         cap.set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'));
         cap.set(cv::CAP_PROP_FRAME_WIDTH, 1920);
@@ -95,6 +104,7 @@ struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
         }
         std::cout << "hello world I am a Camera streamer" << nl;
         auto count{0};
+        cameraStreamReady->notify_all();
         for (;;)
         {
             std::cout << ++count << nl;
@@ -102,7 +112,7 @@ struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
             cap >> frame;
             if (frame.empty())
             {
-                logger.debug("captured empty frame");
+                logger.warn("captured empty frame");
                 continue;
             }
             logger.info("pushing frame");
@@ -123,28 +133,62 @@ template <LogLevel L = LogLevel::INFO>
 struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
 {
 
+    std::shared_ptr<std::condition_variable> cameraStreamReady{};
     Logger<L> logger{};
     // inference result buffer or eat the io overhead..... ??
 
-    InferenceConsumer(std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> buffer) : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>{buffer}
+    std::unique_ptr<tflite::FlatFufferModel> model;
+    std::shared_ptr<edgetpu::EdgeTpuContext> tpu_context;
+    std::unique_ptr<tflite::Interpreter> interpreter;
+
+    InferenceConsumer(std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> buffer, std::shared_ptr<std::condition_variable> csReady) : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>{buffer}, cameraStreamReady{csReady}
     {
+        model = coral::LoadModelOrDie(config::OBJECT_DETECTION_MODEL_PATH);
+        tpu_context = coral::GetEdgeTpuContextOrDie("usb");
+        if (!tpu_context)
+        {
+            logger.error("could not get edgetpu context ");
+            std::exit();
+        }
+        interpreter = coral::MakeEdgeTpuInterpreterOrDie(*model, tpu_context.get());
+        interpreter->AllocateTensors();
         logger.info("inference consumer constructed");
     }
 
     void run() override
     {
+        logger.info("waiting for camera stream to start");
+        cameraStreamReady->wait();
         logger.info("started inference consumer process");
         for (;;)
         {
-            auto value = this->buffer->peek();
 
-            if (!value)
+            cv::Mat frame = this->buffer->peek();
+
+            if (!frame)
             {
                 logger.debug("empty frame buffer");
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
                 logger.debug("waited on empty frame");
                 continue;
             }
+            logger.info("resizing frame");
+            cv::Mat resized;
+            cv::resize(frame, resized, cv::Size(320, 320));
+            cv::cvtColor(resized, resized, cv::COLOR_BGR2RGB);
+            logger.info("creating input buffer");
+            auto *input = interpreter->typed_input_tensor<uint8_t>(0);
+            std::memcpy(input, resized.data, resized.total() * resized.elemSize());
+
+            logger.info("invoking request");
+            interpreter->Invoke();
+
+            auto results = coral::GetDetectionResults(*interpreter, 0.5f);
+            for (auto &obj : results)
+            {
+                logger.info("detected id=" + std::to_string(obj.id) + " score=", std::to_string(obj.score));
+            }
+
             logger.debug("running inference for frame");
         }
     }
@@ -178,9 +222,13 @@ int main()
 
     auto rb = std::make_shared<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>>();
 
-    auto cameraStreamer = CameraStreamer<config::LOG_LEVEL>(rb);
+    auto cameraStreamer = CameraStreamer<LogLevel::WARN>(rb);
     // cameraStreamer->wait();
     cameraStreamer.start();
+
+    auto inferenceStreamer = InferenceConsumer(rb, cameraStreamer.cameraStreamReady);
+
+    inferenceStreamer.start();
 
     return 0;
 }

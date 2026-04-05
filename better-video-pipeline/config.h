@@ -7,6 +7,8 @@ namespace config
 {
     constexpr size_t CAMERA_FRAME_BUFFER_SIZE{3};
     constexpr LogLevel LOG_LEVEL{DEBUG};
+    const std::string OBJECT_DETECTION_MODEL_PATH{"./models/mobilenet.tflite"};
+    const std::string OBJECT_DETECTION_LABEL_PATH{"./models/labels.txt"};
 
     const char *COMPORT{"COM3"};
     const int BAUDRATE{115200};

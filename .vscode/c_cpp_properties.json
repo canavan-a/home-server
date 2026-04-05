@@ -4,6 +4,7 @@
             "name": "windows",
             "includePath": [
                 "${env:VCPKG_ROOT}/installed/x64-windows/include",
+                "${env:VCPKG_ROOT}/installed/x64-windows/include/opencv4",
                 "${workspaceFolder}/better-video-pipeline/libs/serialib/lib",
                 "${workspaceFolder}/better-video-pipeline/buildheaders"
             ],
