@@ -24,6 +24,7 @@ target_link_libraries(main
     ${OpenCV_LIBS} 
     edgetpu 
     /usr/local/lib/libglog.a
+    /usr/local/lib/libtensorflow-lite.a
     unwind
     ${ADAPTER_LIBRARIES}
     absl_strings
