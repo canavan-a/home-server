@@ -163,15 +163,16 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
         for (;;)
         {
 
-            cv::Mat frame = this->buffer->peek();
+            Result<cv::Mat> peekValue = this->buffer->peek();
 
-            if (!frame)
+            if (!peekValue)
             {
                 logger.debug("empty frame buffer");
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
                 logger.debug("waited on empty frame");
                 continue;
             }
+            cv::Mat frame{peekValue.value()};
             logger.info("resizing frame");
             cv::Mat resized;
             cv::resize(frame, resized, cv::Size(320, 320));
