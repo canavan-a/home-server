@@ -12,7 +12,7 @@ namespace config
     };
 
     const std::string MODEL_DIR{"models"};
-    const ModelFormat MODEL_FORMAT{ModelFormat::VINO};
+    const ModelFormat MODEL_FORMAT{ModelFormat::ONNX};
     const std::string MODEL_NAME{"yolo26n"};
 
     constexpr size_t CAMERA_FRAME_BUFFER_SIZE{3};
