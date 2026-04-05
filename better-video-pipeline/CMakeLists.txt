@@ -18,4 +18,5 @@ target_include_directories(main PRIVATE libs/serialib/lib)
 
 target_link_libraries(main 
     ${OpenCV_LIBS} 
+    stdc++fs
 )

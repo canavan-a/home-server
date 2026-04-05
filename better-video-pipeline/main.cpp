@@ -201,6 +201,7 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
         switch (config::MODEL_FORMAT)
         {
         case config::ModelFormat::ONNX:
+        {
             std::string onnxPath{config::MODEL_DIR + "/" + config::MODEL_NAME + ".onnx"};
             if (!std::filesystem::exists(onnxPath))
             {
@@ -209,8 +210,9 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
             net = cv::dnn::readNetFromONNX(onnxPath);
 
             break;
+        }
         case config::ModelFormat::VINO:
-
+        {
             std::string vinoBin{config::MODEL_DIR + "/" + config::MODEL_NAME + ".bin"};
             std::string vinoXml{config::MODEL_DIR + "/" + config::MODEL_NAME + ".xml"};
 
@@ -226,6 +228,7 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
             net = cv::dnn::readNetFromModelOptimizer(vinoXml, vinoBin);
 
             break;
+        }
         default:
             return Err{"invalid model type"};
         }
