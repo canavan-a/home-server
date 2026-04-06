@@ -309,8 +309,9 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
 
     Logger<L> logger{};
     std::mutex signalMutex{};
+    std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> cameraBuffer{};
 
-    ResultStreamer(std::shared_ptr<RingBuffer<cv::Mat, config::RESULT_BUFFER_SIZE>> resBuf) : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>{resBuf}
+    ResultStreamer(std::shared_ptr<RingBuffer<cv::Mat, config::RESULT_BUFFER_SIZE>> resBuf, std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> camBuf) : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>{resBuf}, cameraBuffer{camBuf}
     {
     }
 
@@ -320,7 +321,7 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
         {
             // wait for frame signal from the shared buffer
             std::unique_lock<std::mutex> lock(signalMutex);
-            buffer->signal.wait();
+            cameraBuffer->signal.wait();
             logger.info("triggered ResultStreamer on frame");
         }
     }
@@ -347,17 +348,19 @@ int main()
 
     log.error("hello world");
 
-    auto rb = std::make_shared<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>>();
+    auto cameraBuffer = std::make_shared<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>>();
 
-    auto cameraStreamer = CameraStreamer<LogLevel::WARN>(rb);
+    auto cameraStreamer = CameraStreamer<LogLevel::WARN>(cameraBuffer);
     // cameraStreamer->wait();
     cameraStreamer.start();
 
     auto resultBuffer = std::make_shared<RingBuffer<cv::Mat, RESULT_BUFFER_SIZE>>();
 
-    auto inferenceStreamer = InferenceConsumer(rb, resultBuffer, cameraStreamer.cameraStreamReady);
+    auto inferenceStreamer = InferenceConsumer(cameraBuffer, resultBuffer, cameraStreamer.cameraStreamReady);
 
     inferenceStreamer.start();
+
+    auto resultStreamer = ResultStreamer(resultBuffer, cameraBuffer);
 
     return 0;
 }
