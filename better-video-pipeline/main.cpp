@@ -354,7 +354,7 @@ int main()
     // cameraStreamer->wait();
     cameraStreamer.start();
 
-    auto resultBuffer = std::make_shared<RingBuffer<cv::Mat, RESULT_BUFFER_SIZE>>();
+    auto resultBuffer = std::make_shared<RingBuffer<cv::Mat, config::RESULT_BUFFER_SIZE>>();
 
     auto inferenceStreamer = InferenceConsumer(cameraBuffer, resultBuffer, cameraStreamer.cameraStreamReady);
 
