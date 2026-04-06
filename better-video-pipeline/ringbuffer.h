@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <condition_variable>
 #include <expected>
 #include <memory>
 #include <array>
