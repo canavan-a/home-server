@@ -138,7 +138,8 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
     Logger<L> logger{};
     cv::dnn::Net net;
 
-    Ort::Session session;
+    Ort::Env env{ORT_LOGGING_LEVEL_WARNING, "yolo"};
+    std::unique_ptr<Ort::Session> session;
 
     // inference result buffer or eat the io overhead..... ??
 
@@ -200,7 +201,7 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
                 const char *inputNames[] = {"images"};
                 const char *outputNames[] = {"output0"};
 
-                auto results = session.Run(Ort::RunOptions{nullptr}, inputNames, &inputTensor, 1, outputNames, 1);
+                auto results = session->Run(Ort::RunOptions{nullptr}, inputNames, &inputTensor, 1, outputNames, 1);
                 float *output = results[0].GetTensorMutableData<float>();
                 auto shape = results[0].GetTensorTypeAndShapeInfo().GetShape();
 
@@ -240,9 +241,8 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
                 return Err{"onnx file not found"};
             }
 
-            Ort::Env env(ORT_LOGGING_LEVEL_WARNING, "yolo");
             Ort::SessionOptions sessionOptions;
-            session = OrtSession(env, onnxPath, sessionOptions);
+            session = std::make_unique<Ort::Session>(env, onnxPath.c_str(), sessionOptions);
 
             break;
         }
