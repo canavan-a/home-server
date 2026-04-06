@@ -164,7 +164,7 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
     Ort::Env env{ORT_LOGGING_LEVEL_WARNING, "yolo"};
     std::unique_ptr<Ort::Session> session;
 
-    std::shared_ptr<RingBuffer<cv::Mat, RESULT_BUFFER_SIZE>> resultBuffer;
+    std::shared_ptr<RingBuffer<cv::Mat, config::RESULT_BUFFER_SIZE>> resultBuffer;
 
     // inference result buffer or eat the io overhead..... ??
 
@@ -246,7 +246,7 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
                 return Err{"invalid model inference type"};
             }
 
-            return Err{"invalid return, unexpected break in InferenceConsuumer::cumputeInference"};
+            return Err{"invalid return, unexpected break in InferenceConsumer::cumputeInference"};
         }
         catch (const std::exception &e)
         {
@@ -361,6 +361,7 @@ int main()
     inferenceStreamer.start();
 
     auto resultStreamer = ResultStreamer(resultBuffer, cameraBuffer);
+    resultStreamer.start();
 
     return 0;
 }
