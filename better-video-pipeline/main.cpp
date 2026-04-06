@@ -114,6 +114,8 @@ struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
             if (frame.empty())
             {
                 logger.warn("captured empty frame");
+                logger.warn("cap is open: " + std::to_string(cap.isOpened()));
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
                 continue;
             }
             logger.info("pushing frame");
