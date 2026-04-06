@@ -11,9 +11,8 @@
 #include <filesystem>
 #include <fstream>
 
-// coral and tflite imports
-#include "coral/detection/adapter.h"
-#include "coral/tflite_utils.h"
+// onnx and vino imports
+#include <onnxruntime_cxx_api.h>
 
 #include "constants.h"
 #include "ringbuffer.h"
@@ -138,6 +137,9 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
     std::shared_ptr<std::binary_semaphore> cameraStreamReady{};
     Logger<L> logger{};
     cv::dnn::Net net;
+
+    Ort::Session session;
+
     // inference result buffer or eat the io overhead..... ??
 
     InferenceConsumer(std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> buffer, std::shared_ptr<std::binary_semaphore> csReady) : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>{buffer}, cameraStreamReady{csReady}
@@ -186,10 +188,39 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
     {
         try
         {
-            cv::Mat blob = cv::dnn::blobFromImage(frame, 1 / 255.0, cv::Size(640, 640), cv::Scalar(), true);
-            net.setInput(blob);
-            cv::Mat output = net.forward();
-            return output;
+            switch (config::MODEL_FORMAT)
+            {
+            case config::ModelFormat::ONNX:
+            {
+                cv::Mat blob = cv::dnn::blobFromImage(frame, 1 / 255.0, cv::Size(640, 640), cv::Scalar(), true);
+                std::array<int64_t, 4> inputShape{1, 3, 640, 640};
+                Ort::MemoryInfo memInfo = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
+                Ort::Value inputTensor = Ort::Value::CreateTensor<float>(
+                    memInfo, (float *)blob.data, blob.total(), inputShape.data(), inputShape.size());
+                const char *inputNames[] = {"images"};
+                const char *outputNames[] = {"output0"};
+
+                auto results = session.Run(Ort::RunOptions{nullptr}, inputNames, &inputTensor, 1, outputNames, 1);
+                float *output = results[0].GetTensorMutableData<float>();
+                auto shape = results[0].GetTensorTypeAndShapeInfo().GetShape();
+
+                cv::Mat outputMat(shape[1], shape[2], CV_32F, output);
+                cv::Mat transposed;
+                cv::transpose(outputMat, transposed);
+
+                return transposed;
+                break;
+            }
+            case config::ModelFormat::VINO:
+            {
+
+                break;
+            }
+            default:
+                return Err{"invalid model inference type"};
+            }
+
+            return Err{"invalid return, unexpected break in InferenceConsuumer::cumputeInference"}
         }
         catch (const std::exception &e)
         {
@@ -208,7 +239,10 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
             {
                 return Err{"onnx file not found"};
             }
-            net = cv::dnn::readNetFromONNX(onnxPath);
+
+            Ort::Env env(ORT_LOGGING_LEVEL_WARNING, "yolo");
+            Ort::SessionOptions sessionOptions;
+            session = OrtSession(env, onnxPath, sessionOptions);
 
             break;
         }

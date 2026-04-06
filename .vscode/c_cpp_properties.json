@@ -5,13 +5,14 @@
             "includePath": [
                 "${env:VCPKG_ROOT}/installed/x64-windows/include",
                 "${env:VCPKG_ROOT}/installed/x64-windows/include/opencv4",
-                "${workspaceFolder}/better-video-pipeline/libs/serialib/lib",
-                "${workspaceFolder}/better-video-pipeline/buildheaders"
+                "${env:VCPKG_ROOT}/installed/x64-windows/include/onnxruntime",
+                "${env:VCPKG_ROOT}/installed/x64-windows/include/openvino",
+                "${workspaceFolder}/better-video-pipeline/libs/serialib/lib"
             ],
             "intelliSenseMode": "windows-msvc-x64",
             "cStandard": "c23",
-            "cppStandard": "gnu++23",
-            "configurationProvider": "ms-vscode.cmake-tools"
+            "cppStandard": "gnu++23"
+            // "configurationProvider": "ms-vscode.cmake-tools"
         },
         {
             "name": "esp32",
