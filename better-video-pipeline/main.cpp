@@ -220,7 +220,7 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
                 return Err{"invalid model inference type"};
             }
 
-            return Err{"invalid return, unexpected break in InferenceConsuumer::cumputeInference"}
+            return Err{"invalid return, unexpected break in InferenceConsuumer::cumputeInference"};
         }
         catch (const std::exception &e)
         {
