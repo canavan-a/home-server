@@ -15,6 +15,7 @@ namespace config
     const ModelFormat MODEL_FORMAT{ModelFormat::ONNX};
     const std::string MODEL_NAME{"yolo26n"};
 
+    constexpr size_t RESULT_BUFFER_SIZE{3};
     constexpr size_t CAMERA_FRAME_BUFFER_SIZE{3};
     constexpr LogLevel LOG_LEVEL{DEBUG};
 

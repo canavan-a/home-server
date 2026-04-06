@@ -76,6 +76,17 @@ struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
 
     CameraStreamer(std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> buffer) : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>{buffer}
     {
+        this->setup();
+        auto countdown = std::vector{3, 2, 1};
+        std::ranges::for_each(countdown, [this](auto &v)
+                              { 
+                                std::this_thread::sleep_for(std::chrono::milliseconds(800));
+                                    logger.info(v); });
+    }
+
+    void setup()
+    {
+        logger.info("setting up camera");
         cap.open(config::CAMERA_INPUT, config::CAMERA_BACKEND);
         cap.set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'));
         cap.set(cv::CAP_PROP_FRAME_WIDTH, 1920);
@@ -90,11 +101,6 @@ struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
         logger.info("FPS: " + std::to_string(fps));
         logger.info("Width: " + std::to_string(width));
         logger.info("Height: " + std::to_string(height));
-        auto countdown = std::vector{3, 2, 1};
-        std::ranges::for_each(countdown, [this](auto &v)
-                              { 
-                                std::this_thread::sleep_for(std::chrono::milliseconds(800));
-                                    logger.info(v); });
     }
 
     void run() override
@@ -107,6 +113,8 @@ struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
         std::cout << "hello world I am a Camera streamer" << nl;
         auto count{0};
         cameraStreamReady->release();
+        auto emptyFrameCount{0};
+        constexpr auto MAX_EMPTY_FRAMES{30};
         for (;;)
         {
             std::cout << ++count << nl;
@@ -115,10 +123,22 @@ struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
             if (frame.empty())
             {
                 logger.warn("captured empty frame");
-                logger.warn("cap is open: " + std::to_string(cap.isOpened()));
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                if (++emptyFrameCount >= MAX_EMPTY_FRAMES)
+                {
+
+                    logger.warn("camera disconnected, trying reconnect");
+                    cap.release();
+                    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                    this->setup();
+                    emptyFrameCount = 0;
+                }
+                else
+                {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                }
                 continue;
             }
+            emptyFrameCount = 0;
             logger.info("pushing frame");
             this->buffer->push(frame);
         }
@@ -144,9 +164,11 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
     Ort::Env env{ORT_LOGGING_LEVEL_WARNING, "yolo"};
     std::unique_ptr<Ort::Session> session;
 
+    std::shared_ptr<RingBuffer<cv::Mat, RESULT_BUFFER_SIZE>> resultBuffer;
+
     // inference result buffer or eat the io overhead..... ??
 
-    InferenceConsumer(std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> buffer, std::shared_ptr<std::binary_semaphore> csReady) : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>{buffer}, cameraStreamReady{csReady}
+    InferenceConsumer(std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> buffer, std::shared_ptr<RingBuffer<cv::Mat, RESULT_BUFFER_SIZE>> resBuf, std::shared_ptr<std::binary_semaphore> csReady) : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>{buffer}, resultBuffer{resBuf}, cameraStreamReady{csReady}
     {
         auto res = LoadModel();
         if (!res)
@@ -281,6 +303,29 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
     }
 };
 
+template <LogLevel L = LogLevel::INFO>
+struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
+{
+
+    Logger<L> logger{};
+    std::mutex signalMutex{};
+
+    ResultStreamer(std::shared_ptr<RingBuffer<cv::Mat, config::RESULT_BUFFER_SIZE>> resBuf) : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>{resBuf}
+    {
+    }
+
+    void run() override
+    {
+        for (;;)
+        {
+            // wait for frame signal from the shared buffer
+            std::unique_lock<std::mutex> lock(signalMutex);
+            buffer->signal.wait();
+            logger.info("triggered ResultStreamer on frame");
+        }
+    }
+};
+
 int main()
 {
 
@@ -308,7 +353,9 @@ int main()
     // cameraStreamer->wait();
     cameraStreamer.start();
 
-    auto inferenceStreamer = InferenceConsumer(rb, cameraStreamer.cameraStreamReady);
+    auto resultBuffer = std::make_shared<RingBuffer<cv::Mat, RESULT_BUFFER_SIZE>>();
+
+    auto inferenceStreamer = InferenceConsumer(rb, resultBuffer, cameraStreamer.cameraStreamReady);
 
     inferenceStreamer.start();
 

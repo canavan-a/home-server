@@ -4,6 +4,7 @@
 #include <expected>
 #include <memory>
 #include <array>
+#include <semaphore>
 #include <ranges>
 #include <mutex>
 
@@ -19,6 +20,7 @@ struct RingBuffer
 {
     std::array<T, N> data{};
     std::mutex mtx{};
+    std::condition_variable signal{};
 
     int start{};
     int end{};
@@ -31,6 +33,7 @@ struct RingBuffer
 
     void push(const T &item)
     {
+        signal.notify_all();
         std::lock_guard<std::mutex> lock(this->mtx);
 
         this->data[end] = item;
@@ -87,6 +90,15 @@ struct RingBuffer
 
         T item = data[start];
 
+        return item;
+    }
+
+    Result<T> peekFront()
+    {
+        std::lock_guard<std::mutex> lock(this->mtx);
+        if (this->isEmpty())
+            return Err{"buffer is empty"};
+        T item = data[end == 0 ? N - 1 : end - 1];
         return item;
     }
 
