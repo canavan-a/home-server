@@ -188,7 +188,7 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
         for (;;)
         {
 
-            Result<cv::Mat> peekValue = this->buffer->peek();
+            Result<cv::Mat> peekValue = this->buffer->peekFront();
 
             if (!peekValue)
             {
@@ -321,7 +321,7 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
         {
             // wait for frame signal from the shared buffer
             std::unique_lock<std::mutex> lock(signalMutex);
-            cameraBuffer->signal.wait();
+            cameraBuffer->signal.wait(lock);
             logger.info("triggered ResultStreamer on frame");
         }
     }
@@ -340,13 +340,13 @@ int main()
 
     log.info("res is: " + res);
 
-    log.debug("hello world");
+    log.debug("debug");
 
-    log.warn("hello world");
+    log.warn("warn");
 
-    log.info("hello world");
+    log.info("info");
 
-    log.error("hello world");
+    log.error("error");
 
     auto cameraBuffer = std::make_shared<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>>();
 
