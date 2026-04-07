@@ -13,6 +13,7 @@
 
 // onnx and vino imports
 #include <onnxruntime_cxx_api.h>
+#include <openvino/openvino.hpp>
 
 #include "constants.h"
 #include "ringbuffer.h"
@@ -164,6 +165,10 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
     Ort::Env env{ORT_LOGGING_LEVEL_WARNING, "yolo"};
     std::unique_ptr<Ort::Session> session;
 
+    ov::Core core;
+    ov::CompiledModel model;
+    std::unique_ptr<ov::InferRequest> inferenceRequest;
+
     std::shared_ptr<RingBuffer<cv::Mat, config::RESULT_BUFFER_SIZE>> resultBuffer;
 
     // inference result buffer or eat the io overhead..... ??
@@ -239,7 +244,20 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
             }
             case config::ModelFormat::VINO:
             {
+                cv::Mat blob = cv::dnn::blobFromImage(frame, 1 / 255.0, cv::Size(640, 640), cv::Scalar(), true);
+                ov::Tensor input = inferenceRequest->get_input_tensor();
+                std::memcpy(input.data<float>(), (float *)blob.data, blob.total() * sizeof(float));
 
+                inferenceRequest->infer();
+
+                ov::Tensor output = inferenceRequest->get_output_tensor();
+                float *data = output.data<float>();
+                auto shape = output.get_shape();
+
+                cv::Mat outputMat(shape[1], shape[2], CV_32F, data);
+                cv::Mat transposed;
+                cv::transpose(outputMat, transposed);
+                return transposed;
                 break;
             }
             default:
@@ -285,7 +303,8 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
                 return Err{"openvino xml file not found"};
             }
 
-            net = cv::dnn::readNetFromModelOptimizer(vinoXml, vinoBin);
+            model = core.compile_model(vinoXml, "CPU");
+            inferenceRequest = std::make_unique<ov::InferRequest>(model.create_infer_request());
 
             break;
         }
@@ -323,6 +342,14 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
             std::unique_lock<std::mutex> lock(signalMutex);
             cameraBuffer->signal.wait(lock);
             logger.info("triggered ResultStreamer on frame");
+        }
+    }
+
+    ~ResultStreamer()
+    {
+        if (t.joinable())
+        {
+            t.join();
         }
     }
 };
