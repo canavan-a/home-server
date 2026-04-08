@@ -123,9 +123,9 @@ struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
         cameraStreamReady->release();
         auto emptyFrameCount{0};
         constexpr auto MAX_EMPTY_FRAMES{30};
-        for (!kill;)
+        while (!kill)
         {
-            std::cout << ++count << nl;
+            logger.debug(++count);
             cv::Mat frame;
             cap >> frame;
             if (frame.empty())
@@ -197,7 +197,7 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
         logger.info("waiting for camera stream to start");
         cameraStreamReady->acquire();
         logger.info("started inference consumer process");
-        for (!kill;)
+        while (!kill)
         {
 
             Result<cv::Mat> peekValue = this->buffer->peekFront();
@@ -343,7 +343,7 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
 
     void run() override
     {
-        for (!kill;)
+        while (!kill)
         {
             // wait for frame signal from the shared buffer
             std::unique_lock<std::mutex> lock(signalMutex);
@@ -361,32 +361,42 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
     }
 };
 
+template <LogLevel L = LogLevel::DEBUG>
 struct MediaPipeline
 {
+    std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> cameraBuffer;
+    std::shared_ptr<RingBuffer<cv::Mat, config::RESULT_BUFFER_SIZE>> resultBuffer;
+    std::unique_ptr<CameraStreamer<LogLevel::WARN>> cameraStreamer;
+    std::unique_ptr<InferenceConsumer<>> inferenceStreamer;
+    std::unique_ptr<ResultStreamer<>> resultStreamer;
+    Logger<L> logger{};
 
-    MediaPipeline() default;
+    MediaPipeline() = default;
 
     void run()
     {
-        auto cameraBuffer = std::make_shared<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>>();
+        cameraBuffer = std::make_shared<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>>();
 
-        auto cameraStreamer = CameraStreamer<LogLevel::WARN>(cameraBuffer);
-        // cameraStreamer->wait();
-        cameraStreamer.start();
+        cameraStreamer = std::make_unique<CameraStreamer<LogLevel::DEBUG>>(cameraBuffer);
+        cameraStreamer->start();
 
-        auto resultBuffer = std::make_shared<RingBuffer<cv::Mat, config::RESULT_BUFFER_SIZE>>();
+        resultBuffer = std::make_shared<RingBuffer<cv::Mat, config::RESULT_BUFFER_SIZE>>();
 
-        auto inferenceStreamer = InferenceConsumer(cameraBuffer, resultBuffer, cameraStreamer.cameraStreamReady);
+        inferenceStreamer = std::make_unique<InferenceConsumer<>>(cameraBuffer, resultBuffer, cameraStreamer->cameraStreamReady);
+        inferenceStreamer->start();
 
-        inferenceStreamer.start();
-
-        auto resultStreamer = ResultStreamer(resultBuffer, cameraBuffer);
-        resultStreamer.start();
+        resultStreamer = std::make_unique<ResultStreamer<>>(resultBuffer, cameraBuffer);
+        resultStreamer->start();
     }
 
-    void runFor()
+    void runFor(std::chrono::seconds seconds)
     {
         run();
+        std::this_thread::sleep_for(seconds);
+        resultStreamer->stop();
+        inferenceStreamer->stop();
+        cameraStreamer->stop();
+        logger.debug("stopped camera");
     }
 };
 
@@ -412,7 +422,7 @@ int main()
     log.error("error");
 
     auto mp = MediaPipeline{};
-    mp.run();
+    mp.runFor(std::chrono::seconds(5));
 
     return 0;
 }
