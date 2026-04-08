@@ -123,7 +123,7 @@ struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
         cameraStreamReady->release();
         auto emptyFrameCount{0};
         constexpr auto MAX_EMPTY_FRAMES{30};
-        for (!kill)
+        for (!kill;)
         {
             std::cout << ++count << nl;
             cv::Mat frame;
@@ -197,7 +197,7 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
         logger.info("waiting for camera stream to start");
         cameraStreamReady->acquire();
         logger.info("started inference consumer process");
-        for (!kill)
+        for (!kill;)
         {
 
             Result<cv::Mat> peekValue = this->buffer->peekFront();
@@ -343,7 +343,7 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
 
     void run() override
     {
-        for (!kill)
+        for (!kill;)
         {
             // wait for frame signal from the shared buffer
             std::unique_lock<std::mutex> lock(signalMutex);
