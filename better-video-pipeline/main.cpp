@@ -377,15 +377,15 @@ struct MediaPipeline
     {
         cameraBuffer = std::make_shared<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>>();
 
-        cameraStreamer = std::make_unique<CameraStreamer<LogLevel::DEBUG>>(cameraBuffer);
+        cameraStreamer = std::make_unique<CameraStreamer<L>>(cameraBuffer);
         cameraStreamer->start();
 
         resultBuffer = std::make_shared<RingBuffer<cv::Mat, config::RESULT_BUFFER_SIZE>>();
 
-        inferenceStreamer = std::make_unique<InferenceConsumer<>>(cameraBuffer, resultBuffer, cameraStreamer->cameraStreamReady);
+        inferenceStreamer = std::make_unique<InferenceConsumer<L>>(cameraBuffer, resultBuffer, cameraStreamer->cameraStreamReady);
         inferenceStreamer->start();
 
-        resultStreamer = std::make_unique<ResultStreamer<>>(resultBuffer, cameraBuffer);
+        resultStreamer = std::make_unique<ResultStreamer<L>>(resultBuffer, cameraBuffer);
         resultStreamer->start();
     }
 
