@@ -366,9 +366,9 @@ struct MediaPipeline
 {
     std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> cameraBuffer;
     std::shared_ptr<RingBuffer<cv::Mat, config::RESULT_BUFFER_SIZE>> resultBuffer;
-    std::unique_ptr<CameraStreamer<>> cameraStreamer;
-    std::unique_ptr<InferenceConsumer<>> inferenceStreamer;
-    std::unique_ptr<ResultStreamer<>> resultStreamer;
+    std::unique_ptr<CameraStreamer<L>> cameraStreamer;
+    std::unique_ptr<InferenceConsumer<L>> inferenceStreamer;
+    std::unique_ptr<ResultStreamer<L>> resultStreamer;
     Logger<L> logger{};
 
     MediaPipeline() = default;
