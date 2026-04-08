@@ -96,7 +96,7 @@ struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
     }
 
     CameraStreamer(std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> buffer, bool showFramerate)
-        : CameraStreamer{buffer}, framerate{showFramerate}
+        : framerate{showFramerate}, CameraStreamer{buffer}
     {
     }
 
