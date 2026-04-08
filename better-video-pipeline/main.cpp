@@ -198,12 +198,14 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
 
     std::shared_ptr<RingBuffer<cv::Mat, config::RESULT_BUFFER_SIZE>> resultBuffer;
 
+    config::ModelFormat modelFormat{config::MODEL_FORMAT};
+
     bool inferenceFramerate{};
 
     // inference result buffer or eat the io overhead..... ??
 
-    InferenceConsumer(std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> buffer, std::shared_ptr<RingBuffer<cv::Mat, config::RESULT_BUFFER_SIZE>> resBuf, std::shared_ptr<std::binary_semaphore> csReady)
-        : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>{buffer}, resultBuffer{resBuf}, cameraStreamReady{csReady}
+    InferenceConsumer(std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> buffer, std::shared_ptr<RingBuffer<cv::Mat, config::RESULT_BUFFER_SIZE>> resBuf, std::shared_ptr<std::binary_semaphore> csReady, config::ModelFormat format)
+        : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>{buffer}, resultBuffer{resBuf}, cameraStreamReady{csReady}, modelFormat{format}
     {
         auto res = LoadModel();
         if (!res)
@@ -215,7 +217,7 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
         logger.info("model loaded");
     }
 
-    InferenceConsumer(std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> buffer, std::shared_ptr<RingBuffer<cv::Mat, config::RESULT_BUFFER_SIZE>> resBuf, std::shared_ptr<std::binary_semaphore> csReady, bool infRate) : InferenceConsumer{buffer, resBuf, csReady}
+    InferenceConsumer(std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> buffer, std::shared_ptr<RingBuffer<cv::Mat, config::RESULT_BUFFER_SIZE>> resBuf, std::shared_ptr<std::binary_semaphore> csReady, config::ModelFormat format, bool infRate) : InferenceConsumer{buffer, resBuf, csReady, format}
     {
         inferenceFramerate = infRate;
     }
@@ -266,7 +268,7 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
     {
         try
         {
-            switch (config::MODEL_FORMAT)
+            switch (modelFormat)
             {
             case config::ModelFormat::ONNX:
             {
@@ -321,7 +323,7 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
 
     Result<void> LoadModel()
     {
-        switch (config::MODEL_FORMAT)
+        switch (modelFormat)
         {
         case config::ModelFormat::ONNX:
         {
@@ -413,7 +415,7 @@ struct MediaPipeline
 
     MediaPipeline() = default;
 
-    void run()
+    void run(config::ModelFormat format = config::ModelFormat::ONNX)
     {
         cameraBuffer = std::make_shared<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>>();
 
@@ -422,16 +424,16 @@ struct MediaPipeline
 
         resultBuffer = std::make_shared<RingBuffer<cv::Mat, config::RESULT_BUFFER_SIZE>>();
 
-        inferenceStreamer = std::make_unique<InferenceConsumer<L>>(cameraBuffer, resultBuffer, cameraStreamer->cameraStreamReady, true);
+        inferenceStreamer = std::make_unique<InferenceConsumer<L>>(cameraBuffer, resultBuffer, cameraStreamer->cameraStreamReady, format, true);
         inferenceStreamer->start();
 
         resultStreamer = std::make_unique<ResultStreamer<L>>(resultBuffer, cameraBuffer);
         resultStreamer->start();
     }
 
-    void runFor(std::chrono::seconds seconds)
+    void runFor(config::ModelFormat format, std::chrono::seconds seconds)
     {
-        run();
+        run(format);
         std::this_thread::sleep_for(seconds);
         resultStreamer->stop();
         inferenceStreamer->stop();
@@ -462,7 +464,13 @@ int main()
     log.error("error");
 
     auto mp = MediaPipeline<LogLevel::ERROR>{};
-    mp.runFor(std::chrono::seconds(5));
+    mp.runFor(config::ModelFormat::ONNX, std::chrono::seconds(5));
+
+    std::cout << "\n"
+              << " done with onnx" << "\n\n";
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+
+    mp.runFor(config::ModelFormat::VINO, std::chrono::seconds(5));
 
     return 0;
 }
