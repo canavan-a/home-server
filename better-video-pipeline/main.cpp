@@ -170,6 +170,7 @@ struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
                 last = now;
             }
         }
+        cap.release();
     }
 
     ~CameraStreamer()
