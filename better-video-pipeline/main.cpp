@@ -165,8 +165,8 @@ struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
             {
                 auto now = std::chrono::steady_clock::now();
                 float fps = 1.0f / std::chrono::duration<float>(now - last).count();
-                std::cout << "\033[A\033[2K";
-                std::cout << "CURRENT RAW FPS: " << "\033[32m" << fps << "\033[0m";
+
+                std::cout << "CAMERA RAW FPS: " << "\033[32m" << fps << "\033[0m" << "\n";
                 last = now;
             }
         }
@@ -198,6 +198,8 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
 
     std::shared_ptr<RingBuffer<cv::Mat, config::RESULT_BUFFER_SIZE>> resultBuffer;
 
+    bool inferenceFramerate{};
+
     // inference result buffer or eat the io overhead..... ??
 
     InferenceConsumer(std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> buffer, std::shared_ptr<RingBuffer<cv::Mat, config::RESULT_BUFFER_SIZE>> resBuf, std::shared_ptr<std::binary_semaphore> csReady)
@@ -213,11 +215,19 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
         logger.info("model loaded");
     }
 
+    InferenceConsumer(std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> buffer, std::shared_ptr<RingBuffer<cv::Mat, config::RESULT_BUFFER_SIZE>> resBuf, std::shared_ptr<std::binary_semaphore> csReady, bool infRate) : InferenceConsumer{buffer, resBuf, csReady}
+    {
+        inferenceFramerate = infRate;
+    }
+
     void run() override
     {
         logger.info("waiting for camera stream to start");
         cameraStreamReady->acquire();
         logger.info("started inference consumer process");
+
+        static auto last = std::chrono::steady_clock::now();
+
         while (!kill)
         {
 
@@ -240,6 +250,15 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
             }
             logger.info("inference computed successfully");
             // logger.info(result.value().)
+
+            if (inferenceFramerate)
+            {
+                auto now = std::chrono::steady_clock::now();
+                float fps = 1.0f / std::chrono::duration<float>(now - last).count();
+
+                std::cout << "INFERENCE RAW FPS: " << "\033[96m" << fps << "\033[0m" << "\n";
+                last = now;
+            }
         }
     }
 
@@ -403,7 +422,7 @@ struct MediaPipeline
 
         resultBuffer = std::make_shared<RingBuffer<cv::Mat, config::RESULT_BUFFER_SIZE>>();
 
-        inferenceStreamer = std::make_unique<InferenceConsumer<L>>(cameraBuffer, resultBuffer, cameraStreamer->cameraStreamReady);
+        inferenceStreamer = std::make_unique<InferenceConsumer<L>>(cameraBuffer, resultBuffer, cameraStreamer->cameraStreamReady, true);
         inferenceStreamer->start();
 
         resultStreamer = std::make_unique<ResultStreamer<L>>(resultBuffer, cameraBuffer);
