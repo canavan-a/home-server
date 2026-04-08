@@ -82,6 +82,8 @@ struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
     Logger<L> logger{};
     cv::VideoCapture cap;
 
+    bool framerate{};
+
     CameraStreamer(std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> buffer) : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>{buffer}
     {
         this->setup();
@@ -90,6 +92,10 @@ struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
                               { 
                                 std::this_thread::sleep_for(std::chrono::milliseconds(800));
                                     logger.info(v); });
+    }
+
+    CameraStreamer(std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> buffer, bool showFramerate) : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>{buffer} : CameraStreamer{buffer}, framerate{showFramerate}
+    {
     }
 
     void setup()
@@ -123,6 +129,9 @@ struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
         cameraStreamReady->release();
         auto emptyFrameCount{0};
         constexpr auto MAX_EMPTY_FRAMES{30};
+
+        static auto last = std::chrono::steady_clock::now();
+
         while (!kill)
         {
             logger.debug(++count);
@@ -149,6 +158,14 @@ struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
             emptyFrameCount = 0;
             logger.info("pushing frame");
             this->buffer->push(frame);
+            if (framerate)
+            {
+                auto now = std::chrono::steady_clock::now();
+                float fps = 1.0f / std::chrono::duration<float>(now - last).count();
+                std::cout << "\033[A\033[2K";
+                std::cout << "CURRENT RAW FPS: " << "\033[32m" << fps << "\033[0m";
+                last = now;
+            }
         }
     }
 
@@ -421,7 +438,7 @@ int main()
 
     log.error("error");
 
-    auto mp = MediaPipeline{};
+    auto mp = MediaPipeline<LogLevel::ERROR>{};
     mp.runFor(std::chrono::seconds(5));
 
     return 0;
