@@ -309,17 +309,9 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
                 inferenceRequest->infer();
 
                 ov::Tensor output = inferenceRequest->get_output_tensor();
-                float *data = output.data<float>();
                 auto shape = output.get_shape();
-
-                // if shape is [1, 84, 8400] transpose to [8400, 84]
-                // if shape is [1, 8400, 84] use as-is
                 cv::Mat outputMat;
-                if (shape[1] < shape[2])
-                    cv::transpose(cv::Mat(shape[1], shape[2], CV_32F, data), outputMat);
-                else
-                    outputMat = cv::Mat(shape[1], shape[2], CV_32F, data).clone();
-
+                cv::transpose(cv::Mat(shape[1], shape[2], CV_32F, output.data<float>()), outputMat);
                 return outputMat;
                 break;
             }
@@ -366,18 +358,7 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
                 return Err{"openvino xml file not found"};
             }
 
-            auto readModel = core.read_model(vinoXml);
-            for (auto &input : readModel->inputs())
-            {
-                std::cout << "[VINO] input: " << input.get_any_name()
-                          << " shape=" << input.get_partial_shape() << "\n";
-            }
-            for (size_t i = 0; i < readModel->outputs().size(); i++)
-            {
-                std::cout << "[VINO] output " << i
-                          << " shape=" << readModel->output(i).get_partial_shape() << "\n";
-            }
-            model = core.compile_model(readModel, "CPU");
+            model = core.compile_model(core.read_model(vinoXml), "CPU");
             inferenceRequest = std::make_unique<ov::InferRequest>(model.create_infer_request());
 
             break;
