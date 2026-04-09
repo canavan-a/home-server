@@ -366,7 +366,18 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
                 return Err{"openvino xml file not found"};
             }
 
-            model = core.compile_model(vinoXml, "CPU");
+            auto readModel = core.read_model(vinoXml);
+            for (auto &input : readModel->inputs())
+            {
+                std::cout << "[VINO] input: " << input.get_any_name()
+                          << " shape=" << input.get_partial_shape() << "\n";
+            }
+            for (auto &output : readModel->outputs())
+            {
+                std::cout << "[VINO] output: " << output.get_any_name()
+                          << " shape=" << output.get_partial_shape() << "\n";
+            }
+            model = core.compile_model(readModel, "CPU");
             inferenceRequest = std::make_unique<ov::InferRequest>(model.create_infer_request());
 
             break;
@@ -425,10 +436,10 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
             frameRateBuffer.push(fps);
 
             auto averageFrameRate = std::accumulate(frameRateBuffer.data.begin(), frameRateBuffer.data.end(), 0.0f) / frameRateBuffer.data.size();
-            std::cout << "average framerate: " << averageFrameRate << "\n";
+            // std::cout << "average framerate: " << averageFrameRate << "\n";
 
             cameraBuffer->signal.wait(lock);
-            logger.error("triggered ResultStreamer on frame");
+            // logger.error("triggered ResultStreamer on frame");
             auto frame = cameraBuffer->peekFront();
             auto inferenceResult = this->buffer->peekFront();
 
