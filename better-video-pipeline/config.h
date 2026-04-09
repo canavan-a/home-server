@@ -14,7 +14,7 @@ namespace config
     constexpr float CONF_THRESH{0.5f};
 
     const std::string MODEL_DIR{"models"};
-    const ModelFormat MODEL_FORMAT{ModelFormat::VINO};
+    const ModelFormat MODEL_FORMAT{ModelFormat::ONNX};
     const std::string MODEL_NAME{"yolo26n"};
 
     constexpr size_t RESULT_BUFFER_SIZE{3};

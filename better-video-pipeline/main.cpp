@@ -295,6 +295,13 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
                 cv::Mat transposed;
                 cv::transpose(outputMat, transposed);
 
+                for (int i = 0; i < 3; i++)
+                    std::cout << "anchor " << i
+                              << " cx=" << transposed.at<float>(i, 0)
+                              << " cy=" << transposed.at<float>(i, 1)
+                              << " w="  << transposed.at<float>(i, 2)
+                              << " h="  << transposed.at<float>(i, 3) << "\n";
+
                 return transposed;
                 break;
             }
@@ -436,8 +443,9 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
 
                                     int classId = classIdPoint.x;
                                     float personScore = output.at<float>(i, 4 + COCO::PERSON);
-                                    if (personScore > 0.1f)
-                                        std::cout << "  row=" << i << " person_score=" << personScore << "\n";
+                                    float carScore = output.at<float>(i, 4 + COCO::CAR);
+                                    if (personScore > 0.1f || carScore > 0.1f)
+                                        std::cout << "  row=" << i << " person=" << personScore << " car=" << carScore << "\n";
 
                                     if (confidence >= 0.5)
                                     {
