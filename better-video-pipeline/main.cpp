@@ -14,6 +14,7 @@
 #include <ctime>
 #include <sstream>
 #include <numeric>
+#include <iomanip>
 
 // onnx and vino imports
 #include <onnxruntime_cxx_api.h>
@@ -478,9 +479,14 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
 
             auto ts = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
             std::ostringstream oss;
+            oss << std::fixed << std::setprecision(1) << averageFrameRate << " FPS";
+            cv::putText(display, oss.str(),
+                        cv::Point(10, display.rows - 40),
+                        cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(255, 255, 255), 2);
+
+            oss.str("");
             oss << std::put_time(std::localtime(&ts), "%Y-%m-%d %H:%M:%S");
-            std::string timestamp = oss.str();
-            cv::putText(display, timestamp,
+            cv::putText(display, oss.str(),
                         cv::Point(10, display.rows - 10),
                         cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(255, 255, 255), 2);
 
