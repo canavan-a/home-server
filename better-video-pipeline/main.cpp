@@ -11,6 +11,8 @@
 #include <filesystem>
 #include <fstream>
 #include <ranges>
+#include <ctime>
+#include <sstream>
 
 // onnx and vino imports
 #include <onnxruntime_cxx_api.h>
@@ -390,9 +392,7 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
         CAR = 2,
     };
 
-    // ctad inference
-    const std::array criticalDetections{
-        COCO::CAR, COCO::PERSON};
+    const std::array<int, 2> criticalDetections{COCO::CAR, COCO::PERSON};
 
     const float confidenceThreshold{config::CONF_THRESH};
 
@@ -430,7 +430,7 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
                                     cv::minMaxLoc(scores, nullptr, &confidence, nullptr, &classIdPoint);
 
                                     int classId = classIdPoint.x;
-                                    if (confidence >= confidenceThreshold && std::ranges::contains(criticalDetections, classId))
+                                    if (confidence >= confidenceThreshold && std::ranges::any_of(criticalDetections, [classId](int v){ return v == classId; }))
                                     {
                                         float cx = output.at<float>(i, 0) * xScale;
                                         float cy = output.at<float>(i, 1) * yScale;
@@ -456,8 +456,10 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
                                         ++drawnObjects;
                                     } });
 
-            auto now = std::chrono::system_clock::now();
-            std::string timestamp = std::format("{:%Y-%m-%d %H:%M:%S}", std::chrono::floor<std::chrono::seconds>(now));
+            auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+            std::ostringstream oss;
+            oss << std::put_time(std::localtime(&now), "%Y-%m-%d %H:%M:%S");
+            std::string timestamp = oss.str();
             cv::putText(display, timestamp,
                         cv::Point(10, display.rows - 10),
                         cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(255, 255, 255), 2);
