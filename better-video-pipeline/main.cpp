@@ -422,7 +422,7 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
             last = now;
             frameRateBuffer.push(fps);
 
-            auto averageFrameRate = std::ranges::fold_left(frameRateBuffer.data, 0.0.0f, std::plus{}) / frameRateBuffer.data.size();
+            auto averageFrameRate = std::ranges::fold_left(frameRateBuffer.data, 0.0f, std::plus{}) / frameRateBuffer.data.size();
             std::cout << "average framerate: " << averageFrameRate << "\n";
 
             cameraBuffer->signal.wait(lock);
