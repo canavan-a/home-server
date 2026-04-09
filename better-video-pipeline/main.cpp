@@ -435,7 +435,9 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
                                     if (confidence > globalMax) globalMax = confidence;
 
                                     int classId = classIdPoint.x;
-                                    std::cout << "  row=" << i << " classId=" << classId << " conf=" << confidence << "\n";
+                                    float personScore = output.at<float>(i, 4 + COCO::PERSON);
+                                    if (personScore > 0.1f)
+                                        std::cout << "  row=" << i << " person_score=" << personScore << "\n";
 
                                     if (confidence >= 0.5)
                                     {
