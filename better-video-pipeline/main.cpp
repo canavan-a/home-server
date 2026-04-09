@@ -302,8 +302,7 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
             }
             case config::ModelFormat::VINO:
             {
-                // OV IR models exported via Ultralytics embed preprocessing — feed raw BGR, no normalization
-                cv::Mat blob = cv::dnn::blobFromImage(frame, 1.0, cv::Size(640, 640), cv::Scalar(), false);
+                cv::Mat blob = cv::dnn::blobFromImage(frame, 1 / 255.0, cv::Size(640, 640), cv::Scalar(), true);
                 ov::Tensor input = inferenceRequest->get_input_tensor();
                 std::memcpy(input.data<float>(), (float *)blob.data, blob.total() * sizeof(float));
 
