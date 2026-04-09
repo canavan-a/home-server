@@ -596,7 +596,7 @@ int main(int argc, char *argv[])
     else
     {
         auto mp = MediaPipeline<LogLevel::ERROR>{};
-        mp.run(config::ModelFormat::VINO);
+        mp.run(config::MODEL_FORMAT);
     }
 
     return 0;

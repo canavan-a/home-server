@@ -15,7 +15,7 @@ namespace config
 
     const std::string MODEL_DIR{"models"};
     const ModelFormat MODEL_FORMAT{ModelFormat::ONNX};
-    const std::string MODEL_NAME{"yolov8n"};
+    const std::string MODEL_NAME{"yolov26n"};
 
     constexpr size_t RESULT_BUFFER_SIZE{3};
     constexpr size_t CAMERA_FRAME_BUFFER_SIZE{3};
