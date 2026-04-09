@@ -391,7 +391,7 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
             // wait for frame signal from the shared buffer
             std::unique_lock<std::mutex> lock(signalMutex);
             cameraBuffer->signal.wait(lock);
-            logger.info("triggered ResultStreamer on frame");
+            logger.error("triggered ResultStreamer on frame");
         }
     }
 
@@ -487,7 +487,7 @@ int main(int argc, char *argv[])
     if (argc >= 2)
     {
         // args are good
-        flag1 = std::to_string(argv[1]);
+        flag1 = argv[1];
     }
 
     if (flag1 == "test")
