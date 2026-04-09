@@ -445,7 +445,7 @@ struct MediaPipeline
 
 struct TestProgram
 {
-    TestProgram = default;
+    TestProgram() = default;
 
     void test()
     {
@@ -487,7 +487,7 @@ int main(int argc, char *argv[])
     if (argc >= 2)
     {
         // args are good
-        flag1 = std::to_string(argc[1]);
+        flag1 = std::to_string(argv[1]);
     }
 
     if (flag1 == "test")
