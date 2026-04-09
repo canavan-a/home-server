@@ -414,18 +414,20 @@ struct MediaPipeline
     std::unique_ptr<ResultStreamer<L>> resultStreamer;
     Logger<L> logger{};
 
+    bool testPrint{};
+
     MediaPipeline() = default;
 
     void run(config::ModelFormat format = config::ModelFormat::ONNX)
     {
         cameraBuffer = std::make_shared<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>>();
 
-        cameraStreamer = std::make_unique<CameraStreamer<L>>(cameraBuffer, true);
+        cameraStreamer = std::make_unique<CameraStreamer<L>>(cameraBuffer, testPrint);
         cameraStreamer->start();
 
         resultBuffer = std::make_shared<RingBuffer<cv::Mat, config::RESULT_BUFFER_SIZE>>();
 
-        inferenceStreamer = std::make_unique<InferenceConsumer<L>>(cameraBuffer, resultBuffer, cameraStreamer->cameraStreamReady, format, true);
+        inferenceStreamer = std::make_unique<InferenceConsumer<L>>(cameraBuffer, resultBuffer, cameraStreamer->cameraStreamReady, format, testPrint);
         inferenceStreamer->start();
 
         resultStreamer = std::make_unique<ResultStreamer<L>>(resultBuffer, cameraBuffer);
@@ -450,6 +452,7 @@ struct TestProgram
     void test()
     {
         auto mp = MediaPipeline<LogLevel::ERROR>{};
+        mp.testPrint = true;
         mp.runFor(config::ModelFormat::ONNX, std::chrono::seconds(5));
 
         std::cout << "\n"
@@ -493,6 +496,7 @@ int main(int argc, char *argv[])
     if (flag1 == "test")
     {
         TestProgram t{};
+
         t.test();
     }
     else
