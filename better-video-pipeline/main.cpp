@@ -310,10 +310,19 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
                 float *data = output.data<float>();
                 auto shape = output.get_shape();
 
-                cv::Mat outputMat(shape[1], shape[2], CV_32F, data);
-                cv::Mat transposed;
-                cv::transpose(outputMat, transposed);
-                return transposed;
+                std::cout << "[VINO] output shape: ";
+                for (auto d : shape) std::cout << d << " ";
+                std::cout << "\n";
+
+                // if shape is [1, 84, 8400] transpose to [8400, 84]
+                // if shape is [1, 8400, 84] use as-is
+                cv::Mat outputMat;
+                if (shape[1] < shape[2])
+                    cv::transpose(cv::Mat(shape[1], shape[2], CV_32F, data), outputMat);
+                else
+                    outputMat = cv::Mat(shape[1], shape[2], CV_32F, data).clone();
+
+                return outputMat;
                 break;
             }
             default:
