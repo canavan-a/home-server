@@ -490,18 +490,15 @@ int main(int argc, char *argv[])
         flag1 = std::to_string(argc[1]);
     }
 
-    switch (flag1)
-    {
-    case "test":
+    if (flag1 == "test")
     {
         TestProgram t{};
-
         t.test();
-        break;
     }
-    default:
-
-        t.run();
+    else
+    {
+        auto mp = MediaPipeline<LogLevel::ERROR>{};
+        mp.run(config::ModelFormat::VINO);
     }
 
     return 0;
