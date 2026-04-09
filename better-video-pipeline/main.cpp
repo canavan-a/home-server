@@ -295,13 +295,6 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
                 cv::Mat transposed;
                 cv::transpose(outputMat, transposed);
 
-                for (int i = 0; i < 3; i++)
-                    std::cout << "anchor " << i
-                              << " cx=" << transposed.at<float>(i, 0)
-                              << " cy=" << transposed.at<float>(i, 1)
-                              << " w="  << transposed.at<float>(i, 2)
-                              << " h="  << transposed.at<float>(i, 3) << "\n";
-
                 return transposed;
                 break;
             }
