@@ -130,7 +130,7 @@ struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
             logger.error("camera is in use by another process");
             return;
         }
-        std::cout << "hello world I am a Camera streamer" << nl;
+
         auto count{0};
         cameraStreamReady->release();
         auto emptyFrameCount{0};
@@ -310,9 +310,6 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
                 float *data = output.data<float>();
                 auto shape = output.get_shape();
 
-                std::cout << "[VINO] output shape: ";
-                for (auto d : shape) std::cout << d << " ";
-                std::cout << "\n";
 
                 // if shape is [1, 84, 8400] transpose to [8400, 84]
                 // if shape is [1, 8400, 84] use as-is
@@ -431,9 +428,6 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
 
             int drawnObjects{};
 
-            std::cout << "[ResultStreamer] output rows=" << output.rows << " cols=" << output.cols << "\n";
-
-            double globalMax = 0;
             std::ranges::for_each(std::views::iota(0, output.rows), [&](int i)
                                   {
                                     cv::Mat scores = output.row(i).colRange(4, output.cols);
@@ -441,19 +435,9 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
                                     double confidence;
                                     cv::minMaxLoc(scores, nullptr, &confidence, nullptr, &classIdPoint);
 
-                                    if (confidence > globalMax) globalMax = confidence;
-
                                     int classId = classIdPoint.x;
-                                    float personScore = output.at<float>(i, 4 + COCO::PERSON);
-                                    float carScore = output.at<float>(i, 4 + COCO::CAR);
-                                    if (personScore > 0.1f || carScore > 0.1f)
-                                        std::cout << "  row=" << i << " person=" << personScore << " car=" << carScore << "\n";
-
-                                    if (confidence >= 0.5)
+                                    if (confidence >= confidenceThreshold && std::ranges::any_of(criticalDetections, [classId](int v){ return v == classId; }))
                                     {
-                                        std::cout << "[DETECTION] class=" << classId
-                                                  << " conf=" << confidence << "\n";
-
                                         float cx = output.at<float>(i, 0) * xScale;
                                         float cy = output.at<float>(i, 1) * yScale;
                                         float w  = output.at<float>(i, 2) * xScale;
@@ -477,8 +461,6 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
 
                                         ++drawnObjects;
                                     } });
-
-            std::cout << "[ResultStreamer] best confidence this frame=" << globalMax << "\n";
 
             auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
             std::ostringstream oss;
