@@ -372,10 +372,10 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
                 std::cout << "[VINO] input: " << input.get_any_name()
                           << " shape=" << input.get_partial_shape() << "\n";
             }
-            for (auto &output : readModel->outputs())
+            for (size_t i = 0; i < readModel->outputs().size(); i++)
             {
-                std::cout << "[VINO] output: " << output.get_any_name()
-                          << " shape=" << output.get_partial_shape() << "\n";
+                std::cout << "[VINO] output " << i
+                          << " shape=" << readModel->output(i).get_partial_shape() << "\n";
             }
             model = core.compile_model(readModel, "CPU");
             inferenceRequest = std::make_unique<ov::InferRequest>(model.create_infer_request());
