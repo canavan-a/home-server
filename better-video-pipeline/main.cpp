@@ -437,7 +437,7 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
                                     int classId = classIdPoint.x;
                                     std::cout << "  row=" << i << " classId=" << classId << " conf=" << confidence << "\n";
 
-                                    if (confidence >= confidenceThreshold && std::ranges::any_of(criticalDetections, [classId](int v){ return v == classId; }))
+                                    if (confidence >= 0.5)
                                     {
                                         std::cout << "[DETECTION] class=" << classId
                                                   << " conf=" << confidence << "\n";
