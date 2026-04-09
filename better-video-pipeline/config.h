@@ -11,6 +11,8 @@ namespace config
         ONNX
     };
 
+    constexpr float CONF_THRESH{0.5f};
+
     const std::string MODEL_DIR{"models"};
     const ModelFormat MODEL_FORMAT{ModelFormat::VINO};
     const std::string MODEL_NAME{"yolo26n"};

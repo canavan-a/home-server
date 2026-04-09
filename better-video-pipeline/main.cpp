@@ -10,6 +10,7 @@
 #include <mutex>
 #include <filesystem>
 #include <fstream>
+#include <ranges>
 
 // onnx and vino imports
 #include <onnxruntime_cxx_api.h>
@@ -137,7 +138,8 @@ struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
 
         while (!kill)
         {
-            logger.debug(++count);
+
+            // logger.debug(++count);
             cv::Mat frame;
             cap >> frame;
             if (frame.empty())
@@ -253,6 +255,8 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
             }
             logger.info("inference computed successfully");
             // logger.info(result.value().)
+
+            resultBuffer->push(result.value());
 
             if (inferenceFramerate)
             {
@@ -380,6 +384,18 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
     std::mutex signalMutex{};
     std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> cameraBuffer{};
 
+    enum COCO
+    {
+        PERSON = 0,
+        CAR = 2,
+    };
+
+    // ctad inference
+    const std::array criticalDetections{
+        COCO::CAR, COCO::PERSON};
+
+    const float confidenceThreshold{config::CONF_THRESH};
+
     ResultStreamer(std::shared_ptr<RingBuffer<cv::Mat, config::RESULT_BUFFER_SIZE>> resBuf, std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> camBuf) : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>{resBuf}, cameraBuffer{camBuf}
     {
     }
@@ -392,6 +408,67 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
             std::unique_lock<std::mutex> lock(signalMutex);
             cameraBuffer->signal.wait(lock);
             logger.error("triggered ResultStreamer on frame");
+            auto frame = cameraBuffer->peekFront();
+            auto inferenceResult = this->buffer->peekFront();
+
+            if (!inferenceResult || !frame)
+                continue;
+
+            cv::Mat output = inferenceResult.value();
+            cv::Mat display = frame.value().clone();
+
+            const float xScale = display.cols / 640.0f;
+            const float yScale = display.rows / 640.0f;
+
+            int drawnObjects{};
+
+            std::ranges::for_each(std::views::iota(0, output.rows), [&](int i)
+                                  {
+                                    cv::Mat scores = output.row(i).colRange(4, output.cols);
+                                    cv::Point classIdPoint;
+                                    double confidence;
+                                    cv::minMaxLoc(scores, nullptr, &confidence, nullptr, &classIdPoint);
+
+                                    int classId = classIdPoint.x;
+                                    if (confidence >= confidenceThreshold && std::ranges::contains(criticalDetections, classId))
+                                    {
+                                        float cx = output.at<float>(i, 0) * xScale;
+                                        float cy = output.at<float>(i, 1) * yScale;
+                                        float w  = output.at<float>(i, 2) * xScale;
+                                        float h  = output.at<float>(i, 3) * yScale;
+
+                                        cv::Rect box(
+                                            static_cast<int>(cx - w / 2),
+                                            static_cast<int>(cy - h / 2),
+                                            static_cast<int>(w),
+                                            static_cast<int>(h)
+                                        );
+
+                                        cv::Scalar colorValue;
+                                        if (classId == COCO::CAR){
+                                            colorValue=cv::Scalar(0,255,0);
+                                        }else{
+                                            colorValue=cv::Scalar(0,0,255);
+                                        }
+
+                                        cv::rectangle(display, box, colorValue, 2);
+
+                                        ++drawnObjects;
+                                    } });
+
+            auto now = std::chrono::system_clock::now();
+            std::string timestamp = std::format("{:%Y-%m-%d %H:%M:%S}", std::chrono::floor<std::chrono::seconds>(now));
+            cv::putText(display, timestamp,
+                        cv::Point(10, display.rows - 10),
+                        cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(255, 255, 255), 2);
+
+            cv::imshow("detections", display);
+            cv::waitKey(1);
+
+            if (drawnObjects > 0)
+            {
+                logger.error("objects drawn");
+            }
         }
     }
 
