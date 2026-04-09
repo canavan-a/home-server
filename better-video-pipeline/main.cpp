@@ -422,6 +422,9 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
 
             int drawnObjects{};
 
+            std::cout << "[ResultStreamer] output rows=" << output.rows << " cols=" << output.cols << "\n";
+
+            double globalMax = 0;
             std::ranges::for_each(std::views::iota(0, output.rows), [&](int i)
                                   {
                                     cv::Mat scores = output.row(i).colRange(4, output.cols);
@@ -429,9 +432,14 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
                                     double confidence;
                                     cv::minMaxLoc(scores, nullptr, &confidence, nullptr, &classIdPoint);
 
+                                    if (confidence > globalMax) globalMax = confidence;
+
                                     int classId = classIdPoint.x;
                                     if (confidence >= confidenceThreshold && std::ranges::any_of(criticalDetections, [classId](int v){ return v == classId; }))
                                     {
+                                        std::cout << "[DETECTION] class=" << classId
+                                                  << " conf=" << confidence << "\n";
+
                                         float cx = output.at<float>(i, 0) * xScale;
                                         float cy = output.at<float>(i, 1) * yScale;
                                         float w  = output.at<float>(i, 2) * xScale;
@@ -455,6 +463,8 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
 
                                         ++drawnObjects;
                                     } });
+
+            std::cout << "[ResultStreamer] best confidence this frame=" << globalMax << "\n";
 
             auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
             std::ostringstream oss;
