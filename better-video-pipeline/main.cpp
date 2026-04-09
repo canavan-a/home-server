@@ -443,7 +443,24 @@ struct MediaPipeline
     }
 };
 
-int main()
+struct TestProgram
+{
+    TestProgram = default;
+
+    void test()
+    {
+        auto mp = MediaPipeline<LogLevel::ERROR>{};
+        mp.runFor(config::ModelFormat::ONNX, std::chrono::seconds(5));
+
+        std::cout << "\n"
+                  << " done with onnx" << "\n\n";
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+
+        mp.runFor(config::ModelFormat::VINO, std::chrono::seconds(5));
+    }
+};
+
+int main(int argc, char *argv[])
 {
 
     std::cout << "OpenCV version: " << CV_VERSION << std::endl;
@@ -464,14 +481,28 @@ int main()
 
     log.error("error");
 
-    auto mp = MediaPipeline<LogLevel::ERROR>{};
-    mp.runFor(config::ModelFormat::ONNX, std::chrono::seconds(5));
+    std::string flag1{};
 
-    std::cout << "\n"
-              << " done with onnx" << "\n\n";
-    std::this_thread::sleep_for(std::chrono::seconds(1));
+    // parse args
+    if (argc >= 2)
+    {
+        // args are good
+        flag1 = std::to_string(argc[1]);
+    }
 
-    mp.runFor(config::ModelFormat::VINO, std::chrono::seconds(5));
+    switch (flag1)
+    {
+    case "test":
+    {
+        TestProgram t{};
+
+        t.test();
+        break;
+    }
+    default:
+
+        t.run();
+    }
 
     return 0;
 }
