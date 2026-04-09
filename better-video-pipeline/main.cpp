@@ -13,6 +13,7 @@
 #include <ranges>
 #include <ctime>
 #include <sstream>
+#include <numeric>
 
 // onnx and vino imports
 #include <onnxruntime_cxx_api.h>
@@ -408,7 +409,7 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
     void run() override
     {
 
-        RingBuffer<float, 20> frameRateBuffer();
+        RingBuffer<float, 20> frameRateBuffer{};
         static auto last = std::chrono::steady_clock::now();
 
         while (!kill)
@@ -416,13 +417,13 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
             // wait for frame signal from the shared buffer
             std::unique_lock<std::mutex> lock(signalMutex);
 
-            auto now = std::chrono::steady_clock::now();
-            float fps = 1.0f / std::chrono::duration<float>(now - last).count();
+            auto tick = std::chrono::steady_clock::now();
+            float fps = 1.0f / std::chrono::duration<float>(tick - last).count();
 
-            last = now;
+            last = tick;
             frameRateBuffer.push(fps);
 
-            auto averageFrameRate = std::ranges::fold_left(frameRateBuffer.data, 0.0f, std::plus{}) / frameRateBuffer.data.size();
+            auto averageFrameRate = std::accumulate(frameRateBuffer.data.begin(), frameRateBuffer.data.end(), 0.0f) / frameRateBuffer.data.size();
             std::cout << "average framerate: " << averageFrameRate << "\n";
 
             cameraBuffer->signal.wait(lock);
@@ -475,9 +476,9 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
                                         ++drawnObjects;
                                     } });
 
-            auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+            auto ts = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
             std::ostringstream oss;
-            oss << std::put_time(std::localtime(&now), "%Y-%m-%d %H:%M:%S");
+            oss << std::put_time(std::localtime(&ts), "%Y-%m-%d %H:%M:%S");
             std::string timestamp = oss.str();
             cv::putText(display, timestamp,
                         cv::Point(10, display.rows - 10),
