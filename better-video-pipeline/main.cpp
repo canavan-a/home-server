@@ -310,7 +310,6 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
                 float *data = output.data<float>();
                 auto shape = output.get_shape();
 
-
                 // if shape is [1, 84, 8400] transpose to [8400, 84]
                 // if shape is [1, 8400, 84] use as-is
                 cv::Mat outputMat;
@@ -408,10 +407,24 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
 
     void run() override
     {
+
+        RingBuffer<float, 20> frameRateBuffer();
+        static auto last = std::chrono::steady_clock::now();
+
         while (!kill)
         {
             // wait for frame signal from the shared buffer
             std::unique_lock<std::mutex> lock(signalMutex);
+
+            auto now = std::chrono::steady_clock::now();
+            float fps = 1.0f / std::chrono::duration<float>(now - last).count();
+
+            last = now;
+            frameRateBuffer.push(fps);
+
+            auto averageFrameRate = std::ranges::fold_left(frameRateBuffer.data, 0.0.0f, std::plus{}) / frameRateBuffer.data.size();
+            std::cout << "average framerate: " << averageFrameRate << "\n";
+
             cameraBuffer->signal.wait(lock);
             logger.error("triggered ResultStreamer on frame");
             auto frame = cameraBuffer->peekFront();
