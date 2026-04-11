@@ -5,6 +5,24 @@
 
 namespace config
 {
+
+    enum MODE
+    {
+        DISPLAY,
+        RTP_VP8,
+        RTP_VP9,
+        RTP_H264,
+    };
+
+    const MODE displayMode{MODE::RTP_VP8};
+
+    const int bitrate{2000000};
+    const std::string rtpHost{"127.0.0.1"};
+    const int rtpPort{5111};
+
+    const int frameHeight{1080};
+    const int frameWidth{1920};
+
     enum ModelFormat
     {
         VINO,

@@ -111,8 +111,8 @@ struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
         logger.info("setting up camera");
         cap.open(config::CAMERA_INPUT, config::CAMERA_BACKEND);
         cap.set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'));
-        cap.set(cv::CAP_PROP_FRAME_WIDTH, 1920);
-        cap.set(cv::CAP_PROP_FRAME_HEIGHT, 1080);
+        cap.set(cv::CAP_PROP_FRAME_WIDTH, config::frameWidth);
+        cap.set(cv::CAP_PROP_FRAME_HEIGHT, config::frameHeight);
         cap.set(cv::CAP_PROP_FPS, 30);
 
         double fps = cap.get(cv::CAP_PROP_FPS);
@@ -384,6 +384,7 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
     Logger<L> logger{};
     std::mutex signalMutex{};
     std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> cameraBuffer{};
+    cv::VideoWriter writer;
 
     enum COCO
     {
@@ -395,8 +396,42 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
 
     const float confidenceThreshold{config::CONF_THRESH};
 
+    config::MODE displayMode{config::displayMode};
+    const int port{config::rtpPort};
+    const std::string host{config::rtpHost};
+    const int bitrate{config::bitrate};
+
+    bool rtpEnabled{};
+
     ResultStreamer(std::shared_ptr<RingBuffer<cv::Mat, config::RESULT_BUFFER_SIZE>> resBuf, std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> camBuf) : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>{resBuf}, cameraBuffer{camBuf}
     {
+        rtpEnabled = displayMode != config::MODE::DISPLAY;
+        if (rtpEnabled)
+        {
+            configureRtp();
+        }
+    }
+
+    void setDisplayMode(Mode newMode)
+    {
+        displayMode = newMode;
+
+        if (rtpEnabled)
+        {
+            configureRtp();
+        }
+    };
+
+    void configureRtp()
+    {
+        writer.release();
+        writer.open(
+            "appsrc ! videoconvert ! vp8enc target-bitrate=" + std::to_string(bitrate) + " ! rtpvp8pay ! udpsink host=" + host + " port=" + std::to_string(port),
+            cv::CAP_GSTREAMER,
+            0,
+            30.0,
+            cv::Size(config::frameWidth, config::frameHeight),
+            true);
     }
 
     void run() override
@@ -481,19 +516,36 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
             cv::putText(display, oss.str(),
                         cv::Point(10, display.rows - 10),
                         cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(255, 255, 255), 2);
+        }
+        writer.release();
+    }
 
+    void handleFrameOutput(cv::Mat &frame)
+    {
+
+        if (displayMode == config::MODE::DISPLAY)
+        {
             cv::imshow("detections", display);
             cv::waitKey(1);
-
-            if (drawnObjects > 0)
-            {
-                logger.error("objects drawn");
-            }
+        }
+        // else if (displayMode == config::MODE::RTP_VP8)
+        // {
+        // }
+        else if (rtpEnabled)
+        {
+            writer.write(frame);
+        }
+        else
+        {
+            logger.warn("display mode not configured code: " + std::to_string(displayMode));
         }
     }
 
     ~ResultStreamer()
     {
+
+        writer.release();
+
         if (t.joinable())
         {
             t.join();
