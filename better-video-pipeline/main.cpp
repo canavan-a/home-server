@@ -315,6 +315,12 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
                 return outputMat;
                 break;
             }
+            case config::ModelFormat::NONE:
+            {
+                logger.info("no inference result, model: NONE");
+                return cv::Mat{};
+                break;
+            }
             default:
                 return Err{"invalid model inference type"};
             }
@@ -363,7 +369,10 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
 
             break;
         }
-        default:
+        case config::ModelFormat::NONE {
+            logger.info("no model format configured");
+            break;
+        } default:
             return Err{"invalid model type"};
         }
 
@@ -434,6 +443,10 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
             true);
     }
 
+    void configureHls()
+    {
+    }
+
     void run() override
     {
 
@@ -461,6 +474,11 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
 
             if (!inferenceResult || !frame)
                 continue;
+
+            if (config::MODEL_FORMAT == config::ModelFormat::NONE)
+            {
+                goto endDrawFrame;
+            }
 
             cv::Mat output = inferenceResult.value();
             cv::Mat display = frame.value().clone();
@@ -503,7 +521,7 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
 
                                         ++drawnObjects;
                                     } });
-
+        endDrawFrame:
             auto ts = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
             std::ostringstream oss;
             oss << std::fixed << std::setprecision(1) << averageFrameRate << " FPS";

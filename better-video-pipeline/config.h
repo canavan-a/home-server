@@ -12,6 +12,7 @@ namespace config
         RTP_VP8,
         RTP_VP9,
         RTP_H264,
+        HLS,
     };
 
     const MODE displayMode{MODE::RTP_VP8};
@@ -25,6 +26,7 @@ namespace config
 
     enum ModelFormat
     {
+        NONE,
         VINO,
         ONNX
     };
