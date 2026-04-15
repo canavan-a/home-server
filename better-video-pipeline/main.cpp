@@ -703,7 +703,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        auto mp = MediaPipeline<LogLevel::ERROR>{};
+        auto mp = MediaPipeline<LogLevel::DEBUG>{};
         mp.run(config::MODEL_FORMAT);
     }
 
