@@ -7,6 +7,9 @@
                 "${env:VCPKG_ROOT}/installed/x64-windows/include/opencv4",
                 "${env:VCPKG_ROOT}/installed/x64-windows/include/onnxruntime",
                 "${env:VCPKG_ROOT}/installed/x64-windows/include/openvino",
+                "${env:VCPKG_ROOT}/installed/x64-windows/include/gstreamer-1.0",
+                "${env:VCPKG_ROOT}/installed/x64-windows/include/glib-2.0",
+                "${env:VCPKG_ROOT}/installed/x64-windows/lib/glib-2.0/include",
                 "${workspaceFolder}/better-video-pipeline/libs/serialib/lib"
             ],
             "intelliSenseMode": "windows-msvc-x64",

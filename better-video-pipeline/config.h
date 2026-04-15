@@ -13,6 +13,7 @@ namespace config
         RTP_VP9,
         RTP_H264,
         HLS,
+        MJPEG,
     };
 
     const MODE displayMode{MODE::RTP_VP8};
@@ -20,6 +21,8 @@ namespace config
     const int bitrate{2000000};
     const std::string rtpHost{"127.0.0.1"};
     const int rtpPort{5111};
+    const int mjpegPort{5222};
+    const int mjpegQuality{80};
 
     const int frameHeight{1080};
     const int frameWidth{1920};

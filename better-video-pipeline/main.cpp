@@ -5,6 +5,8 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/dnn.hpp>
+#include <gst/gst.h>
+#include <gst/app/gstappsrc.h>
 #include <chrono>
 #include <semaphore>
 #include <mutex>
@@ -395,7 +397,8 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
     Logger<L> logger{};
     std::mutex signalMutex{};
     std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> cameraBuffer{};
-    cv::VideoWriter writer;
+    GstElement *gstPipeline{nullptr};
+    GstElement *gstAppsrc{nullptr};
 
     enum COCO
     {
@@ -429,6 +432,10 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
         {
             configureHls();
         }
+        else if (this->isMjpegEnabled())
+        {
+            configureMjpeg();
+        }
     }
 
     void setDisplayMode(config::MODE newMode)
@@ -456,29 +463,62 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
 
     bool isHlsEnabled()
     {
-        const std::array<config::MODE, 3> hlsFormats{
+        const std::array<config::MODE, 1> hlsFormats{
             config::MODE::HLS,
         };
 
         return std::ranges::find(hlsFormats, displayMode) != hlsFormats.end();
     }
 
+    bool isMjpegEnabled()
+    {
+        return displayMode == config::MODE::MJPEG;
+    }
+
+    void openGstPipeline(const std::string &pipelineStr)
+    {
+        if (gstPipeline)
+        {
+            gst_element_set_state(gstPipeline, GST_STATE_NULL);
+            gst_object_unref(gstAppsrc);
+            gst_object_unref(gstPipeline);
+            gstPipeline = nullptr;
+            gstAppsrc = nullptr;
+        }
+
+        logger.info("opening GStreamer pipeline: " + pipelineStr);
+        gstPipeline = gst_parse_launch(pipelineStr.c_str(), nullptr);
+        if (!gstPipeline)
+        {
+            logger.error("GStreamer pipeline failed to create");
+            return;
+        }
+
+        gstAppsrc = gst_bin_get_by_name(GST_BIN(gstPipeline), "src");
+
+        GstCaps *caps = gst_caps_new_simple("video/x-raw",
+            "format", G_TYPE_STRING, "BGR",
+            "width", G_TYPE_INT, config::frameWidth,
+            "height", G_TYPE_INT, config::frameHeight,
+            "framerate", GST_TYPE_FRACTION, 30, 1,
+            nullptr);
+        gst_app_src_set_caps(GST_APP_SRC(gstAppsrc), caps);
+        gst_caps_unref(caps);
+
+        gst_element_set_state(gstPipeline, GST_STATE_PLAYING);
+        logger.info("GStreamer pipeline started successfully");
+    }
+
     void configureRtp()
     {
-        writer.release();
-        std::string pipeline = "appsrc ! videoconvert ! vp8enc target-bitrate=" + std::to_string(bitrate) + " deadline=1 ! rtpvp8pay ! udpsink host=" + host + " port=" + std::to_string(port) + " sync=false";
-        logger.info("opening GStreamer pipeline: " + pipeline);
-        writer.open(
-            pipeline,
-            cv::CAP_GSTREAMER,
-            0,
-            30.0,
-            cv::Size(config::frameWidth, config::frameHeight),
-            true);
-        if (!writer.isOpened())
-            logger.error("GStreamer writer FAILED to open");
-        else
-            logger.info("GStreamer writer opened successfully");
+        std::string pipelineStr = "appsrc name=src ! videoconvert ! vp8enc target-bitrate=" + std::to_string(bitrate) + " deadline=1 ! rtpvp8pay ! udpsink host=" + host + " port=" + std::to_string(port) + " sync=false";
+        openGstPipeline(pipelineStr);
+    }
+
+    void configureMjpeg()
+    {
+        std::string pipelineStr = "appsrc name=src ! videoconvert ! jpegenc quality=" + std::to_string(config::mjpegQuality) + " ! multipartmux ! tcpserversink port=" + std::to_string(config::mjpegPort) + " recover-policy=keyframe sync=false";
+        openGstPipeline(pipelineStr);
     }
 
     void configureHls()
@@ -582,21 +622,35 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
                         cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(255, 255, 255), 2);
             handleFrameOutput(display);
         }
-        writer.release();
     }
 
     void handleFrameOutput(cv::Mat &frame)
     {
-
         if (displayMode == config::MODE::DISPLAY)
         {
             cv::imshow("detections", frame);
             cv::waitKey(1);
         }
-        else if (isRtpEnabled() || isHlsEnabled())
+        else if (isRtpEnabled() || isMjpegEnabled())
         {
-            logger.info("writing frame to gstreamer size=" + std::to_string(frame.cols) + "x" + std::to_string(frame.rows) + " type=" + std::to_string(frame.type()));
-            writer.write(frame);
+            if (!gstAppsrc)
+            {
+                logger.error("appsrc is null, cannot push frame");
+                return;
+            }
+
+            logger.info("pushing frame to appsrc size=" + std::to_string(frame.cols) + "x" + std::to_string(frame.rows));
+
+            gsize size = frame.total() * frame.elemSize();
+            GstBuffer *buffer = gst_buffer_new_allocate(nullptr, size, nullptr);
+            GstMapInfo map;
+            gst_buffer_map(buffer, &map, GST_MAP_WRITE);
+            std::memcpy(map.data, frame.data, size);
+            gst_buffer_unmap(buffer, &map);
+
+            GstFlowReturn ret = gst_app_src_push_buffer(GST_APP_SRC(gstAppsrc), buffer);
+            if (ret != GST_FLOW_OK)
+                logger.error("gst_app_src_push_buffer failed: " + std::to_string(ret));
         }
         else
         {
@@ -606,12 +660,15 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
 
     ~ResultStreamer()
     {
-
-        writer.release();
-
         if (t.joinable())
-        {
             t.join();
+
+        if (gstPipeline)
+        {
+            gst_app_src_end_of_stream(GST_APP_SRC(gstAppsrc));
+            gst_element_set_state(gstPipeline, GST_STATE_NULL);
+            gst_object_unref(gstAppsrc);
+            gst_object_unref(gstPipeline);
         }
     }
 };
@@ -677,6 +734,8 @@ struct TestProgram
 
 int main(int argc, char *argv[])
 {
+
+    gst_init(nullptr, nullptr);
 
     std::cout << "OpenCV version: " << CV_VERSION << std::endl;
     std::cout << cv::getBuildInformation() << std::endl;
