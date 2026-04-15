@@ -369,10 +369,12 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
 
             break;
         }
-        case config::ModelFormat::NONE {
+        case config::ModelFormat::NONE:
+        {
             logger.info("no model format configured");
             break;
-        } default:
+        }
+        default:
             return Err{"invalid model type"};
         }
 
@@ -429,7 +431,7 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
         }
     }
 
-    void setDisplayMode(Mode newMode)
+    void setDisplayMode(config::MODE newMode)
     {
         displayMode = newMode;
 
@@ -449,7 +451,7 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
             config::MODE::RTP_H264,
         };
 
-        return std::ranges::contains(rtpFormats, displayMode);
+        return std::ranges::find(rtpFormats, displayMode) != rtpFormats.end();
     }
 
     bool isHlsEnabled()
@@ -458,7 +460,7 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
             config::MODE::HLS,
         };
 
-        return std::ranges::contains(hlsFormats, displayMode);
+        return std::ranges::find(hlsFormats, displayMode) != hlsFormats.end();
     }
 
     void configureRtp()
