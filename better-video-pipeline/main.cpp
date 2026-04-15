@@ -466,13 +466,19 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
     void configureRtp()
     {
         writer.release();
+        std::string pipeline = "appsrc ! videoconvert ! vp8enc target-bitrate=" + std::to_string(bitrate) + " ! rtpvp8pay ! udpsink host=" + host + " port=" + std::to_string(port);
+        logger.info("opening GStreamer pipeline: " + pipeline);
         writer.open(
-            "appsrc ! videoconvert ! vp8enc target-bitrate=" + std::to_string(bitrate) + " ! rtpvp8pay ! udpsink host=" + host + " port=" + std::to_string(port),
+            pipeline,
             cv::CAP_GSTREAMER,
             0,
             30.0,
             cv::Size(config::frameWidth, config::frameHeight),
             true);
+        if (!writer.isOpened())
+            logger.error("GStreamer writer FAILED to open");
+        else
+            logger.info("GStreamer writer opened successfully");
     }
 
     void configureHls()

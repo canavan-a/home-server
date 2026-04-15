@@ -43,7 +43,6 @@ namespace config
 
     const char *COMPORT{"COM3"};
     const int BAUDRATE{115200};
-    const int RTP_PORT{3000};
 #ifdef _WIN32
     constexpr auto CAMERA_BACKEND = cv::CAP_MSMF;
     const int CAMERA_INPUT{0};
