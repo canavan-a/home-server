@@ -589,6 +589,7 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
         }
         else if (isRtpEnabled() || isHlsEnabled())
         {
+            logger.info("writing frame to gstreamer");
             writer.write(frame);
         }
         else
