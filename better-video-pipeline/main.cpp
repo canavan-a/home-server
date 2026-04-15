@@ -510,18 +510,20 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
 
             if (modelFormat == config::ModelFormat::NONE)
             {
-                goto endDrawFrame;
+                logger.info("skipping inference processing in ResultStreamer");
             }
+            else
+            {
 
-            cv::Mat output = inferenceResult.value();
+                cv::Mat output = inferenceResult.value();
 
-            const float xScale = display.cols / 640.0f;
-            const float yScale = display.rows / 640.0f;
+                const float xScale = display.cols / 640.0f;
+                const float yScale = display.rows / 640.0f;
 
-            int drawnObjects{};
+                int drawnObjects{};
 
-            std::ranges::for_each(std::views::iota(0, output.rows), [&](int i)
-                                  {
+                std::ranges::for_each(std::views::iota(0, output.rows), [&](int i)
+                                      {
                                     cv::Mat scores = output.row(i).colRange(4, output.cols);
                                     cv::Point classIdPoint;
                                     double confidence;
@@ -553,7 +555,8 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
 
                                         ++drawnObjects;
                                     } });
-        endDrawFrame:
+            }
+
             auto ts = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
             std::ostringstream oss;
             oss << std::fixed << std::setprecision(1) << averageFrameRate << " FPS";
