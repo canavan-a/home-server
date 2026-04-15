@@ -466,7 +466,7 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
     void configureRtp()
     {
         writer.release();
-        std::string pipeline = "appsrc ! videoconvert ! vp8enc target-bitrate=" + std::to_string(bitrate) + " ! rtpvp8pay ! udpsink host=" + host + " port=" + std::to_string(port);
+        std::string pipeline = "appsrc ! videoconvert ! vp8enc target-bitrate=" + std::to_string(bitrate) + " deadline=1 ! rtpvp8pay ! udpsink host=" + host + " port=" + std::to_string(port) + " sync=false";
         logger.info("opening GStreamer pipeline: " + pipeline);
         writer.open(
             pipeline,
@@ -595,7 +595,7 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
         }
         else if (isRtpEnabled() || isHlsEnabled())
         {
-            logger.info("writing frame to gstreamer");
+            logger.info("writing frame to gstreamer size=" + std::to_string(frame.cols) + "x" + std::to_string(frame.rows) + " type=" + std::to_string(frame.type()));
             writer.write(frame);
         }
         else
