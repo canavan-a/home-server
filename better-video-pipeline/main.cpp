@@ -475,6 +475,7 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
 
     void configureHls()
     {
+        logger.error("hls not configured");
     }
 
     void run() override
@@ -505,13 +506,14 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
             if (!inferenceResult || !frame)
                 continue;
 
+            cv::Mat display = frame.value().clone();
+
             if (modelFormat == config::ModelFormat::NONE)
             {
                 goto endDrawFrame;
             }
 
             cv::Mat output = inferenceResult.value();
-            cv::Mat display = frame.value().clone();
 
             const float xScale = display.cols / 640.0f;
             const float yScale = display.rows / 640.0f;
@@ -564,6 +566,7 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
             cv::putText(display, oss.str(),
                         cv::Point(10, display.rows - 10),
                         cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(255, 255, 255), 2);
+            handleFrameOutput(display);
         }
         writer.release();
     }
@@ -573,7 +576,7 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
 
         if (displayMode == config::MODE::DISPLAY)
         {
-            cv::imshow("detections", display);
+            cv::imshow("detections", frame);
             cv::waitKey(1);
         }
         else if (isRtpEnabled() || isHlsEnabled())
