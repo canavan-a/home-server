@@ -482,6 +482,7 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
 
     void run() override
     {
+        logger.debug("entering ResultStreamer loop");
 
         RingBuffer<float, 20> frameRateBuffer{};
         static auto last = std::chrono::steady_clock::now();
@@ -489,7 +490,9 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
         while (!kill)
         {
             // wait for frame signal from the shared buffer
+            logger.debug("waiting on tick");
             std::unique_lock<std::mutex> lock(signalMutex);
+            logger.debug("tick signaled");
 
             auto tick = std::chrono::steady_clock::now();
             float fps = 1.0f / std::chrono::duration<float>(tick - last).count();
