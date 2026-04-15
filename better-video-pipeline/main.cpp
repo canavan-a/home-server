@@ -410,14 +410,22 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
     const std::string host{config::rtpHost};
     const int bitrate{config::bitrate};
 
-    bool rtpEnabled{};
+    const config::ModelFormat modelFormat{config::MODEL_FORMAT};
 
     ResultStreamer(std::shared_ptr<RingBuffer<cv::Mat, config::RESULT_BUFFER_SIZE>> resBuf, std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> camBuf) : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>{resBuf}, cameraBuffer{camBuf}
     {
-        rtpEnabled = displayMode != config::MODE::DISPLAY;
-        if (rtpEnabled)
+        this->configure();
+    }
+
+    void configure()
+    {
+        if (this->isRtpEnabled())
         {
             configureRtp();
+        }
+        else if (this->isHlsEnabled())
+        {
+            configureHls();
         }
     }
 
@@ -425,11 +433,33 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
     {
         displayMode = newMode;
 
-        if (rtpEnabled)
-        {
-            configureRtp();
-        }
+        configure();
     };
+
+    void setModeFormat(const config::ModelFormat format)
+    {
+        modelFormat = format;
+    }
+
+    bool isRtpEnabled()
+    {
+        const std::array<config::MODE, 3> rtpFormats{
+            config::MODE::RTP_VP8,
+            config::MODE::RTP_VP9,
+            config::MODE::RTP_H264,
+        };
+
+        return std::ranges::contains(rtpFormats, displayMode);
+    }
+
+    bool isHlsEnabled()
+    {
+        const std::array<config::MODE, 3> hlsFormats{
+            config::MODE::HLS,
+        };
+
+        return std::ranges::contains(hlsFormats, displayMode);
+    }
 
     void configureRtp()
     {
@@ -475,7 +505,7 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
             if (!inferenceResult || !frame)
                 continue;
 
-            if (config::MODEL_FORMAT == config::ModelFormat::NONE)
+            if (modelFormat == config::ModelFormat::NONE)
             {
                 goto endDrawFrame;
             }
@@ -546,10 +576,7 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
             cv::imshow("detections", display);
             cv::waitKey(1);
         }
-        // else if (displayMode == config::MODE::RTP_VP8)
-        // {
-        // }
-        else if (rtpEnabled)
+        else if (isRtpEnabled() || isHlsEnabled())
         {
             writer.write(frame);
         }
