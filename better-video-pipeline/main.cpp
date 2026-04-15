@@ -466,7 +466,7 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
     void configureRtp()
     {
         writer.release();
-        std::string pipeline = "appsrc ! videoconvert ! vp8enc target-bitrate=" + std::to_string(bitrate) + " deadline=1 ! rtpvp8pay ! udpsink host=" + host + " port=" + std::to_string(port) + " sync=false";
+        std::string pipeline = "appsrc ! videoconvert ! x264enc ! mp4mux ! filesink location=/tmp/test.mp4";
         logger.info("opening GStreamer pipeline: " + pipeline);
         writer.open(
             pipeline,
