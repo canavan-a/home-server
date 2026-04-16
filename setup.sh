@@ -45,6 +45,6 @@ echo "Pipes created"
 tmux send-keys -t server "sudo systemd-run --scope -p MemoryMax=4G ./myprogram" Enter
 # echo "Orchestrator started"
 
-tmux send-keys -t stream-ingress "./build/main" Enter
+tmux send-keys -t stream-ingress "sudo systemd-run --scope -p MemoryMax=4G -p CPUQuota=80% ./build/main" Enter
 
 echo "Setup complete"
