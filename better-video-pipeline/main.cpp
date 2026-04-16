@@ -438,10 +438,6 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
         {
             configureMjpeg();
         }
-        else if (this->isMjpegPipeEnabled())
-        {
-            configureMjpegPipe();
-        }
     }
 
     void setDisplayMode(config::MODE newMode)
@@ -481,17 +477,16 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
         return displayMode == config::MODE::MJPEG;
     }
 
-    bool isMjpegPipeEnabled()
-    {
-        return displayMode == config::MODE::MJPEG_PIPE;
-    }
-
     void openGstPipeline(const std::string &pipelineStr)
     {
         if (gstPipeline)
         {
             gst_element_set_state(gstPipeline, GST_STATE_NULL);
-            if (gstAppsrc) { gst_object_unref(gstAppsrc); gstAppsrc = nullptr; }
+            if (gstAppsrc)
+            {
+                gst_object_unref(gstAppsrc);
+                gstAppsrc = nullptr;
+            }
             gst_object_unref(gstPipeline);
             gstPipeline = nullptr;
         }
@@ -520,11 +515,14 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
     {
         std::string pipelineStr =
             "appsrc name=src is-live=true do-timestamp=true format=time caps=\"" + appsrcCaps() + "\" "
-            "! videoconvert "
-            "! videoscale ! video/x-raw,width=" + std::to_string(config::streamWidth) + ",height=" + std::to_string(config::streamHeight) + " "
-            "! vp8enc target-bitrate=" + std::to_string(bitrate) + " deadline=1 cpu-used=5 keyframe-max-dist=15 lag-in-frames=0 error-resilient=1 "
-            "! rtpvp8pay "
-            "! udpsink host=" + host + " port=" + std::to_string(port) + " sync=false async=false";
+                                                                                                  "! videoconvert "
+                                                                                                  "! videoscale ! video/x-raw,width=" +
+            std::to_string(config::streamWidth) + ",height=" + std::to_string(config::streamHeight) + " "
+                                                                                                      "! vp8enc target-bitrate=" +
+            std::to_string(bitrate) + " deadline=1 cpu-used=5 keyframe-max-dist=15 lag-in-frames=0 error-resilient=1 "
+                                      "! rtpvp8pay "
+                                      "! udpsink host=" +
+            host + " port=" + std::to_string(port) + " sync=false async=false";
         openGstPipeline(pipelineStr);
     }
 
@@ -532,27 +530,15 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
     {
         std::string pipelineStr =
             "appsrc name=src is-live=true do-timestamp=true format=time caps=\"" + appsrcCaps() + "\" "
-            "! videoconvert "
-            "! videoscale ! video/x-raw,width=" + std::to_string(config::streamWidth) + ",height=" + std::to_string(config::streamHeight) + " "
-            "! jpegenc quality=" + std::to_string(config::mjpegQuality) + " "
-            "! multipartmux boundary=frame "
-            "! souphttpsink port=" + std::to_string(config::mjpegPort) + " sync=false async=false";
+                                                                                                  "! videoconvert "
+                                                                                                  "! videoscale ! video/x-raw,width=" +
+            std::to_string(config::streamWidth) + ",height=" + std::to_string(config::streamHeight) + " "
+                                                                                                      "! jpegenc quality=" +
+            std::to_string(config::mjpegQuality) + " "
+                                                   "! multipartmux boundary=frame "
+                                                   "! souphttpsink port=" +
+            std::to_string(config::mjpegPort) + " sync=false async=false";
         openGstPipeline(pipelineStr);
-    }
-
-    void configureMjpegPipe()
-    {
-        if (ffmpegPipe)
-        {
-            pclose(ffmpegPipe);
-            ffmpegPipe = nullptr;
-        }
-
-        ffmpegPipe = popen(config::ffmpegPipeCmd.c_str(), "w");
-        if (!ffmpegPipe)
-            logger.error("failed to open ffmpeg pipe: " + config::ffmpegPipeCmd);
-        else
-            logger.info("ffmpeg pipe opened: " + config::ffmpegPipeCmd);
     }
 
     void configureHls()
@@ -680,19 +666,7 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
             if (ret != GST_FLOW_OK)
                 logger.error("gst_app_src_push_buffer failed: " + std::to_string(ret));
         }
-        else if (isMjpegPipeEnabled())
-        {
-            if (!ffmpegPipe)
-            {
-                logger.error("ffmpeg pipe is null, cannot push frame");
-                return;
-            }
 
-            std::vector<uchar> jpegBuf;
-            cv::imencode(".jpg", frame, jpegBuf, {cv::IMWRITE_JPEG_QUALITY, config::mjpegQuality});
-            fwrite(jpegBuf.data(), 1, jpegBuf.size(), ffmpegPipe);
-            fflush(ffmpegPipe);
-        }
         else
         {
             logger.warn("display mode not configured code: " + std::to_string(displayMode));
@@ -704,17 +678,12 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
         if (t.joinable())
             t.join();
 
-        if (ffmpegPipe)
-        {
-            pclose(ffmpegPipe);
-            ffmpegPipe = nullptr;
-        }
-
         if (gstPipeline)
         {
             gst_app_src_end_of_stream(GST_APP_SRC(gstAppsrc));
             gst_element_set_state(gstPipeline, GST_STATE_NULL);
-            if (gstAppsrc) gst_object_unref(gstAppsrc);
+            if (gstAppsrc)
+                gst_object_unref(gstAppsrc);
             gst_object_unref(gstPipeline);
         }
     }
