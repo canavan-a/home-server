@@ -35,12 +35,10 @@ export const Camera = () => {
   const moveCameraDynamic = (dir) => {
     axios
       .post(
-        `https://aidan.house/api/camera/dynamic_move?controlCommand=${
-          dir.toUpperCase() + 800 + dir.toUpperCase()
-        }`,
+        `https://aidan.house/api/camera/dynamic_move?controlCommand=${dir.toUpperCase() + 800 + dir.toUpperCase()}`,
         {
           doorCode: password,
-        }
+        },
       )
       .then(() => {
         console.log("moved camera");
@@ -62,9 +60,7 @@ export const Camera = () => {
 
     if (password) {
       console.log("PASSWORD", password);
-      signalingServer = new WebSocket(
-        `wss:/aidan.house/api/camera/relay?doorCode=${password}`
-      );
+      signalingServer = new WebSocket(`wss:/aidan.house/api/camera/relay?doorCode=${password}`);
 
       signalingServer.onclose = () => {
         navigate("/settings");
@@ -73,6 +69,7 @@ export const Camera = () => {
       const start = async () => {
         const servers = {
           iceServers: [
+            { urls: "stun:stun.l.google.com:19302" },
             { urls: "stun:ice.aidan.house" },
             {
               urls: "turn:ice.aidan.house",
@@ -183,9 +180,7 @@ export const Camera = () => {
         })
         .catch((error) => {
           console.error("Failed to start video:", error);
-          alert(
-            "Autoplay is blocked by your browser. Please interact with the page to play the video."
-          );
+          alert("Autoplay is blocked by your browser. Please interact with the page to play the video.");
         });
     } else {
       alert("no video ref");
@@ -277,15 +272,8 @@ export const Camera = () => {
             >
               <FontAwesomeIcon icon={faChevronLeft} />
             </button>
-            <button
-              onClick={toggleTracking}
-              className={`btn btn-md mx-4 ${"btn-primary"}`}
-            >
-              {!trackerStatus ? (
-                <FontAwesomeIcon icon={faPlay} />
-              ) : (
-                <FontAwesomeIcon icon={faStop} />
-              )}
+            <button onClick={toggleTracking} className={`btn btn-md mx-4 ${"btn-primary"}`}>
+              {!trackerStatus ? <FontAwesomeIcon icon={faPlay} /> : <FontAwesomeIcon icon={faStop} />}
               track
             </button>
             <button
