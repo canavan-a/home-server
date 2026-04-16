@@ -65,7 +65,7 @@ func main() {
 
 	go func() {
 		fmt.Println("starting video stream")
-		err := StreamReader("video", "0.0.0.0", 5005)
+		err := StreamReader("video", "0.0.0.0", 5111)
 		panic(err)
 	}()
 
