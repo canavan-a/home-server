@@ -367,7 +367,7 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
                 return Err{"openvino xml file not found"};
             }
 
-            model = core.compile_model(core.read_model(vinoXml), "GPU");
+            model = core.compile_model(core.read_model(vinoXml), "CPU");
             inferenceRequest = std::make_unique<ov::InferRequest>(model.create_infer_request());
 
             break;
