@@ -42,7 +42,7 @@ chmod 666 /tmp/raw_frame
 echo "Pipes created"
 
 # setup orch
-# tmux send-keys -t orch "./orch" Enter
+tmux send-keys -t server "sudo systemd-run --scope -p MemoryMax=4G ./myprogram" Enter
 # echo "Orchestrator started"
 
 tmux send-keys -t stream-ingress "./build/main" Enter
