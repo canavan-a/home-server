@@ -14,16 +14,21 @@ namespace config
         RTP_H264,
         HLS,
         MJPEG,
-        MJPEG_TCP,
+        MJPEG_PIPE,
     };
 
-    const MODE displayMode{MODE::MJPEG_TCP};
+    const MODE displayMode{MODE::MJPEG_PIPE};
+
+    // ffmpeg command to pipe annotated JPEG frames into.
+    // receives raw JPEG frames on stdin; do whatever you like with the output.
+    const std::string ffmpegPipeCmd{
+        "ffmpeg -f mjpeg -i pipe:0 -f mpjpeg -q:v 5 - 2>/dev/null"
+    };
 
     const int bitrate{2000000};
     const std::string rtpHost{"127.0.0.1"};
     const int rtpPort{5111};
     const int mjpegPort{5222};
-    const int mjpegTcpPort{8080};
     const int mjpegQuality{80};
 
     const int frameHeight{1080};

@@ -17,10 +17,7 @@
 #include <sstream>
 #include <numeric>
 #include <iomanip>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <unistd.h>
-#include <gio/gio.h>
+#include <cstdio>
 
 // onnx and vino imports
 #include <onnxruntime_cxx_api.h>
@@ -403,9 +400,7 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
     std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> cameraBuffer{};
     GstElement *gstPipeline{nullptr};
     GstElement *gstAppsrc{nullptr};
-    GstElement *gstStreamsink{nullptr};
-    int httpServerFd{-1};
-    std::thread httpAcceptThread;
+    FILE *ffmpegPipe{nullptr};
 
     enum COCO
     {
@@ -443,9 +438,9 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
         {
             configureMjpeg();
         }
-        else if (this->isMjpegTcpEnabled())
+        else if (this->isMjpegPipeEnabled())
         {
-            configureMjpegTcp();
+            configureMjpegPipe();
         }
     }
 
@@ -486,9 +481,9 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
         return displayMode == config::MODE::MJPEG;
     }
 
-    bool isMjpegTcpEnabled()
+    bool isMjpegPipeEnabled()
     {
-        return displayMode == config::MODE::MJPEG_TCP;
+        return displayMode == config::MODE::MJPEG_PIPE;
     }
 
     void openGstPipeline(const std::string &pipelineStr)
@@ -497,7 +492,6 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
         {
             gst_element_set_state(gstPipeline, GST_STATE_NULL);
             if (gstAppsrc) { gst_object_unref(gstAppsrc); gstAppsrc = nullptr; }
-            if (gstStreamsink) { gst_object_unref(gstStreamsink); gstStreamsink = nullptr; }
             gst_object_unref(gstPipeline);
             gstPipeline = nullptr;
         }
@@ -511,7 +505,6 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
         }
 
         gstAppsrc = gst_bin_get_by_name(GST_BIN(gstPipeline), "src");
-        gstStreamsink = gst_bin_get_by_name(GST_BIN(gstPipeline), "streamsink");
 
         gst_element_set_state(gstPipeline, GST_STATE_PLAYING);
         logger.info("GStreamer pipeline started successfully");
@@ -547,96 +540,19 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
         openGstPipeline(pipelineStr);
     }
 
-    void configureMjpegTcp()
+    void configureMjpegPipe()
     {
-        std::string pipelineStr =
-            "appsrc name=src is-live=true do-timestamp=true format=time caps=\"" + appsrcCaps() + "\" "
-            "! videoconvert "
-            "! videoscale ! video/x-raw,width=" + std::to_string(config::streamWidth) + ",height=" + std::to_string(config::streamHeight) + " "
-            "! jpegenc quality=" + std::to_string(config::mjpegQuality) + " "
-            "! multipartmux boundary=frame "
-            "! multisocketsink name=streamsink sync=false async=false";
-        openGstPipeline(pipelineStr);
-        startHttpAcceptLoop(config::mjpegTcpPort);
-    }
-
-    void startHttpAcceptLoop(int port)
-    {
-        if (httpServerFd >= 0)
+        if (ffmpegPipe)
         {
-            ::close(httpServerFd);
-            if (httpAcceptThread.joinable())
-                httpAcceptThread.join();
+            pclose(ffmpegPipe);
+            ffmpegPipe = nullptr;
         }
 
-        httpServerFd = ::socket(AF_INET, SOCK_STREAM, 0);
-        if (httpServerFd < 0)
-        {
-            logger.error("failed to create HTTP server socket");
-            return;
-        }
-
-        int opt = 1;
-        ::setsockopt(httpServerFd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-
-        sockaddr_in addr{};
-        addr.sin_family = AF_INET;
-        addr.sin_addr.s_addr = INADDR_ANY;
-        addr.sin_port = htons(port);
-
-        if (::bind(httpServerFd, reinterpret_cast<sockaddr *>(&addr), sizeof(addr)) < 0)
-        {
-            logger.error("failed to bind HTTP server socket on port " + std::to_string(port));
-            ::close(httpServerFd);
-            httpServerFd = -1;
-            return;
-        }
-
-        ::listen(httpServerFd, 8);
-        logger.info("MJPEG HTTP server listening on port " + std::to_string(port));
-
-        httpAcceptThread = std::thread([this]()
-        {
-            while (!kill)
-            {
-                sockaddr_in clientAddr{};
-                socklen_t clientLen = sizeof(clientAddr);
-                int clientFd = ::accept(httpServerFd, reinterpret_cast<sockaddr *>(&clientAddr), &clientLen);
-                if (clientFd < 0)
-                    break;
-
-                // Drain the HTTP request (browser sends GET / HTTP/1.1 etc.)
-                char buf[1024];
-                ::recv(clientFd, buf, sizeof(buf), 0);
-
-                // Send HTTP headers so the browser treats this as MJPEG
-                const std::string headers =
-                    "HTTP/1.0 200 OK\r\n"
-                    "Content-Type: multipart/x-mixed-replace;boundary=frame\r\n"
-                    "Cache-Control: no-cache\r\n"
-                    "\r\n";
-                ::send(clientFd, headers.c_str(), headers.size(), 0);
-
-                if (!gstStreamsink)
-                {
-                    logger.error("streamsink not available, closing client");
-                    ::close(clientFd);
-                    continue;
-                }
-
-                GSocket *gsock = g_socket_new_from_fd(clientFd, nullptr);
-                if (!gsock)
-                {
-                    logger.error("failed to wrap client fd in GSocket");
-                    ::close(clientFd);
-                    continue;
-                }
-
-                g_signal_emit_by_name(gstStreamsink, "add", gsock);
-                g_object_unref(gsock);
-                logger.info("browser client connected to MJPEG stream");
-            }
-        });
+        ffmpegPipe = popen(config::ffmpegPipeCmd.c_str(), "w");
+        if (!ffmpegPipe)
+            logger.error("failed to open ffmpeg pipe: " + config::ffmpegPipeCmd);
+        else
+            logger.info("ffmpeg pipe opened: " + config::ffmpegPipeCmd);
     }
 
     void configureHls()
@@ -749,7 +665,7 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
             cv::imshow("detections", frame);
             cv::waitKey(1);
         }
-        else if (isRtpEnabled() || isMjpegEnabled() || isMjpegTcpEnabled())
+        else if (isRtpEnabled() || isMjpegEnabled())
         {
             if (!gstAppsrc)
             {
@@ -764,6 +680,19 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
             if (ret != GST_FLOW_OK)
                 logger.error("gst_app_src_push_buffer failed: " + std::to_string(ret));
         }
+        else if (isMjpegPipeEnabled())
+        {
+            if (!ffmpegPipe)
+            {
+                logger.error("ffmpeg pipe is null, cannot push frame");
+                return;
+            }
+
+            std::vector<uchar> jpegBuf;
+            cv::imencode(".jpg", frame, jpegBuf, {cv::IMWRITE_JPEG_QUALITY, config::mjpegQuality});
+            fwrite(jpegBuf.data(), 1, jpegBuf.size(), ffmpegPipe);
+            fflush(ffmpegPipe);
+        }
         else
         {
             logger.warn("display mode not configured code: " + std::to_string(displayMode));
@@ -772,23 +701,20 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
 
     ~ResultStreamer()
     {
-        if (httpServerFd >= 0)
-        {
-            ::close(httpServerFd);
-            httpServerFd = -1;
-        }
-        if (httpAcceptThread.joinable())
-            httpAcceptThread.join();
-
         if (t.joinable())
             t.join();
+
+        if (ffmpegPipe)
+        {
+            pclose(ffmpegPipe);
+            ffmpegPipe = nullptr;
+        }
 
         if (gstPipeline)
         {
             gst_app_src_end_of_stream(GST_APP_SRC(gstAppsrc));
             gst_element_set_state(gstPipeline, GST_STATE_NULL);
             if (gstAppsrc) gst_object_unref(gstAppsrc);
-            if (gstStreamsink) gst_object_unref(gstStreamsink);
             gst_object_unref(gstPipeline);
         }
     }
