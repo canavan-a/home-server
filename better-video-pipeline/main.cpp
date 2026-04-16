@@ -496,28 +496,35 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
 
         gstAppsrc = gst_bin_get_by_name(GST_BIN(gstPipeline), "src");
 
-        GstCaps *caps = gst_caps_new_simple("video/x-raw",
-                                            "format", G_TYPE_STRING, "BGR",
-                                            "width", G_TYPE_INT, config::frameWidth,
-                                            "height", G_TYPE_INT, config::frameHeight,
-                                            "framerate", GST_TYPE_FRACTION, 30, 1,
-                                            nullptr);
-        gst_app_src_set_caps(GST_APP_SRC(gstAppsrc), caps);
-        gst_caps_unref(caps);
-
         gst_element_set_state(gstPipeline, GST_STATE_PLAYING);
         logger.info("GStreamer pipeline started successfully");
     }
 
+    std::string appsrcCaps()
+    {
+        return "video/x-raw,format=BGR,width=" + std::to_string(config::frameWidth) +
+               ",height=" + std::to_string(config::frameHeight) + ",framerate=30/1";
+    }
+
     void configureRtp()
     {
-        std::string pipelineStr = "appsrc name=src ! videoconvert ! vp8enc target-bitrate=" + std::to_string(bitrate) + " deadline=1 keyframe-max-dist=30 ! rtpvp8pay ! udpsink host=" + host + " port=" + std::to_string(port) + " sync=false";
+        std::string pipelineStr =
+            "appsrc name=src is-live=true do-timestamp=true format=time caps=\"" + appsrcCaps() + "\" "
+            "! videoconvert "
+            "! vp8enc target-bitrate=" + std::to_string(bitrate) + " deadline=1 cpu-used=8 keyframe-max-dist=30 lag-in-frames=0 "
+            "! rtpvp8pay "
+            "! udpsink host=" + host + " port=" + std::to_string(port) + " sync=false async=false";
         openGstPipeline(pipelineStr);
     }
 
     void configureMjpeg()
     {
-        std::string pipelineStr = "appsrc name=src ! videoconvert ! jpegenc quality=" + std::to_string(config::mjpegQuality) + " ! multipartmux ! tcpserversink port=" + std::to_string(config::mjpegPort) + " recover-policy=keyframe sync=false";
+        std::string pipelineStr =
+            "appsrc name=src is-live=true do-timestamp=true format=time caps=\"" + appsrcCaps() + "\" "
+            "! videoconvert "
+            "! jpegenc quality=" + std::to_string(config::mjpegQuality) + " "
+            "! multipartmux "
+            "! tcpserversink port=" + std::to_string(config::mjpegPort) + " recover-policy=keyframe sync=false async=false";
         openGstPipeline(pipelineStr);
     }
 
@@ -639,14 +646,8 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
                 return;
             }
 
-            logger.info("pushing frame to appsrc size=" + std::to_string(frame.cols) + "x" + std::to_string(frame.rows));
-
             gsize size = frame.total() * frame.elemSize();
-            GstBuffer *buffer = gst_buffer_new_allocate(nullptr, size, nullptr);
-            GstMapInfo map;
-            gst_buffer_map(buffer, &map, GST_MAP_WRITE);
-            std::memcpy(map.data, frame.data, size);
-            gst_buffer_unmap(buffer, &map);
+            GstBuffer *buffer = gst_buffer_new_wrapped(g_memdup2(frame.data, size), size);
 
             GstFlowReturn ret = gst_app_src_push_buffer(GST_APP_SRC(gstAppsrc), buffer);
             if (ret != GST_FLOW_OK)
