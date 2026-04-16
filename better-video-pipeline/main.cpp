@@ -367,7 +367,7 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
                 return Err{"openvino xml file not found"};
             }
 
-            model = core.compile_model(core.read_model(vinoXml), "CPU");
+            model = core.compile_model(core.read_model(vinoXml), "GPU");
             inferenceRequest = std::make_unique<ov::InferRequest>(model.create_infer_request());
 
             break;
@@ -515,6 +515,7 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
     {
         std::string pipelineStr =
             "appsrc name=src is-live=true do-timestamp=true format=time caps=\"" + appsrcCaps() + "\" "
+                                                                                                  "! queue max-size-buffers=2 leaky=upstream "
                                                                                                   "! videoconvert "
                                                                                                   "! videoscale ! video/x-raw,width=" +
             std::to_string(config::streamWidth) + ",height=" + std::to_string(config::streamHeight) + " "
@@ -664,7 +665,10 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
 
             GstFlowReturn ret = gst_app_src_push_buffer(GST_APP_SRC(gstAppsrc), buffer);
             if (ret != GST_FLOW_OK)
+            {
                 logger.error("gst_app_src_push_buffer failed: " + std::to_string(ret));
+                gst_buffer_unref(buffer);
+            }
         }
 
         else
