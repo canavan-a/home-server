@@ -497,11 +497,11 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
         gstAppsrc = gst_bin_get_by_name(GST_BIN(gstPipeline), "src");
 
         GstCaps *caps = gst_caps_new_simple("video/x-raw",
-            "format", G_TYPE_STRING, "BGR",
-            "width", G_TYPE_INT, config::frameWidth,
-            "height", G_TYPE_INT, config::frameHeight,
-            "framerate", GST_TYPE_FRACTION, 30, 1,
-            nullptr);
+                                            "format", G_TYPE_STRING, "BGR",
+                                            "width", G_TYPE_INT, config::frameWidth,
+                                            "height", G_TYPE_INT, config::frameHeight,
+                                            "framerate", GST_TYPE_FRACTION, 30, 1,
+                                            nullptr);
         gst_app_src_set_caps(GST_APP_SRC(gstAppsrc), caps);
         gst_caps_unref(caps);
 
@@ -511,7 +511,7 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
 
     void configureRtp()
     {
-        std::string pipelineStr = "appsrc name=src ! videoconvert ! vp8enc target-bitrate=" + std::to_string(bitrate) + " deadline=1 ! rtpvp8pay ! udpsink host=" + host + " port=" + std::to_string(port) + " sync=false";
+        std::string pipelineStr = "appsrc name=src ! videoconvert ! vp8enc target-bitrate=" + std::to_string(bitrate) + " deadline=1 keyframe-max-dist=30 ! rtpvp8pay ! udpsink host=" + host + " port=" + std::to_string(port) + " sync=false";
         openGstPipeline(pipelineStr);
     }
 
