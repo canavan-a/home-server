@@ -16,7 +16,7 @@ namespace config
         MJPEG,
     };
 
-    const MODE displayMode{MODE::RTP_VP8};
+    const MODE displayMode{MODE::MJPEG};
 
     const int bitrate{2000000};
     const std::string rtpHost{"127.0.0.1"};
