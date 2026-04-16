@@ -14,18 +14,23 @@ namespace config
         RTP_H264,
         HLS,
         MJPEG,
+        MJPEG_TCP,
     };
 
-    const MODE displayMode{MODE::MJPEG};
+    const MODE displayMode{MODE::MJPEG_TCP};
 
     const int bitrate{2000000};
     const std::string rtpHost{"127.0.0.1"};
     const int rtpPort{5111};
     const int mjpegPort{5222};
+    const int mjpegTcpPort{8080};
     const int mjpegQuality{80};
 
     const int frameHeight{1080};
     const int frameWidth{1920};
+
+    const int streamWidth{1280};
+    const int streamHeight{720};
 
     enum ModelFormat
     {
