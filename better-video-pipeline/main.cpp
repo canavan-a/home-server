@@ -90,6 +90,8 @@ struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
     Logger<L> logger{};
     cv::VideoCapture cap;
 
+    auto cameraInput{config::CAMERA_INPUT};
+
     bool framerate{};
 
     CameraStreamer(std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> buffer)
@@ -103,6 +105,13 @@ struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
                                     logger.info(v); });
     }
 
+    CameraStreamer(std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> buffer, auto camInput)
+        : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>{buffer}, cameraInput{camInput}
+    {
+        this->setup();
+        logger.info("Starting CamerStreamer with input: " + cameraInput);
+    }
+
     CameraStreamer(std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> buffer, bool showFramerate)
         : CameraStreamer{buffer}
     {
@@ -112,7 +121,7 @@ struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
     void setup()
     {
         logger.info("setting up camera");
-        cap.open(config::CAMERA_INPUT, config::CAMERA_BACKEND);
+        cap.open(cameraInput, config::CAMERA_BACKEND);
         cap.set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'));
         cap.set(cv::CAP_PROP_FRAME_WIDTH, config::frameWidth);
         cap.set(cv::CAP_PROP_FRAME_HEIGHT, config::frameHeight);
@@ -188,6 +197,44 @@ struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
             t.join();
 
         cap.release();
+    }
+};
+
+template <LogLevel L = LogLevel::INFO>
+struct CaptureManager
+{
+
+    auto inputs{config::CAMERA_INPUTS};
+    int current{0};
+    std::array<std::unique_ptr<CameraStreamer<L>>, config::CAMERA_INPUTS.size()> cameraStreams{};
+
+    CaptureManager()
+    {
+        this->setup();
+    }
+
+    void setup()
+    {
+        auto index{0};
+        std::ranges::for_each(inputs, [&index, this](auto input)
+                              { 
+                                auto stream = std::make_unique<CameraStreamer<L>>(std::make_shared<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>>(), input);
+                                this->cameraStreams[index++] = std::move(stream); });
+    }
+
+    auto getCurrentBuffer() -> std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>>
+    {
+        return cameraStreams[current]->buffer;
+    }
+
+    auto getSwapBuffer() -> std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>>
+    {
+        ++current;
+        if (current == cameraStreams.size())
+        {
+            current = 0;
+        }
+        return getCurrentBuffer();
     }
 };
 
@@ -398,6 +445,9 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
     Logger<L> logger{};
     std::mutex signalMutex{};
     std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> cameraBuffer{};
+
+    std::mutex cameraBufferSwapMutex{};
+
     GstElement *gstPipeline{nullptr};
     GstElement *gstAppsrc{nullptr};
     FILE *ffmpegPipe{nullptr};
@@ -417,11 +467,18 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
     const std::string host{config::rtpHost};
     const int bitrate{config::bitrate};
 
-    const config::ModelFormat modelFormat{config::MODEL_FORMAT};
+    bool bypassDrawResults{false};
+    config::ModelFormat modelFormat{config::MODEL_FORMAT};
 
     ResultStreamer(std::shared_ptr<RingBuffer<cv::Mat, config::RESULT_BUFFER_SIZE>> resBuf, std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> camBuf) : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>{resBuf}, cameraBuffer{camBuf}
     {
         this->configure();
+    }
+
+    void swapCameraStream(std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> newCameraBuffer)
+    {
+        std::lock_guard<std::mutex> lock(this->cameraBufferSwapMutex);
+        cameraBuffer = newCameraBuffer;
     }
 
     void configure()
@@ -442,6 +499,7 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
 
     void setDisplayMode(config::MODE newMode)
     {
+
         displayMode = newMode;
 
         configure();
@@ -449,7 +507,15 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
 
     void setModeFormat(const config::ModelFormat format)
     {
+        std::lock_guard<std::mutex> lock(this->cameraBufferSwapMutex);
+
         modelFormat = format;
+    }
+
+    void setDrawResultsBypass(bool newValue)
+    {
+        std::lock_guard<std::mutex> lock(this->cameraBufferSwapMutex);
+        bypassDrawResults = newValue;
     }
 
     bool isRtpEnabled()
@@ -556,6 +622,8 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
 
         while (!kill)
         {
+            std::lock_guard<std::mutex> lock(this->cameraBufferSwapMutex);
+
             // wait for frame signal from the shared buffer
             logger.debug("waiting on tick");
             std::unique_lock<std::mutex> lock(signalMutex);
@@ -580,7 +648,7 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
 
             cv::Mat display = frame.value().clone();
 
-            if (modelFormat == config::ModelFormat::NONE)
+            if (modelFormat == config::ModelFormat::NONE || this->bypassDrawResults)
             {
                 logger.info("skipping inference processing in ResultStreamer");
             }
@@ -642,7 +710,14 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
                         cv::Point(10, display.rows - 10),
                         cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(255, 255, 255), 2);
             handleFrameOutput(display);
+            handleInferenceResult(inferenceResult);
         }
+    }
+
+    void handleInferenceResult(cv::Mat &inferenceFrame)
+    {
+        // reduce and convert to low bandwidth format
+        // send over serial or do something else??
     }
 
     void handleFrameOutput(cv::Mat &frame)
