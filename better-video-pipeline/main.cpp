@@ -18,6 +18,8 @@
 #include <numeric>
 #include <iomanip>
 #include <cstdio>
+#include <csignal>
+#include <functional>
 
 // onnx and vino imports
 #include <onnxruntime_cxx_api.h>
@@ -778,6 +780,11 @@ struct MediaPipeline
     std::unique_ptr<ResultStreamer<L>> resultStreamer;
     Logger<L> logger{};
 
+    std::function<void()> swapLambda = []()
+    {
+        std::cout << "not set \n";
+    };
+
     bool testPrint{};
 
     MediaPipeline() = default;
@@ -806,6 +813,18 @@ struct MediaPipeline
         inferenceStreamer->stop();
         cameraStreamer->stop();
         logger.debug("stopped camera");
+    }
+
+    void initSignalHandlers()
+    {
+        signal(10, handleRotateViewCamera);
+    }
+
+    void handleSwapCamera()
+    {
+        swapLambda()
+        {
+        }
     }
 };
 
