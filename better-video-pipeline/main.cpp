@@ -1,7 +1,6 @@
 #include <iostream>
 #include <memory>
 #include <thread>
-#include <serialib.h>
 #include <opencv2/opencv.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/dnn.hpp>
@@ -18,8 +17,11 @@
 #include <numeric>
 #include <iomanip>
 #include <cstdio>
-#include <csignal>
 #include <functional>
+
+// git submodules imports
+#include <serialib.h>
+#include <httplib.h>
 
 // onnx and vino imports
 #include <onnxruntime_cxx_api.h>
@@ -208,7 +210,7 @@ struct CaptureManager
 
     auto inputs{config::CAMERA_INPUTS};
     int current{0};
-    std::array<std::unique_ptr<CameraStreamer<L>>, config::CAMERA_INPUTS.size()> cameraStreams{};
+    std::array<std::shared_ptr<CameraStreamer<L>>, config::CAMERA_INPUTS.size()> cameraStreams{};
 
     CaptureManager()
     {
@@ -219,9 +221,21 @@ struct CaptureManager
     {
         auto index{0};
         std::ranges::for_each(inputs, [&index, this](auto input)
-                              { 
-                                auto stream = std::make_unique<CameraStreamer<L>>(std::make_shared<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>>(), input);
-                                this->cameraStreams[index++] = std::move(stream); });
+                              {
+                                  auto stream = std::make_shared<CameraStreamer<L>>(std::make_shared<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>>(), input);
+                                  this->cameraStreams[index++] = std::move(stream); });
+    }
+
+    void start()
+    {
+        std::ranges::for_each(cameraStreams, [this](auto stream)
+                              { stream->start(); });
+    }
+
+    void stop()
+    {
+        std::ranges::for_each(cameraStreams, [this](auto stream)
+                              { stream->stop(); });
     }
 
     auto getCurrentBuffer() -> std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>>
@@ -773,6 +787,8 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
 template <LogLevel L = LogLevel::DEBUG>
 struct MediaPipeline
 {
+
+    std::unique_ptr<CaptureManager> captureManager;
     std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> cameraBuffer;
     std::shared_ptr<RingBuffer<cv::Mat, config::RESULT_BUFFER_SIZE>> resultBuffer;
     std::unique_ptr<CameraStreamer<L>> cameraStreamer;
@@ -780,10 +796,9 @@ struct MediaPipeline
     std::unique_ptr<ResultStreamer<L>> resultStreamer;
     Logger<L> logger{};
 
-    std::function<void()> swapLambda = []()
-    {
-        std::cout << "not set \n";
-    };
+    std::thread httpServerThread;
+
+    httplib::Server svr;
 
     bool testPrint{};
 
@@ -791,40 +806,68 @@ struct MediaPipeline
 
     void run(config::ModelFormat format = config::ModelFormat::ONNX)
     {
-        cameraBuffer = std::make_shared<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>>();
 
-        cameraStreamer = std::make_unique<CameraStreamer<L>>(cameraBuffer, testPrint);
-        cameraStreamer->start();
+        // cameraBuffer = std::make_shared<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>>();
+
+        // cameraStreamer = std::make_unique<CameraStreamer<L>>(cameraBuffer, testPrint);
+        // cameraStreamer->start();
+
+        captureManager = std::make_unique::<CaptureManager<T>>();
+        captureManager->start();
+
+        std::shared_ptr<CameraStreamer> inferenceCameraStream = captureManager->cameraStreams[config::CAMERA_INFERENCE_INDEX];
 
         resultBuffer = std::make_shared<RingBuffer<cv::Mat, config::RESULT_BUFFER_SIZE>>();
 
-        inferenceStreamer = std::make_unique<InferenceConsumer<L>>(cameraBuffer, resultBuffer, cameraStreamer->cameraStreamReady, format, testPrint);
+        inferenceStreamer = std::make_unique<InferenceConsumer<L>>(inferenceCameraStream->buffer, resultBuffer, inferenceCameraStream->cameraStreamReady, format, testPrint);
         inferenceStreamer->start();
 
-        resultStreamer = std::make_unique<ResultStreamer<L>>(resultBuffer, cameraBuffer);
+        resultStreamer = std::make_unique<ResultStreamer<L>>(resultBuffer, inferenceCameraStream->buffer);
         resultStreamer->start();
+
+        startHttpServer();
     }
 
     void runFor(config::ModelFormat format, std::chrono::seconds seconds)
     {
         run(format);
         std::this_thread::sleep_for(seconds);
+        this->stopHttpServer();
         resultStreamer->stop();
         inferenceStreamer->stop();
-        cameraStreamer->stop();
+        // cameraStreamer->stop();
+        captureManager->stop();
         logger.debug("stopped camera");
     }
 
-    void initSignalHandlers()
+    void startHttpServer()
     {
-        signal(10, handleRotateViewCamera);
+
+        svr.Get("/swap", [this](const httplib::Request &req, httplib::Response &res)
+                { 
+                    this->handleSwapCamera();
+                    res.status=200;
+                    res.set_content("Camera swap triggered", "text/plain"); });
+
+        logger.infor("starting http server");
+        httpServerThread = std::thread([this]()
+                                       { svr.listen("0.0.0.0", config::httpServerPort); });
+    }
+
+    void stopHttpServer()
+    {
+
+        logger.infor("stopping http server");
+        svr.stop();
+
+        if (httpServerThread.joinable())
+        {
+            httpServerThread.join();
+        }
     }
 
     void handleSwapCamera()
     {
-        swapLambda()
-        {
-        }
     }
 };
 
@@ -886,7 +929,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        auto mp = MediaPipeline<LogLevel::DEBUG>{};
+        auto mp = MediaPipeline<LogLevel::INFO>{};
         mp.run(config::MODEL_FORMAT);
     }
 

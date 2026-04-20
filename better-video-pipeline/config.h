@@ -17,6 +17,8 @@ namespace config
         MJPEG,
     };
 
+    constexpr int httpServerPort{3333};
+
     constexpr MODE displayMode{MODE::RTP_VP8};
 
     constexpr int bitrate{2000000};
@@ -53,7 +55,8 @@ namespace config
 #ifdef _WIN32
     constexpr auto CAMERA_BACKEND = cv::CAP_MSMF;
     constexpr int CAMERA_INPUT{0};
-    constexpr std::array<int, 2> CAMERA_INPUTS{0, 1};
+    constexpr int CAMERA_INFERENCE_INDEX{0};
+    constexpr std::array<int, 1> CAMERA_INPUTS{0};
 #else
     constexpr std::string_view CAMERA_INPUT{"/dev/video0"};
     constexpr auto CAMERA_BACKEND = cv::CAP_V4L2;

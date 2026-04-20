@@ -21,6 +21,7 @@ target_include_directories(main PRIVATE
     libs/serialib/lib
     /usr/local/include
     ${GST_INCLUDE_DIRS}
+    ${CMAKE_SOURCE_DIR}/libs/httplib
 )
 
 target_link_libraries(main
