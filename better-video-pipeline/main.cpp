@@ -94,7 +94,7 @@ struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
     Logger<L> logger{};
     cv::VideoCapture cap;
 
-    auto cameraInput{config::CAMERA_INPUT};
+    int cameraInput{config::CAMERA_INPUT};
 
     bool framerate{};
 
@@ -208,7 +208,7 @@ template <LogLevel L = LogLevel::INFO>
 struct CaptureManager
 {
 
-    auto inputs{config::CAMERA_INPUTS};
+    std::array<int, std::size(config::CAMERA_INPUTS)> inputs{config::CAMERA_INPUTS};
     int current{0};
     std::array<std::shared_ptr<CameraStreamer<L>>, config::CAMERA_INPUTS.size()> cameraStreams{};
 
@@ -405,7 +405,7 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
         {
         case config::ModelFormat::ONNX:
         {
-            std::string onnxPath{config::MODEL_DIR + "/" + config::MODEL_NAME + ".onnx"};
+            std::string onnxPath{std::string(config::MODEL_DIR) + "/" + config::MODEL_NAME + ".onnx"};
             if (!std::filesystem::exists(onnxPath))
             {
                 return Err{"onnx file not found"};
@@ -418,8 +418,8 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
         }
         case config::ModelFormat::VINO:
         {
-            std::string vinoBin{config::MODEL_DIR + "/" + config::MODEL_NAME + ".bin"};
-            std::string vinoXml{config::MODEL_DIR + "/" + config::MODEL_NAME + ".xml"};
+            std::string vinoBin{std::string(config::MODEL_DIR) + "/" + config::MODEL_NAME + ".bin"};
+            std::string vinoXml{std::string(config::MODEL_DIR) + "/" + config::MODEL_NAME + ".xml"};
 
             if (!std::filesystem::exists(vinoBin))
             {
@@ -638,7 +638,7 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
 
         while (!kill)
         {
-            std::lock_guard<std::mutex> lock(this->cameraBufferSwapMutex);
+            std::lock_guard<std::mutex> swapLock(this->cameraBufferSwapMutex);
 
             // wait for frame signal from the shared buffer
             logger.debug("waiting on tick");
@@ -788,7 +788,7 @@ template <LogLevel L = LogLevel::DEBUG>
 struct MediaPipeline
 {
 
-    std::unique_ptr<CaptureManager> captureManager;
+    std::unique_ptr<CaptureManager<L>> captureManager;
     std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> cameraBuffer;
     std::shared_ptr<RingBuffer<cv::Mat, config::RESULT_BUFFER_SIZE>> resultBuffer;
     std::unique_ptr<CameraStreamer<L>> cameraStreamer;
@@ -812,7 +812,7 @@ struct MediaPipeline
         // cameraStreamer = std::make_unique<CameraStreamer<L>>(cameraBuffer, testPrint);
         // cameraStreamer->start();
 
-        captureManager = std::make_unique::<CaptureManager<T>>();
+        captureManager = std::make_unique::<CaptureManager<L>>();
         captureManager->start();
 
         std::shared_ptr<CameraStreamer> inferenceCameraStream = captureManager->cameraStreams[config::CAMERA_INFERENCE_INDEX];
@@ -849,7 +849,7 @@ struct MediaPipeline
                     res.status=200;
                     res.set_content("Camera swap triggered", "text/plain"); });
 
-        logger.infor("starting http server");
+        logger.info("starting http server");
         httpServerThread = std::thread([this]()
                                        { svr.listen("0.0.0.0", config::httpServerPort); });
     }
@@ -857,7 +857,7 @@ struct MediaPipeline
     void stopHttpServer()
     {
 
-        logger.infor("stopping http server");
+        logger.info("stopping http server");
         svr.stop();
 
         if (httpServerThread.joinable())
