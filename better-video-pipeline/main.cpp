@@ -726,11 +726,11 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
                         cv::Point(10, display.rows - 10),
                         cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(255, 255, 255), 2);
             handleFrameOutput(display);
-            handleInferenceResult(inferenceResult);
+            handleInferenceResult(inferenceResult.value());
         }
     }
 
-    void handleInferenceResult(cv::Mat &inferenceFrame)
+    void handleInferenceResult(cv::Mat inferenceFrame)
     {
         // reduce and convert to low bandwidth format
         // send over serial or do something else??
