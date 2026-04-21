@@ -94,7 +94,7 @@ struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
     Logger<L> logger{};
     cv::VideoCapture cap;
 
-    int cameraInput{config::CAMERA_INPUT};
+    std::string_view cameraInput{config::CAMERA_INPUT};
 
     bool framerate{};
 
@@ -208,7 +208,7 @@ template <LogLevel L = LogLevel::INFO>
 struct CaptureManager
 {
 
-    std::array<int, std::size(config::CAMERA_INPUTS)> inputs{config::CAMERA_INPUTS};
+    std::array<std::string_view, std::size(config::CAMERA_INPUTS)> inputs{config::CAMERA_INPUTS};
     int current{0};
     std::array<std::shared_ptr<CameraStreamer<L>>, config::CAMERA_INPUTS.size()> cameraStreams{};
 
@@ -405,7 +405,7 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
         {
         case config::ModelFormat::ONNX:
         {
-            std::string onnxPath{std::string(config::MODEL_DIR) + "/" + config::MODEL_NAME + ".onnx"};
+            std::string onnxPath{std::string(config::MODEL_DIR) + "/" + std::string(config::MODEL_NAME) + ".onnx"};
             if (!std::filesystem::exists(onnxPath))
             {
                 return Err{"onnx file not found"};
@@ -418,8 +418,8 @@ struct InferenceConsumer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
         }
         case config::ModelFormat::VINO:
         {
-            std::string vinoBin{std::string(config::MODEL_DIR) + "/" + config::MODEL_NAME + ".bin"};
-            std::string vinoXml{std::string(config::MODEL_DIR) + "/" + config::MODEL_NAME + ".xml"};
+            std::string vinoBin{std::string(config::MODEL_DIR) + "/" + std::string(config::MODEL_NAME) + ".bin"};
+            std::string vinoXml{std::string(config::MODEL_DIR) + "/" + std::string(config::MODEL_NAME) + ".xml"};
 
             if (!std::filesystem::exists(vinoBin))
             {
@@ -812,7 +812,7 @@ struct MediaPipeline
         // cameraStreamer = std::make_unique<CameraStreamer<L>>(cameraBuffer, testPrint);
         // cameraStreamer->start();
 
-        captureManager = std::make_unique::<CaptureManager<L>>();
+        captureManager = std::make_unique<CaptureManager<L>>();
         captureManager->start();
 
         std::shared_ptr<CameraStreamer> inferenceCameraStream = captureManager->cameraStreams[config::CAMERA_INFERENCE_INDEX];
