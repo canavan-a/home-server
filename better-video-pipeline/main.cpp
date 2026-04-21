@@ -807,22 +807,22 @@ struct MediaPipeline
     void run(config::ModelFormat format = config::ModelFormat::ONNX)
     {
 
-        // cameraBuffer = std::make_shared<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>>();
+        cameraBuffer = std::make_shared<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>>();
 
-        // cameraStreamer = std::make_unique<CameraStreamer<L>>(cameraBuffer, testPrint);
-        // cameraStreamer->start();
+        cameraStreamer = std::make_unique<CameraStreamer<L>>(cameraBuffer, testPrint);
+        cameraStreamer->start();
 
-        captureManager = std::make_unique<CaptureManager<L>>();
-        captureManager->start();
+        // captureManager = std::make_unique<CaptureManager<L>>();
+        // captureManager->start();
 
-        auto inferenceCameraStream = captureManager->cameraStreams[config::CAMERA_INFERENCE_INDEX];
+        // auto inferenceCameraStream = captureManager->cameraStreams[config::CAMERA_INFERENCE_INDEX];
 
         resultBuffer = std::make_shared<RingBuffer<cv::Mat, config::RESULT_BUFFER_SIZE>>();
 
-        inferenceStreamer = std::make_unique<InferenceConsumer<L>>(inferenceCameraStream->buffer, resultBuffer, inferenceCameraStream->cameraStreamReady, format, testPrint);
+        inferenceStreamer = std::make_unique<InferenceConsumer<L>>(cameraBuffer, resultBuffer, cameraStreamer->cameraStreamReady, format, testPrint);
         inferenceStreamer->start();
 
-        resultStreamer = std::make_unique<ResultStreamer<L>>(resultBuffer, inferenceCameraStream->buffer);
+        resultStreamer = std::make_unique<ResultStreamer<L>>(resultBuffer, cameraBuffer);
         resultStreamer->start();
 
         startHttpServer();
@@ -835,8 +835,8 @@ struct MediaPipeline
         this->stopHttpServer();
         resultStreamer->stop();
         inferenceStreamer->stop();
-        // cameraStreamer->stop();
-        captureManager->stop();
+        cameraStreamer->stop();
+        // captureManager->stop();
         logger.debug("stopped camera");
     }
 
