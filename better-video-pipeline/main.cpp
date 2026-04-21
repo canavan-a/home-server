@@ -825,7 +825,7 @@ struct MediaPipeline
         resultStreamer = std::make_unique<ResultStreamer<L>>(resultBuffer, inferenceCameraStream->buffer);
         resultStreamer->start();
 
-        // startHttpServer();
+        startHttpServer();
     }
 
     void runFor(config::ModelFormat format, std::chrono::seconds seconds)
