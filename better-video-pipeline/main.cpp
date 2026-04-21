@@ -31,6 +31,7 @@
 #include "ringbuffer.h"
 #include "config.h"
 #include "logger.h"
+#include "coco.h"
 
 #define nl "\n"
 
@@ -467,12 +468,6 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
     GstElement *gstPipeline{nullptr};
     GstElement *gstAppsrc{nullptr};
     FILE *ffmpegPipe{nullptr};
-
-    enum COCO
-    {
-        PERSON = 0,
-        CAR = 2,
-    };
 
     const std::array<int, 2> criticalDetections{COCO::CAR, COCO::PERSON};
 
