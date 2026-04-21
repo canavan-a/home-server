@@ -868,6 +868,7 @@ struct MediaPipeline
 
     void handleSwapCamera()
     {
+        resultStreamer->swapCameraStream(captureManager->getSwapBuffer());
     }
 };
 
