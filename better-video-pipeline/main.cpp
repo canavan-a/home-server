@@ -870,6 +870,12 @@ struct MediaPipeline
     {
         resultStreamer->swapCameraStream(captureManager->getSwapBuffer());
     }
+
+    ~MediaPipeline()
+    {
+        if (httpServerThread.joinable())
+            httpServerThread.join();
+    }
 };
 
 struct TestProgram
