@@ -58,9 +58,9 @@ namespace config
     constexpr int CAMERA_INFERENCE_INDEX{0};
     constexpr std::array<int, 1> CAMERA_INPUTS{0};
 #else
-    constexpr std::string_view CAMERA_INPUT{"/dev/video2"};
+    constexpr std::string_view CAMERA_INPUT{"/dev/video0"};
     constexpr auto CAMERA_BACKEND = cv::CAP_V4L2;
     constexpr int CAMERA_INFERENCE_INDEX{0};
-    constexpr std::array<std::string_view, 1> CAMERA_INPUTS{"/dev/video2"};
+    constexpr std::array<std::string_view, 1> CAMERA_INPUTS{"/dev/video0"};
 #endif
 }
