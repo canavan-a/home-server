@@ -125,7 +125,7 @@ struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
     void setup()
     {
         logger.info("setting up camera");
-        cap.open(cameraInput, config::CAMERA_BACKEND);
+        cap.open(std::string(cameraInput), config::CAMERA_BACKEND);
         cap.set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'));
         cap.set(cv::CAP_PROP_FRAME_WIDTH, config::frameWidth);
         cap.set(cv::CAP_PROP_FRAME_HEIGHT, config::frameHeight);
@@ -815,7 +815,7 @@ struct MediaPipeline
         captureManager = std::make_unique<CaptureManager<L>>();
         captureManager->start();
 
-        std::shared_ptr<CameraStreamer> inferenceCameraStream = captureManager->cameraStreams[config::CAMERA_INFERENCE_INDEX];
+        auto inferenceCameraStream = captureManager->cameraStreams[config::CAMERA_INFERENCE_INDEX];
 
         resultBuffer = std::make_shared<RingBuffer<cv::Mat, config::RESULT_BUFFER_SIZE>>();
 
