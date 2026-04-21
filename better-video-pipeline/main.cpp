@@ -113,7 +113,7 @@ struct CameraStreamer : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>
         : Streamer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>{buffer}, cameraInput{camInput}
     {
         this->setup();
-        logger.info("Starting CamerStreamer with input: " + cameraInput);
+        logger.info("Starting CamerStreamer with input: " + std::string(cameraInput));
     }
 
     CameraStreamer(std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> buffer, bool showFramerate)
@@ -736,7 +736,7 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
         // send over serial or do something else??
     }
 
-    void handleFrameOutput(cv::Mat &frame)
+    void handleFrameOutput(cv::Mat frame)
     {
         if (displayMode == config::MODE::DISPLAY)
         {
