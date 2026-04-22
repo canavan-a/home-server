@@ -7,6 +7,9 @@
 namespace config
 {
 
+    bool clippingEnabled{true};
+    bool comEnabled{true};
+
     enum MODE
     {
         DISPLAY,
