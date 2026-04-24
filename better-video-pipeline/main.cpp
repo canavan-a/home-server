@@ -32,6 +32,8 @@
 #include "config.h"
 #include "logger.h"
 #include "coco.h"
+#include "cliphandler.h"
+#include "inferenceutil.h"
 
 #define nl "\n"
 
@@ -481,6 +483,8 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
     bool bypassDrawResults{false};
     config::ModelFormat modelFormat{config::MODEL_FORMAT};
 
+    ClipHandler clipHandler{};
+
     ResultStreamer(std::shared_ptr<RingBuffer<cv::Mat, config::RESULT_BUFFER_SIZE>> resBuf, std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> camBuf) : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>{resBuf}, cameraBuffer{camBuf}
     {
         this->configure();
@@ -721,14 +725,20 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
                         cv::Point(10, display.rows - 10),
                         cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(255, 255, 255), 2);
             handleFrameOutput(display);
-            handleInferenceResult(inferenceResult.value());
+            handleInferenceResult(display, inferenceResult.value());
         }
     }
 
-    void handleInferenceResult(cv::Mat inferenceFrame)
+    void handleInferenceResult(cv::Mat frame, cv::Mat inferenceFrame)
     {
         // reduce and convert to low bandwidth format
         // send over serial or do something else??
+
+        if (config::clippingEnabled)
+        {
+            auto objects = InferenceObjects::parseObjects(inferenceFrame);
+            clipHandler.handleInferenceFrame(frame, objects);
+        }
     }
 
     void handleFrameOutput(cv::Mat frame)

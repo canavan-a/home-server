@@ -8,6 +8,7 @@ namespace config
 {
 
     bool clippingEnabled{true};
+    std::string clipDirName{"clips"};
     bool comEnabled{true};
 
     enum MODE

@@ -103,6 +103,19 @@ struct RingBuffer
         return item;
     }
 
+    std::vector<T> dump()
+    {
+        std::lock_guard<std::mutex> lock(this->mtx);
+
+        std::vector<T> output{};
+        output.reserve(count);
+
+        for (int i = 0; i < count; ++i)
+            output.push_back(data[(start + i) % N]);
+
+        return output;
+    }
+
 private:
     bool isEmpty()
     {

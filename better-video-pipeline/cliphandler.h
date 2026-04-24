@@ -3,7 +3,7 @@
 #include <opencv2/opencv.hpp>
 #include <array>
 #include <ranges>
-#include <
+#include <filesystem>
 
 #include "inferenceutil.h"
 #include "config.h"
@@ -12,6 +12,8 @@
 constexpr int PRECLIP_QUEUE_SIZE{150};
 constexpr int CLIP_START_THRESH{20}; // frames to start the clip
 constexpr int CLIP_STALE_THRESH{35}; // frames to stop the clip
+
+constexpr int CLIP_FPS{20};
 
 struct ClipHandler
 {
@@ -26,13 +28,17 @@ struct ClipHandler
 
     std::vector<cv::Mat> currentClip{};
 
-    ClipHandler() = default;
+    ClipHandler()
+    {
+        // make the clip dir
+        std::filesystem::create_directories(config::clipDirName);
+    };
 
     // objects are deemed to already be filtered for confidence
     void handleInferenceFrame(cv::Mat frame, const std::vector<InferenceObjects::DetectedObject> &confidentObjects)
     {
         // add preclip
-        if (!this->containsCriticalObject(confidentObjects))
+        if (this->containsCriticalObject(confidentObjects))
         {
             handleDetection(frame);
         }
@@ -60,7 +66,7 @@ struct ClipHandler
         {
             if (startCounter >= CLIP_START_THRESH)
             {
-                startClip()
+                startClip();
             }
             else
             {
@@ -80,7 +86,7 @@ struct ClipHandler
         {
             startCounter = 0;
             //  not clipping, no object, pass
-            return
+            return;
         }
         else
         {
@@ -98,6 +104,7 @@ struct ClipHandler
     void startClip()
     {
         resetCounters();
+        currentClip = preclip.dump();
         clipping = true;
     }
 
@@ -105,8 +112,25 @@ struct ClipHandler
     {
         resetCounters();
         clipping = false;
+        processClipBuffer(std::move(currentClip));
+        currentClip.clear();
+    }
 
-        // combine and send buffers to a processing thread
+    void processClipBuffer(std::vector<cv::Mat> clip)
+    {
+        // handle completed clip
+        auto t = std::thread([clip = std::move(clip)]()
+                             {
+          cv::VideoWriter writer(
+              config::clipDirName +"/" + std::to_string(std::time(nullptr)) + ".webm",
+              cv::VideoWriter::fourcc('V', 'P', '8', '0'),
+              20.0,
+              cv::Size(clip[0].cols, clip[0].rows)
+          );
+          for (const auto &frame : clip)
+              writer.write(frame);
+          writer.release(); });
+        t.detach();
     }
 
     void resetCounters()
@@ -120,7 +144,7 @@ struct ClipHandler
     }
     void incrementStaleCount()
     {
-        --staleCounter;
+        ++staleCounter;
     }
 
     bool containsCriticalObject(const std::vector<InferenceObjects::DetectedObject> &confidentObjects)
