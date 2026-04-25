@@ -228,7 +228,9 @@ func writeHeapProfile(c *gin.Context) {
 
 func HandleListClips(c *gin.Context) {
 
-	clips, err := os.ReadDir("webm-clips")
+	clipDir := os.Getenv("WEBM_CLIPHOST")
+
+	clips, err := os.ReadDir(clipDir)
 	if err != nil {
 		c.JSON(400, "could not generate file list")
 		return
@@ -271,7 +273,9 @@ func HandleDownloadClip(c *gin.Context) {
 	mapLock.Unlock()
 	defer fileLocks[name].Unlock()
 
-	file, err := os.Open("webm-clips/" + name)
+	clipDir := os.Getenv("WEBM_CLIPHOST")
+
+	file, err := os.Open(clipDir + "/" + name)
 	if err != nil {
 		c.JSON(400, "file open error")
 		return
