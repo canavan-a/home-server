@@ -733,6 +733,7 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
     {
         // reduce and convert to low bandwidth format
         // send over serial or do something else??
+        return;
 
         if (config::clippingEnabled)
         {
