@@ -736,7 +736,7 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
 
         if (config::clippingEnabled)
         {
-            auto objects = InferenceObjects::parseObjects(inferenceFrame);
+            auto objects = InferenceObjects::parseObjects(inferenceFrame, config::CONF_THRESH);
             clipHandler.handleInferenceFrame(frame, objects);
         }
     }
