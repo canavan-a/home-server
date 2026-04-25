@@ -232,7 +232,7 @@ func HandleListClips(c *gin.Context) {
 
 	clips, err := os.ReadDir(clipDir)
 	if err != nil {
-		c.JSON(400, "could not generate file list")
+		c.JSON(400, err.Error())
 		return
 	}
 
