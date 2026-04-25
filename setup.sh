@@ -42,9 +42,9 @@ chmod 666 /tmp/raw_frame
 echo "Pipes created"
 
 # setup orch
-tmux send-keys -t server "sudo ./myprogram" Enter
+tmux send-keys -t server "./myprogram" Enter
 # echo "Orchestrator started"
 
-tmux send-keys -t stream-ingress "sudo ./build/main" Enter
+tmux send-keys -t stream-ingress "./build/main" Enter
 
 echo "Setup complete"
