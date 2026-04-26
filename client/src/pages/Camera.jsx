@@ -17,19 +17,18 @@ export const Camera = () => {
 
   const videoRef = useRef(null);
 
+  const [socket, setSocket] = useState(null);
+
   const [password, setPassword] = useState(null);
 
   const moveCamera = (dir) => {
-    axios
-      .post(`https://aidan.house/api/camera/move?direction=${dir}`, {
-        doorCode: password,
-      })
-      .then(() => {
-        console.log("moved camera");
-      })
-      .catch((error) => {
-        console.log(error);
-      });
+    const msg = {
+      type: "move",
+      manualControl: dir,
+    };
+
+    const strMsg = JSON.stringify(msg);
+    socket.send(strMsg);
   };
 
   const moveCameraDynamic = (dir) => {
@@ -61,8 +60,10 @@ export const Camera = () => {
     if (password) {
       console.log("PASSWORD", password);
       signalingServer = new WebSocket(`wss:/aidan.house/api/camera/relay?doorCode=${password}`);
+      setSocket(signalingServer);
 
       signalingServer.onclose = () => {
+        setSocket(null);
         navigate("/settings");
       };
 

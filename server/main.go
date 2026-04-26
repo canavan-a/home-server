@@ -13,7 +13,6 @@ import (
 	credentialer "main/creds"
 	"main/database"
 	"main/garage"
-	"main/rawframe"
 	"main/sockstreamer"
 	"main/tracker"
 	"net"
@@ -43,9 +42,6 @@ var (
 	NewtworkActorActive = true
 )
 
-// run on linux
-//sudo setcap cap_net_raw+ep ./{binary name}
-
 func main() {
 	r := gin.Default()
 	err := godotenv.Load()
@@ -57,27 +53,11 @@ func main() {
 
 	credsGenerator := credentialer.NewCreds()
 
-	device := clipper.NewClipStorageDevice()
-	go device.Run()
-
-	clipMaker := clipper.NewClipper(device.StorageChannel)
-	go clipMaker.Run()
-
 	go func() {
 		fmt.Println("starting video stream")
 		err := StreamReader("video", "0.0.0.0", 5111)
 		panic(err)
 	}()
-
-	frameReader := rawframe.NewFrameReader("/tmp/raw_frame", clipMaker.PacketChannel)
-	go frameReader.Run()
-
-	tk := tracker.NewTracker("/tmp/json_pipe", TrackerRunner, clipMaker.ReceiveEntity)
-	go tk.Run()
-
-	tk.AreaSubscriber(func(i int) {
-		socketStreamer.Send([]byte(strconv.Itoa(i)))
-	})
 
 	config := cors.DefaultConfig()
 	config.AllowOrigins = []string{"*"}
@@ -103,8 +83,6 @@ func main() {
 
 		trk := api.Group("/tracker", MiddlewareAuthenticate)
 		{
-			trk.GET("/toggle", MakeToggleTrackerRoute(&tk))
-			trk.GET("/status", MakeTrackerStatusRoute(&tk))
 			speed := trk.Group("speed")
 			{
 				speed.GET("/get", GetTrackerSpeed)
@@ -115,20 +93,9 @@ func main() {
 
 		clp := api.Group("/clipper", MiddlewareAuthenticate)
 		{
-			clp.GET("/toggle", MakeClipperToggleRoute(&tk, clipMaker))
-			clp.GET("/status", MakeClipperStatusRoute(&tk))
-			clp.GET("/clipping", MakeClipperClippingRoute(clipMaker))
 			clp.GET("/list", HandleListClips)
 			clp.GET("/download", HandleDownloadClip)
 			clp.GET("/area_subscribe", socketStreamer.ListenRoute)
-			clp.GET("/area_min", clipMaker.HandleGetAreaMinimum)
-			clp.GET("/set_area_min", clipMaker.HandleUpdateAreaMinimum)
-		}
-
-		clipNotifier := api.Group("/clipper_notifier", MiddlewareAuthenticate)
-		{
-			clipNotifier.GET("/toggle", HandleToggleNotifyClips(device))
-			clipNotifier.GET("/status", HandleNotifyClipsStatus(device))
 		}
 
 		tempLink := api.Group("/templink")
@@ -1199,6 +1166,7 @@ func handleRelayServer(c *gin.Context) {
 		if msgType == websocket.TextMessage {
 			var offer struct {
 				Type          string `json:"type"`
+				ManualControl string `json:"manualControl"`
 				Sdp           string `json:"sdp,omitempty"`
 				Candidate     string `json:"candidate,omitempty"`
 				SdpMid        string `json:"sdpMid,omitempty"`
@@ -1256,6 +1224,19 @@ func handleRelayServer(c *gin.Context) {
 				}
 			} else if offer.Type == "ping" {
 				conn.WriteMessage(websocket.TextMessage, []byte("pong"))
+			} else if offer.Type == "move" {
+				if offer.ManualControl == "l" || offer.ManualControl == "r" {
+				} else {
+					fmt.Println("invalid control direction")
+					continue
+				}
+
+				err := SerialSend(offer.ManualControl)
+				if err != nil {
+					fmt.Println("could not send serial: ", err.Error())
+					return
+				}
+
 			} else {
 				fmt.Println("Received unsupported message type")
 			}

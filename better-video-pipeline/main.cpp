@@ -700,10 +700,10 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
                                         );
 
                                         cv::Scalar colorValue;
-                                        if (classId == COCO::CAR){
+                                        if (classId == COCO::PERSON){
                                             colorValue=cv::Scalar(0,255,0);
                                         }else{
-                                            colorValue=cv::Scalar(0,0,255);
+                                            colorValue=cv::Scalar(255,0,0);
                                         }
 
                                         cv::rectangle(display, box, colorValue, 2);
