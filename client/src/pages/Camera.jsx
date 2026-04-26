@@ -238,9 +238,8 @@ export const Camera = () => {
             >
               <FontAwesomeIcon icon={faChevronLeft} />
             </button>
-            <button onClick={toggleTracking} className={`btn btn-md mx-4 ${"btn-primary"}`}>
+            <button className={`btn btn-md mx-4 ${"btn-primary"}`}>
               {!trackerStatus ? <FontAwesomeIcon icon={faPlay} /> : <FontAwesomeIcon icon={faStop} />}
-              track
             </button>
             <button
               className="btn btn-md"
