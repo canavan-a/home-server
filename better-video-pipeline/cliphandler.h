@@ -128,10 +128,11 @@ struct ClipHandler
         auto rate = frames.empty() ? 20.0f : std::accumulate(frames.begin(), frames.end(), 0.0f) / frames.size();
 
         // handle completed clip
-        auto t = std::thread([clip = std::move(clip), rate]()
+        auto timestamp = std::to_string(std::time(nullptr));
+        auto t = std::thread([clip = std::move(clip), rate, timestamp]()
                              {
           cv::VideoWriter writer(
-              config::clipDirName +"/" + std::to_string(std::time(nullptr)) + ".webm",
+              config::clipDirName + "/" + timestamp + ".webm",
               cv::VideoWriter::fourcc('V', 'P', '8', '0'),
               rate,
               cv::Size(clip[0].cols, clip[0].rows)
