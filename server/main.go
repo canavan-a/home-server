@@ -19,6 +19,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime/pprof"
 	"strconv"
 	"strings"
@@ -224,26 +225,8 @@ func HandleListClips(c *gin.Context) {
 }
 
 func HandleDownloadClip(c *gin.Context) {
-	name := c.Query("name")
-
-	file, err := os.Open(WebmClipDir + "/" + name)
-	if err != nil {
-		c.JSON(400, "file open error")
-		return
-	}
-
-	stat, err := file.Stat()
-	if err != nil {
-		c.JSON(400, "file stat error")
-		return
-	}
-
-	defer file.Close()
-
-	c.Header("Content-Type", "video/webm")
-	c.Header("Content-Length", strconv.FormatInt(stat.Size(), 10))
-
-	http.ServeContent(c.Writer, c.Request, name, stat.ModTime(), file)
+	name := filepath.Base(c.Query("name"))
+	c.File(WebmClipDir + "/" + name)
 }
 
 type IceServerResponse struct {
