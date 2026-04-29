@@ -725,11 +725,11 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
                         cv::Point(10, display.rows - 10),
                         cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(255, 255, 255), 2);
             handleFrameOutput(display);
-            handleInferenceResult(display, inferenceResult.value());
+            handleInferenceResult(display, inferenceResult.value(), averageFrameRate);
         }
     }
 
-    void handleInferenceResult(cv::Mat frame, cv::Mat inferenceFrame)
+    void handleInferenceResult(cv::Mat frame, cv::Mat inferenceFrame, float averageFrameRate)
     {
         // reduce and convert to low bandwidth format
         // send over serial or do something else??
@@ -737,7 +737,7 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
         if (config::clippingEnabled)
         {
             auto objects = InferenceObjects::parseObjects(inferenceFrame, config::CONF_THRESH);
-            clipHandler.handleInferenceFrame(frame, objects);
+            clipHandler.handleInferenceFrame(frame, objects, averageFrameRate);
         }
     }
 

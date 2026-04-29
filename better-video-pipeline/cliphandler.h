@@ -28,6 +28,8 @@ struct ClipHandler
 
     std::vector<cv::Mat> currentClip{};
 
+    RingBuffer<float, 150> frameRates{};
+
     ClipHandler()
     {
         // make the clip dir
@@ -35,8 +37,11 @@ struct ClipHandler
     };
 
     // objects are deemed to already be filtered for confidence
-    void handleInferenceFrame(cv::Mat frame, const std::vector<InferenceObjects::DetectedObject> &confidentObjects)
+    void handleInferenceFrame(cv::Mat frame, const std::vector<InferenceObjects::DetectedObject> &confidentObjects, float frameRate)
     {
+
+        frameRates.push(frameRate);
+
         // add preclip
         if (this->containsCriticalObject(confidentObjects))
         {
@@ -118,13 +123,17 @@ struct ClipHandler
 
     void processClipBuffer(std::vector<cv::Mat> clip)
     {
+
+        auto frames = frameRates.dump();
+        auto rate = frames.empty() ? 20.0f : std::accumulate(frames.begin(), frames.end(), 0.0f) / frames.size();
+
         // handle completed clip
-        auto t = std::thread([clip = std::move(clip)]()
+        auto t = std::thread([clip = std::move(clip), rate]()
                              {
           cv::VideoWriter writer(
               config::clipDirName +"/" + std::to_string(std::time(nullptr)) + ".webm",
               cv::VideoWriter::fourcc('V', 'P', '8', '0'),
-              20.0,
+              rate,
               cv::Size(clip[0].cols, clip[0].rows)
           );
           for (const auto &frame : clip)
