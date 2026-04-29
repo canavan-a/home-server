@@ -40,6 +40,7 @@ var (
 	Addresses           = []string{"192.168.1.154"}
 	AddressMutex        sync.Mutex
 	NewtworkActorActive = true
+	WebmClipDir         string
 )
 
 func main() {
@@ -48,6 +49,7 @@ func main() {
 	if err != nil {
 		panic("Error loading .env file")
 	}
+	WebmClipDir = os.Getenv("WEBM_CLIPHOST")
 
 	socketStreamer := sockstreamer.NewSocketStreamer()
 
@@ -195,9 +197,7 @@ func writeHeapProfile(c *gin.Context) {
 
 func HandleListClips(c *gin.Context) {
 
-	clipDir := os.Getenv("WEBM_CLIPHOST")
-
-	clips, err := os.ReadDir(clipDir)
+	clips, err := os.ReadDir(WebmClipDir)
 	if err != nil {
 		c.JSON(400, err.Error())
 		return
@@ -223,26 +223,10 @@ func HandleListClips(c *gin.Context) {
 	c.JSON(200, output)
 }
 
-var (
-	fileLocks = make(map[string]*sync.Mutex)
-	mapLock   sync.Mutex
-)
-
 func HandleDownloadClip(c *gin.Context) {
 	name := c.Query("name")
 
-	mapLock.Lock()
-
-	if fileLocks[name] == nil {
-		fileLocks[name] = &sync.Mutex{}
-	}
-	fileLocks[name].Lock()
-	mapLock.Unlock()
-	defer fileLocks[name].Unlock()
-
-	clipDir := os.Getenv("WEBM_CLIPHOST")
-
-	file, err := os.Open(clipDir + "/" + name)
+	file, err := os.Open(WebmClipDir + "/" + name)
 	if err != nil {
 		c.JSON(400, "file open error")
 		return
