@@ -32,8 +32,8 @@ struct ClipHandler
 
     ClipHandler()
     {
-        // make the clip dir
         std::filesystem::create_directories(config::clipDirName);
+        std::filesystem::create_directories(std::string(config::clipDirName) + "-tmp");
     };
 
     // objects are deemed to already be filtered for confidence
@@ -133,15 +133,18 @@ struct ClipHandler
              
              
             auto timestamp = std::to_string(std::time(nullptr));
+            std::string tmpPath = config::clipDirName + "-tmp/" + timestamp + ".webm";
+            std::string finalPath = config::clipDirName + "/" + timestamp + ".webm";
             cv::VideoWriter writer(
-              config::clipDirName + "/" + timestamp + ".webm",
+              tmpPath,
               cv::VideoWriter::fourcc('V', 'P', '8', '0'),
               rate,
               cv::Size(clip[0].cols, clip[0].rows)
             );
             for (const auto &frame : clip)
                 writer.write(frame);
-            writer.release(); });
+            writer.release();
+            std::filesystem::rename(tmpPath, finalPath); });
         t.detach();
     }
 
