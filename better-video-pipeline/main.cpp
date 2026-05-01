@@ -644,9 +644,8 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
             std::lock_guard<std::mutex> swapLock(this->cameraBufferSwapMutex);
 
             // wait for frame signal from the shared buffer
-            logger.debug("waiting on tick");
+
             std::unique_lock<std::mutex> lock(signalMutex);
-            logger.debug("tick signaled");
 
             auto tick = std::chrono::steady_clock::now();
             float fps = 1.0f / std::chrono::duration<float>(tick - last).count();
