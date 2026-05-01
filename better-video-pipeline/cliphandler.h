@@ -164,11 +164,11 @@ struct ClipHandler
 
 
             auto timestamp = std::to_string(std::time(nullptr));
-            std::string tmpPath = config::clipDirName + "-tmp/" + timestamp + ".webm";
-            std::string finalPath = config::clipDirName + "/" + timestamp + ".webm";
+            std::string tmpPath = config::clipDirName + "-tmp/" + timestamp + ".mp4";
+            std::string finalPath = config::clipDirName + "/" + timestamp + ".mp4";
             cv::VideoWriter writer(
               tmpPath,
-              cv::VideoWriter::fourcc('v', 'p', '8', '0'),
+              cv::VideoWriter::fourcc('m','p','4','v'),
               rate,
               cv::Size(pre[0].cols, pre[0].rows)
             );
