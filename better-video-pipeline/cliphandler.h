@@ -43,6 +43,8 @@ struct ClipHandler
     std::condition_variable cond;
     bool frameReady{false};
 
+    std::shared_ptr<std::atomic<bool>> clipStopped{};
+
     std::vector<cv::Mat> currentClip{};
 
     cv::Mat shareFrame;
@@ -140,11 +142,9 @@ struct ClipHandler
     {
         logger.info("clip complete, ending clip");
         resetCounters();
-        {
-            std::unique_lock<std::mutex> lock(mtx);
-            clipping = false;
-            frameReady = true;
-        }
+        clipping = false;
+        if (clipStopped)
+            clipStopped->store(true);
         cond.notify_one();
     }
 
@@ -157,11 +157,12 @@ struct ClipHandler
         auto frames = frameRates.dump();
         auto rate = frames.empty() ? 20.0f : std::accumulate(frames.begin(), frames.end(), 0.0f) / frames.size();
 
-        // handle completed clip
-        auto t = std::thread([this, pre = std::move(pc), rate]()
+        clipStopped = std::make_shared<std::atomic<bool>>(false);
+
+        auto t = std::thread([this, pre = std::move(pc), rate, stopped = clipStopped]()
                              {
-            
-            
+
+
             auto timestamp = std::to_string(std::time(nullptr));
             std::string tmpPath = config::clipDirName + "-tmp/" + timestamp + ".webm";
             std::string finalPath = config::clipDirName + "/" + timestamp + ".webm";
@@ -173,14 +174,13 @@ struct ClipHandler
             );
 
             writer.set(cv::VIDEOWRITER_PROP_QUALITY, quality);
-            // write the pre clip
             for (auto &fr : pre)
                 writer.write(fr);
 
             for (;;){
                 std::unique_lock<std::mutex> lock(mtx);
-                cond.wait(lock, [this]{ return frameReady || !clipping; });
-                if (!clipping)
+                cond.wait(lock, [&stopped, this]{ return frameReady || stopped->load(); });
+                if (stopped->load())
                     break;
                 auto frame = shareFrame.clone();
                 frameReady = false;
