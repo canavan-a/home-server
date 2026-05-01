@@ -12,6 +12,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <filesystem>
+#include <queue>
 
 #include "inferenceutil.h"
 #include "config.h"
@@ -41,13 +42,9 @@ struct ClipHandler
 
     std::mutex mtx;
     std::condition_variable cond;
-    bool frameReady{false};
+    std::queue<cv::Mat> frameQueue{};
 
     std::shared_ptr<std::atomic<bool>> clipStopped{};
-
-    std::vector<cv::Mat> currentClip{};
-
-    cv::Mat shareFrame;
 
     RingBuffer<float, 150> frameRates{};
 
@@ -78,14 +75,12 @@ struct ClipHandler
         {
             {
                 std::unique_lock<std::mutex> lock(mtx);
-                shareFrame = frame;
-                frameReady = true;
+                frameQueue.push(frame);
             }
             cond.notify_one();
         }
         else
         {
-            //
             preclip.push(frame);
         }
     }
@@ -167,7 +162,7 @@ struct ClipHandler
 
         {
             std::unique_lock<std::mutex> lock(mtx);
-            frameReady = false;
+            frameQueue = {};
         }
 
         auto t = std::thread([this, pre = std::move(pc), rate, stopped = clipStopped]()
@@ -179,7 +174,7 @@ struct ClipHandler
             std::string finalPath = config::clipDirName + "/" + timestamp + ".mp4";
             cv::VideoWriter writer(
               tmpPath,
-              cv::VideoWriter::fourcc('m','p','4','v'),
+              cv::VideoWriter::fourcc('a','v','c','1'),
               rate,
               cv::Size(pre[0].cols, pre[0].rows)
             );
@@ -190,14 +185,20 @@ struct ClipHandler
 
             for (;;){
                 std::unique_lock<std::mutex> lock(mtx);
-                cond.wait(lock, [&stopped, this]{ return frameReady || stopped->load(); });
-                if (stopped->load())
-                    break;
-                auto frame = shareFrame.clone();
-                frameReady = false;
+                cond.wait(lock, [&stopped, this]{ return !frameQueue.empty() || stopped->load(); });
+
+                std::queue<cv::Mat> batch;
+                std::swap(batch, frameQueue);
+                bool shouldStop = stopped->load();
                 lock.unlock();
-                writer.write(frame);
-                logger.info("adding frame");
+
+                while (!batch.empty()) {
+                    writer.write(batch.front());
+                    batch.pop();
+                }
+
+                if (shouldStop)
+                    break;
             }
             logger.info("breaking clip thread loop, renaming");
             writer.release();
