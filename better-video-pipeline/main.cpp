@@ -484,7 +484,7 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
     bool bypassDrawResults{false};
     config::ModelFormat modelFormat{config::MODEL_FORMAT};
 
-    ClipHandler clipHandler{};
+    ClipHandler clipHandler<L>{};
 
     SerialSender serialSender<L>{};
 
