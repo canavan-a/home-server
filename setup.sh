@@ -45,6 +45,6 @@ echo "Pipes created"
 tmux send-keys -t server "./myprogram" Enter
 # echo "Orchestrator started"
 
-tmux send-keys -t stream-ingress "./build/main" Enter
+tmux send-keys -t stream "./build/main" Enter
 
 echo "Setup complete"

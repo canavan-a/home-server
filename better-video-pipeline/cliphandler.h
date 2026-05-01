@@ -185,6 +185,7 @@ struct ClipHandler
                 frameLock.unlock();
                 writer.write(frame);
             }
+            logger.info("breaking clip thread loop, renaming");
             writer.release();
             std::filesystem::rename(tmpPath, finalPath); });
         t.detach();
