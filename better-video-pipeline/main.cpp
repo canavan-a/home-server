@@ -484,9 +484,9 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
     bool bypassDrawResults{false};
     config::ModelFormat modelFormat{config::MODEL_FORMAT};
 
-    ClipHandler clipHandler<L>{};
+    ClipHandler<L> clipHandler{};
 
-    SerialSender serialSender<L>{};
+    SerialSender<L> serialSender{};
 
     ResultStreamer(std::shared_ptr<RingBuffer<cv::Mat, config::RESULT_BUFFER_SIZE>> resBuf, std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> camBuf) : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>{resBuf}, cameraBuffer{camBuf}
     {
