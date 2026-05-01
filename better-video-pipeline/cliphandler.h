@@ -143,6 +143,7 @@ struct ClipHandler
         {
             std::unique_lock<std::mutex> lock(mtx);
             clipping = false;
+            frameReady = true;
         }
         cond.notify_one();
     }
