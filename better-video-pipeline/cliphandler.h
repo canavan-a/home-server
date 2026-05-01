@@ -186,6 +186,7 @@ struct ClipHandler
                 frameReady = false;
                 lock.unlock();
                 writer.write(frame);
+                logger.info("adding frame");
             }
             logger.info("breaking clip thread loop, renaming");
             writer.release();
