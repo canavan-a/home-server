@@ -226,6 +226,7 @@ func HandleListClips(c *gin.Context) {
 
 func HandleDownloadClip(c *gin.Context) {
 	name := filepath.Base(c.Query("name"))
+	c.Header("Content-Type", "video/mp4")
 	c.File(WebmClipDir + "/" + name)
 }
 
