@@ -41,10 +41,10 @@ struct ClipHandler
 
     std::mutex mtx;
     std::condition_variable cond;
+    bool frameReady{false};
 
     std::vector<cv::Mat> currentClip{};
 
-    std::mutex shareMtx;
     cv::Mat shareFrame;
 
     RingBuffer<float, 150> frameRates{};
@@ -74,12 +74,11 @@ struct ClipHandler
         // always push frames to either preclip or current clip buffers
         if (clipping)
         {
-
-            // currentClip.push_back(frame);
-            // check length and see if clip is too long. if so .... force end the clip
-            std::unique_lock<std::mutex> lock(shareMtx);
-            shareFrame = frame;
-            lock.unlock();
+            {
+                std::unique_lock<std::mutex> lock(mtx);
+                shareFrame = frame;
+                frameReady = true;
+            }
             cond.notify_one();
         }
         else
@@ -141,8 +140,10 @@ struct ClipHandler
     {
         logger.info("clip complete, ending clip");
         resetCounters();
-        clipping = false;
-        // close out the clip thread
+        {
+            std::unique_lock<std::mutex> lock(mtx);
+            clipping = false;
+        }
         cond.notify_one();
     }
 
@@ -177,12 +178,12 @@ struct ClipHandler
 
             for (;;){
                 std::unique_lock<std::mutex> lock(mtx);
-                cond.wait(lock);
+                cond.wait(lock, [this]{ return frameReady || !clipping; });
                 if (!clipping)
                     break;
-                std::unique_lock<std::mutex> frameLock(shareMtx);
                 auto frame = shareFrame.clone();
-                frameLock.unlock();
+                frameReady = false;
+                lock.unlock();
                 writer.write(frame);
             }
             logger.info("breaking clip thread loop, renaming");
