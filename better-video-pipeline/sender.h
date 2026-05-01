@@ -8,6 +8,7 @@
 #include "coco.h"
 #include "config.h"
 #include "ringbuffer.h"
+#include "inferenceutil.h"
 
 template <typename T>
 using Result = std::expected<T, std::string>;
@@ -21,16 +22,16 @@ struct SerialSender
 
     COCO detectedClass{COCO::PERSON};
 
-    std::shared_ptr<RingBuffer<DetectedObject, 4>> sendBuffer{};
+    std::shared_ptr<RingBuffer<InferenceObjects::DetectedObject, 4>> sendBuffer{};
 
     std::thread t;
 
     std::mutex mtx;
     std::condition_variable cv;
 
-    SerialSender() : sendBuffer{std::make_shared<RingBuffer<DetectedObject, 4>>()} {};
+    SerialSender() : sendBuffer{std::make_shared<RingBuffer<InferenceObjects::DetectedObject, 4>>()} {};
 
-    void gatherObjects(std::vector<DetectedObject> &objects)
+    void gatherObjects(std::vector<InferenceObjects::DetectedObject> &objects)
     {
 
         for (auto &object : objects)
