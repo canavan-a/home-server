@@ -54,7 +54,7 @@ namespace config
     constexpr size_t CAMERA_FRAME_BUFFER_SIZE{3};
     constexpr LogLevel LOG_LEVEL{DEBUG};
 
-    constexpr char *COMPORT{"COM3"};
+    constexpr const char *COMPORT{"COM3"};
     constexpr int BAUDRATE{115200};
 #ifdef _WIN32
     constexpr auto CAMERA_BACKEND = cv::CAP_MSMF;
