@@ -166,7 +166,7 @@ struct ClipHandler
             std::string finalPath = config::clipDirName + "/" + timestamp + ".webm";
             cv::VideoWriter writer(
               tmpPath,
-              cv::VideoWriter::fourcc('V', 'P', '8', '0'),
+              cv::VideoWriter::fourcc('v', 'p', '8', '0'),
               rate,
               cv::Size(pre[0].cols, pre[0].rows)
             );
