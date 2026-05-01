@@ -806,7 +806,7 @@ struct MediaPipeline
     std::shared_ptr<RingBuffer<cv::Mat, config::RESULT_BUFFER_SIZE>> resultBuffer;
     std::unique_ptr<CameraStreamer<L>> cameraStreamer;
     std::unique_ptr<InferenceConsumer<L>> inferenceStreamer;
-    std::unique_ptr<ResultStreamer<LogLevel::DEBUG>> resultStreamer;
+    std::unique_ptr<ResultStreamer<LogLevel::INFO>> resultStreamer;
     Logger<L> logger{};
 
     std::thread httpServerThread;
@@ -835,7 +835,7 @@ struct MediaPipeline
         inferenceStreamer = std::make_unique<InferenceConsumer<L>>(inferenceCameraStream->buffer, resultBuffer, inferenceCameraStream->cameraStreamReady, format, testPrint);
         inferenceStreamer->start();
 
-        resultStreamer = std::make_unique<ResultStreamer<LogLevel::DEBUG>>(resultBuffer, inferenceCameraStream->buffer);
+        resultStreamer = std::make_unique<ResultStreamer<LogLevel::INFO>>(resultBuffer, inferenceCameraStream->buffer);
         resultStreamer->start();
 
         startHttpServer();
