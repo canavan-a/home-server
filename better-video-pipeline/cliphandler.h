@@ -3,13 +3,21 @@
 #include <opencv2/opencv.hpp>
 #include <array>
 #include <ranges>
+#include <atomic>
+#include <numeric>
+#include <ctime>
+#include <thread>
+#include <vector>
+#include <iostream>
+#include <mutex>
+#include <condition_variable>
 #include <filesystem>
 
 #include "inferenceutil.h"
 #include "config.h"
 #include "ringbuffer.h"
 
-constexpr int PRECLIP_QUEUE_SIZE{150};
+constexpr int PRECLIP_QUEUE_SIZE{100};
 constexpr int CLIP_START_THRESH{20}; // frames to start the clip
 constexpr int CLIP_STALE_THRESH{35}; // frames to stop the clip
 
@@ -22,11 +30,19 @@ struct ClipHandler
 
     const std::array<COCO, 1> criticalObject{COCO::PERSON};
 
-    bool clipping{false};
+    std::atomic<bool> clipping{false};
     int startCounter{0};
     int staleCounter{0};
 
+    int quality{50};
+
+    std::mutex mtx;
+    std::condition_variable cond;
+
     std::vector<cv::Mat> currentClip{};
+
+    std::mutex shareMtx;
+    cv::Mat shareFrame;
 
     RingBuffer<float, 150> frameRates{};
 
@@ -55,8 +71,13 @@ struct ClipHandler
         // always push frames to either preclip or current clip buffers
         if (clipping)
         {
-            currentClip.push_back(frame);
+
+            // currentClip.push_back(frame);
             // check length and see if clip is too long. if so .... force end the clip
+            std::unique_lock<std::mutex> lock(shareMtx);
+            shareFrame = frame;
+            lock.unlock();
+            cond.notify_one();
         }
         else
         {
@@ -108,8 +129,7 @@ struct ClipHandler
 
     void startClip()
     {
-        resetCounters();
-        currentClip = preclip.dump();
+        startClipProcess();
         clipping = true;
     }
 
@@ -117,21 +137,23 @@ struct ClipHandler
     {
         resetCounters();
         clipping = false;
-        processClipBuffer(std::move(currentClip));
-        currentClip.clear();
+        // close out the clip thread
+        cond.notify_one();
     }
 
-    void processClipBuffer(std::vector<cv::Mat> clip)
+    void startClipProcess()
     {
+
+        auto pc = preclip.dump();
 
         auto frames = frameRates.dump();
         auto rate = frames.empty() ? 20.0f : std::accumulate(frames.begin(), frames.end(), 0.0f) / frames.size();
 
         // handle completed clip
-        auto t = std::thread([clip = std::move(clip), rate]()
+        auto t = std::thread([this, pre = std::move(pc), rate]()
                              {
-             
-             
+            
+            
             auto timestamp = std::to_string(std::time(nullptr));
             std::string tmpPath = config::clipDirName + "-tmp/" + timestamp + ".webm";
             std::string finalPath = config::clipDirName + "/" + timestamp + ".webm";
@@ -139,10 +161,24 @@ struct ClipHandler
               tmpPath,
               cv::VideoWriter::fourcc('V', 'P', '8', '0'),
               rate,
-              cv::Size(clip[0].cols, clip[0].rows)
+              cv::Size(pre[0].cols, pre[0].rows)
             );
-            for (const auto &frame : clip)
+
+            writer.set(cv::VIDEOWRITER_PROP_QUALITY, quality);
+            // write the pre clip
+            for (auto &fr : pre)
+                writer.write(fr);
+
+            for (;;){
+                std::unique_lock<std::mutex> lock(mtx);
+                cond.wait(lock);
+                if (!clipping)
+                    break;
+                std::unique_lock<std::mutex> frameLock(shareMtx);
+                auto frame = shareFrame.clone();
+                frameLock.unlock();
                 writer.write(frame);
+            }
             writer.release();
             std::filesystem::rename(tmpPath, finalPath); });
         t.detach();

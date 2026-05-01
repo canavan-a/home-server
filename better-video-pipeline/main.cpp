@@ -34,6 +34,7 @@
 #include "coco.h"
 #include "cliphandler.h"
 #include "inferenceutil.h"
+#include "sender.h"
 
 #define nl "\n"
 
@@ -485,9 +486,12 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
 
     ClipHandler clipHandler{};
 
+    SerialSender serialSender{};
+
     ResultStreamer(std::shared_ptr<RingBuffer<cv::Mat, config::RESULT_BUFFER_SIZE>> resBuf, std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> camBuf) : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>{resBuf}, cameraBuffer{camBuf}
     {
         this->configure();
+        serialSender.start();
     }
 
     void swapCameraStream(std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> newCameraBuffer)
@@ -738,6 +742,10 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
         {
             auto objects = InferenceObjects::parseObjects(inferenceFrame, config::CONF_THRESH);
             clipHandler.handleInferenceFrame(frame, objects, averageFrameRate);
+            if (objects.size() > 0 && config::comEnabled)
+            {
+                serialSender.gatherObjects(objects);
+            }
         }
     }
 
