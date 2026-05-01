@@ -207,6 +207,9 @@ func HandleListClips(c *gin.Context) {
 	var output []database.Clip
 
 	for i, clip := range clips {
+		if filepath.Ext(clip.Name()) != ".mp4" {
+			continue
+		}
 
 		info, err := clip.Info()
 		if err != nil {

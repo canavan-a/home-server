@@ -154,10 +154,21 @@ struct ClipHandler
         logger.info("starting clip process thread");
         auto pc = preclip.dump();
 
+        if (pc.empty())
+        {
+            logger.info("preclip empty, skipping clip");
+            return;
+        }
+
         auto frames = frameRates.dump();
         auto rate = frames.empty() ? 20.0f : std::accumulate(frames.begin(), frames.end(), 0.0f) / frames.size();
 
         clipStopped = std::make_shared<std::atomic<bool>>(false);
+
+        {
+            std::unique_lock<std::mutex> lock(mtx);
+            frameReady = false;
+        }
 
         auto t = std::thread([this, pre = std::move(pc), rate, stopped = clipStopped]()
                              {
