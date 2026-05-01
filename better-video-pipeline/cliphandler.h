@@ -16,6 +16,7 @@
 #include "inferenceutil.h"
 #include "config.h"
 #include "ringbuffer.h"
+#include "logger.h"
 
 constexpr int PRECLIP_QUEUE_SIZE{100};
 constexpr int CLIP_START_THRESH{20}; // frames to start the clip
@@ -23,9 +24,11 @@ constexpr int CLIP_STALE_THRESH{35}; // frames to stop the clip
 
 constexpr int CLIP_FPS{20};
 
+template <LogLevel L = LogLevel::INFO>
 struct ClipHandler
 {
 
+    Logger<L> logger{};
     RingBuffer<cv::Mat, PRECLIP_QUEUE_SIZE> preclip{};
 
     const std::array<COCO, 1> criticalObject{COCO::PERSON};
@@ -129,12 +132,14 @@ struct ClipHandler
 
     void startClip()
     {
+        logger.info("starting clip (normal)");
         startClipProcess();
         clipping = true;
     }
 
     void endClip()
     {
+        logger.info("clip complete, ending clip");
         resetCounters();
         clipping = false;
         // close out the clip thread
@@ -144,6 +149,7 @@ struct ClipHandler
     void startClipProcess()
     {
 
+        logger.info("starting clip process thread");
         auto pc = preclip.dump();
 
         auto frames = frameRates.dump();

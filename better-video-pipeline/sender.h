@@ -9,15 +9,17 @@
 #include "config.h"
 #include "ringbuffer.h"
 #include "inferenceutil.h"
+#include "logger.h"
 
 template <typename T>
 using Result = std::expected<T, std::string>;
 
 using Err = std::unexpected<std::string>;
 
+template <LogLevel L = LogLevel::INFO>
 struct SerialSender
 {
-
+    Logger<L> logger{};
     std::string comPort{config::COMPORT};
 
     COCO detectedClass{COCO::PERSON};

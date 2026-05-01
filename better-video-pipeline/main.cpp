@@ -486,7 +486,7 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
 
     ClipHandler clipHandler{};
 
-    SerialSender serialSender{};
+    SerialSender serialSender<L>{};
 
     ResultStreamer(std::shared_ptr<RingBuffer<cv::Mat, config::RESULT_BUFFER_SIZE>> resBuf, std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> camBuf) : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>{resBuf}, cameraBuffer{camBuf}
     {
@@ -806,7 +806,7 @@ struct MediaPipeline
     std::shared_ptr<RingBuffer<cv::Mat, config::RESULT_BUFFER_SIZE>> resultBuffer;
     std::unique_ptr<CameraStreamer<L>> cameraStreamer;
     std::unique_ptr<InferenceConsumer<L>> inferenceStreamer;
-    std::unique_ptr<ResultStreamer<L>> resultStreamer;
+    std::unique_ptr<ResultStreamer<LogLevel::DEBUG>> resultStreamer;
     Logger<L> logger{};
 
     std::thread httpServerThread;
@@ -949,7 +949,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        auto mp = MediaPipeline<LogLevel::DEBUG>{};
+        auto mp = MediaPipeline<LogLevel::ERROR>{};
         mp.run(config::MODEL_FORMAT);
     }
 
