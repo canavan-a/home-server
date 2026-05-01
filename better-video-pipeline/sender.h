@@ -14,7 +14,7 @@ using Result = std::expected<T, std::string>;
 
 using Err = std::unexpected<std::string>;
 
-struct SerialSender()
+struct SerialSender
 {
 
     std::string comPort{config::COMPORT};
