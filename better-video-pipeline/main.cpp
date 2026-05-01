@@ -835,7 +835,7 @@ struct MediaPipeline
         inferenceStreamer = std::make_unique<InferenceConsumer<L>>(inferenceCameraStream->buffer, resultBuffer, inferenceCameraStream->cameraStreamReady, format, testPrint);
         inferenceStreamer->start();
 
-        resultStreamer = std::make_unique<ResultStreamer<L>>(resultBuffer, inferenceCameraStream->buffer);
+        resultStreamer = std::make_unique<ResultStreamer<LogLevel::DEBUG>>(resultBuffer, inferenceCameraStream->buffer);
         resultStreamer->start();
 
         startHttpServer();
