@@ -170,10 +170,11 @@ struct ClipHandler
 
 
             auto timestamp = std::to_string(std::time(nullptr));
-            std::string tmpPath = config::clipDirName + "-tmp/" + timestamp + ".avi";
-            std::string finalPath = config::clipDirName + "/" + timestamp + ".mp4";
+            std::string tmpAviPath = config::clipDirName + "-tmp/" + timestamp + ".avi";
+            std::string tmpMp4Path = config::clipDirName + "-tmp/" + timestamp + ".mp4";
+            std::string finalPath  = config::clipDirName + "/" + timestamp + ".mp4";
             cv::VideoWriter writer(
-              tmpPath,
+              tmpAviPath,
               cv::VideoWriter::fourcc('M','J','P','G'),
               rate,
               cv::Size(pre[0].cols, pre[0].rows)
@@ -202,16 +203,20 @@ struct ClipHandler
             }
             logger.info("breaking clip thread loop, converting to mp4");
             writer.release();
-            std::string cmd = "ffmpeg -y -i \"" + tmpPath + "\" -c:v libx264 -crf 23 -preset fast \"" + finalPath + "\" > /dev/null 2>&1";
-                
+            std::string cmd = "ffmpeg -y -i \"" + tmpAviPath + "\" -c:v libx264 -crf 23 -preset fast \"" + tmpMp4Path + "\" > /dev/null 2>&1";
+
             logger.info("running ffmpeg file converter");
             int ret = std::system(cmd.c_str());
             if (ret != 0)
-                logger.info("ffmpeg conversion failed, keeping raw avi at: " + tmpPath);
+            {
+                logger.info("ffmpeg conversion failed, keeping raw avi at: " + tmpAviPath);
+            }
             else
-                std::filesystem::remove(tmpPath); 
-            
-                logger.info("done converting clip with ffmpeg"); });
+            {
+                std::filesystem::rename(tmpMp4Path, finalPath);
+                std::filesystem::remove(tmpAviPath);
+                logger.info("done converting clip with ffmpeg");
+            } });
         t.detach();
     }
 
