@@ -9,7 +9,7 @@ tmux new-session -d -s server -c "$(pwd)/server"
 # tmux new-session -d -s ffmpeg 
 # tmux new-session -d -s mobilenet -c "$(pwd)/mobilenet"
 # tmux new-session -d -s orch -c "$(pwd)/orchestrator"
-tmux new-session -d -s stream-ingress -c "$(pwd)/better-video-pipeline"
+tmux new-session -d -s stream -c "$(pwd)/better-video-pipeline"
 
 echo "Tmux sessions created"
 
