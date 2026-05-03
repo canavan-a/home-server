@@ -4,3 +4,6 @@
 [submodule "better-video-pipeline/libs/httplib"]
 	path = better-video-pipeline/libs/httplib
 	url = https://github.com/yhirose/cpp-httplib
+[submodule "monitor/libs/httplib"]
+	path = monitor/libs/httplib
+	url = https://github.com/yhirose/cpp-httplib

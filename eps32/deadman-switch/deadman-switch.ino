@@ -31,5 +31,4 @@ void setup()
 void loop()
 {
     server.handleClient();
-    Serial.println(WiFi.localIP());
 }
