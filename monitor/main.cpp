@@ -2,6 +2,7 @@
 #include <thread>
 #include <httplib.h>
 #include <chrono>
+#include <expected>
 #include "config.h"
 #define nl "\n"
 
@@ -10,14 +11,14 @@ using Result = std::expected<T, std::string>;
 
 using Err = std::unexpected<std::string>;
 
-struct NewtorkMonitor
+struct NewtorkServerMonitor
 {
     std::string switch_hostname{config::SWITCH_HOST};
     std::string app_hostname{config::APP_HOST};
 
     int failureCount{0};
 
-    NetworkMonitor() = default;
+    NewtorkServerMonitor() = default;
 
     Result<void> pingApp()
     {
@@ -65,7 +66,7 @@ struct NewtorkMonitor
             {
                 if (failures > 5)
                     break;
-                auto res = pingApp();
+                auto res = this->pingApp();
                 if (!res)
                 {
                     ++failures;
@@ -89,7 +90,9 @@ struct NewtorkMonitor
 int main()
 {
 
-    auto last = std::chrono::steady_clock::now();
-
     std::cout << "starting monitor" << nl;
+
+    NewtorkServerMonitor nm{};
+
+    nm.run();
 }
