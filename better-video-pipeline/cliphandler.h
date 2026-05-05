@@ -203,13 +203,13 @@ struct ClipHandler
             }
             logger.info("breaking clip thread loop, converting to mp4");
             writer.release();
-            std::string cmd = "ffmpeg -y -i \"" + tmpAviPath + "\" -c:v libx264 -crf 23 -preset fast \"" + tmpMp4Path + "\" > /dev/null 2>&1";
+            std::string cmd = "ffmpeg -y -i \"" + tmpAviPath + "\" -c:v libx264 -crf 26 -preset fast -movflags +faststart \"" + tmpMp4Path + "\" > /dev/null 2>&1";
 
             logger.info("running ffmpeg file converter");
             int ret = std::system(cmd.c_str());
             if (ret != 0)
             {
-                logger.info("ffmpeg conversion failed, keeping raw avi at: " + tmpAviPath);
+                logger.error("ffmpeg conversion failed, keeping raw avi at: " + tmpAviPath);
             }
             else
             {
