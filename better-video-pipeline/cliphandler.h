@@ -21,7 +21,7 @@
 
 constexpr int PRECLIP_QUEUE_SIZE{100};
 constexpr int CLIP_START_THRESH{20}; // frames to start the clip
-constexpr int CLIP_STALE_THRESH{35}; // frames to stop the clip
+constexpr int CLIP_STALE_THRESH{65}; // frames to stop the clip
 
 constexpr int CLIP_FPS{20};
 
@@ -201,7 +201,7 @@ struct ClipHandler
                 if (shouldStop)
                     break;
             }
-            logger.info("breaking clip thread loop, converting to mp4");
+            logger.info("clip loop broken, converting to mp4");
             writer.release();
             std::string cmd = "ffmpeg -y -i \"" + tmpAviPath + "\" -c:v libx264 -crf 26 -preset fast -movflags +faststart \"" + tmpMp4Path + "\" > /dev/null 2>&1";
 
