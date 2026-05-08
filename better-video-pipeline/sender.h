@@ -43,7 +43,7 @@ namespace special
 
             std::unique_lock<std::mutex> lock(mutex);
             if (queue.empty())
-                return Err{};
+                return Err{"queue is empty"};
             T item = queue.front();
             queue.pop();
             return item;
