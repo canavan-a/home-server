@@ -22,7 +22,7 @@ namespace config
     };
 
     constexpr int httpServerPort{3333};
-    constexpr std::string httpPrefix{"/cpp"}
+    constexpr std::string httpPrefix{"/cpp"};
 
     constexpr MODE displayMode{MODE::RTP_VP8};
 

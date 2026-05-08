@@ -7,4 +7,5 @@ enum Action
     ConfigSpeed,
     SetHome,
     Lock,
+    Detection,
 };

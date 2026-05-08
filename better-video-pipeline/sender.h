@@ -37,7 +37,7 @@ struct SerialSender
     // Controls section
     serialib serial;
 
-    std::shared_ptr<AtomicQueue<SerialControl>> controlQueue{};
+    std::shared_ptr<special::AtomicQueue<SerialControl>> controlQueue{};
 
     SerialSender() : sendBuffer{std::make_shared<RingBuffer<InferenceObjects::DetectedObject, 4>>()},
                      controlQueue{std::make_shared<AtomicQueue<SerialControl>>()}
@@ -128,40 +128,43 @@ struct SerialSender
     }
 };
 
-template <typename T>
-struct AtomicQueue
+namespace special
 {
-
-    std::queue<T> queue{};
-
-    std::mutex mutex;
-
-    AtomicQueue() = default;
-
-    void push(T item)
-    {
-        std::unique_lock<std::mutex> lock(mutex);
-
-        queue.push(item);
-    }
-
-    Result<T> pop()
+    template <typename T>
+    struct AtomicQueue
     {
 
-        std::unique_lock<std::mutex> lock(mutex);
-        if (queue.empty())
-            return Err{};
-        T item = queue.front();
-        queue.pop();
-        return item;
-    }
+        std::queue<T> queue{};
 
-    bool empty()
-    {
-        std::unique_lock<std::mutex> lock(mutex);
-        return queue.empty();
-    }
-};
+        std::mutex mutex;
+
+        AtomicQueue() = default;
+
+        void push(T item)
+        {
+            std::unique_lock<std::mutex> lock(mutex);
+
+            queue.push(item);
+        }
+
+        Result<T> pop()
+        {
+
+            std::unique_lock<std::mutex> lock(mutex);
+            if (queue.empty())
+                return Err{};
+            T item = queue.front();
+            queue.pop();
+            return item;
+        }
+
+        bool empty()
+        {
+            std::unique_lock<std::mutex> lock(mutex);
+            return queue.empty();
+        }
+    };
+}
 
 struct SerialControl
 {
