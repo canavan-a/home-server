@@ -19,115 +19,6 @@ using Result = std::expected<T, std::string>;
 
 using Err = std::unexpected<std::string>;
 
-template <LogLevel L = LogLevel::INFO>
-struct SerialSender
-{
-    Logger<L> logger{};
-    std::string comPort{config::COMPORT};
-
-    COCO detectedClass{COCO::PERSON};
-
-    std::shared_ptr<RingBuffer<InferenceObjects::DetectedObject, 4>> sendBuffer{};
-
-    std::thread t;
-
-    std::mutex mtx;
-    std::condition_variable cv;
-
-    // Controls section
-    serialib serial;
-
-    std::shared_ptr<special::AtomicQueue<SerialControl>> controlQueue{};
-
-    SerialSender() : sendBuffer{std::make_shared<RingBuffer<InferenceObjects::DetectedObject, 4>>()},
-                     controlQueue{std::make_shared<AtomicQueue<SerialControl>>()}
-    {
-
-        this->openSerial();
-    };
-
-    void openSerial()
-    {
-        this->safeCloseSerial();
-        auto res = serial.openDevice(config::COMPORT, config::BAUDRATE);
-        if (res != 1)
-            logger.error("could not open serial");
-    }
-
-    void safeCloseSerial()
-    {
-        if (serial.isDeviceOpen())
-        {
-            serial.closeDevice();
-        }
-    }
-
-    void enqueueControl(SerialControl control)
-    {
-        controlQueue->push(control);
-        cv.notify_one();
-    }
-
-    void gatherObjects(std::vector<InferenceObjects::DetectedObject> &objects)
-    {
-
-        for (auto &object : objects)
-        {
-            if (object.type == detectedClass)
-            {
-                sendBuffer->push(object);
-                cv.notify_one();
-                // signal here
-            }
-        }
-    }
-
-    void start()
-    {
-        t = std::thread([this]()
-                        {
-                            for (;;)
-                            {
-
-                                std::unique_lock<std::mutex> lock(mtx);
-                                cv.wait(lock, [this]{ return !controlQueue->empty() || sendBuffer->hasData(); });
-
-                                std::string msg{};
-
-                                if (auto control = controlQueue->pop())
-                                {
-                                    msg = control->marshall();
-                                }
-                                else if (auto value = sendBuffer->peekFront())
-                                {
-                                    // marshall *value -> msg
-                                    msg = value->marshall();
-                                }
-                                else
-                                {
-                                    continue;
-                                }
-
-                                // send msg over serial
-                                auto res = this->serial.writeString(msg);
-                                if (res!=1){
-                                    logger.error("could not send data on serial attempting to reopen serial com");
-                                    this->openSerial();
-                                }
-
-                            } });
-    }
-
-    ~SerialSender()
-    {
-
-        if (t.joinable())
-            t.join();
-
-        this->safeCloseSerial();
-    }
-};
-
 namespace special
 {
     template <typename T>
@@ -199,7 +90,115 @@ struct SerialControl
 
         marshalledAction += "\n";
 
-        // probably a switch statement here to handle different cases
         return marshalledAction;
+    }
+};
+
+template <LogLevel L = LogLevel::INFO>
+struct SerialSender
+{
+    Logger<L> logger{};
+    std::string comPort{config::COMPORT};
+
+    COCO detectedClass{COCO::PERSON};
+
+    std::shared_ptr<RingBuffer<InferenceObjects::DetectedObject, 4>> sendBuffer{};
+
+    std::thread t;
+
+    std::mutex mtx;
+    std::condition_variable cv;
+
+    // Controls section
+    serialib serial;
+
+    std::shared_ptr<special::AtomicQueue<SerialControl>> controlQueue{};
+
+    SerialSender() : sendBuffer{std::make_shared<RingBuffer<InferenceObjects::DetectedObject, 4>>()},
+                     controlQueue{std::make_shared<special::AtomicQueue<SerialControl>>()}
+    {
+
+        this->openSerial();
+    };
+
+    void openSerial()
+    {
+        this->safeCloseSerial();
+        auto res = serial.openDevice(config::COMPORT, config::BAUDRATE);
+        if (res != 1)
+            logger.error("could not open serial");
+    }
+
+    void safeCloseSerial()
+    {
+        if (serial.isDeviceOpen())
+        {
+            serial.closeDevice();
+        }
+    }
+
+    void enqueueControl(SerialControl control)
+    {
+        controlQueue->push(control);
+        cv.notify_one();
+    }
+
+    void gatherObjects(std::vector<InferenceObjects::DetectedObject> &objects)
+    {
+
+        for (auto &object : objects)
+        {
+            if (object.type == detectedClass)
+            {
+                sendBuffer->push(object);
+                cv.notify_one();
+                // signal here
+            }
+        }
+    }
+
+    void start()
+    {
+        t = std::thread([this]()
+                        {
+                            for (;;)
+                            {
+
+                                std::unique_lock<std::mutex> lock(mtx);
+                                cv.wait(lock, [this]{ return !controlQueue->empty() || sendBuffer->hasData(); });
+
+                                std::string msg{};
+
+                                if (auto control = controlQueue->pop())
+                                {
+                                    msg = control->marshall();
+                                }
+                                else if (auto value = sendBuffer->peekFront())
+                                {
+                                    // marshall *value -> msg
+                                    msg = value->marshall();
+                                }
+                                else
+                                {
+                                    continue;
+                                }
+
+                                // send msg over serial
+                                auto res = this->serial.writeString(msg.c_str());
+                                if (res!=1){
+                                    logger.error("could not send data on serial attempting to reopen serial com");
+                                    this->openSerial();
+                                }
+
+                            } });
+    }
+
+    ~SerialSender()
+    {
+
+        if (t.joinable())
+            t.join();
+
+        this->safeCloseSerial();
     }
 };

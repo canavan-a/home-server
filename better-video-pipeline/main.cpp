@@ -747,7 +747,7 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
             clipHandler.handleInferenceFrame(frame, objects, averageFrameRate);
             if (objects.size() > 0 && config::comEnabled)
             {
-                serialSender.gatherObjects(objects);
+                serialSender->gatherObjects(objects);
             }
         }
     }
