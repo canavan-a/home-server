@@ -35,6 +35,7 @@
 #include "cliphandler.h"
 #include "inferenceutil.h"
 #include "sender.h"
+#include "action.h"
 
 #define nl "\n"
 
@@ -486,12 +487,15 @@ struct ResultStreamer : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>
 
     ClipHandler<L> clipHandler{};
 
-    SerialSender<L> serialSender{};
+    std::shared_ptr<SerialSender<L>> serialSender{};
 
-    ResultStreamer(std::shared_ptr<RingBuffer<cv::Mat, config::RESULT_BUFFER_SIZE>> resBuf, std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> camBuf) : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>{resBuf}, cameraBuffer{camBuf}
+    ResultStreamer(std::shared_ptr<RingBuffer<cv::Mat, config::RESULT_BUFFER_SIZE>> resBuf,
+                   std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> camBuf) : Streamer<cv::Mat, config::RESULT_BUFFER_SIZE>{resBuf},
+                                                                                                    cameraBuffer{camBuf},
+                                                                                                    serialSender{std::make_shared<SerialSender<L>>()}
     {
         this->configure();
-        serialSender.start();
+        serialSender->start();
     }
 
     void swapCameraStream(std::shared_ptr<RingBuffer<cv::Mat, config::CAMERA_FRAME_BUFFER_SIZE>> newCameraBuffer)
@@ -855,7 +859,52 @@ struct MediaPipeline
     void startHttpServer()
     {
 
-        svr.Get("/swap", [this](const httplib::Request &req, httplib::Response &res)
+        svr.Get(config::httpPrefix + "/sethome", [this](const httplib::Request &req, httplib::Response &res)
+                { 
+                    SerialControl control{Action::SetHome}; 
+                    control.home_x = req.has_param("x") ? std::stoi(req.get_param_value("x")) : 0;
+                    control.home_y = req.has_param("y") ? std::stoi(req.get_param_value("y")) : 0;
+
+                    this->resultStreamer->serialSender->enqueueControl(control);
+                    res.status=200;
+
+                    res.set_content("sethome", "text/plain"); });
+
+        svr.Get(config::httpPrefix + "/toggletrack", [this](const httplib::Request &req, httplib::Response &res)
+                { 
+                    SerialControl control{Action::ToggleTrack}; 
+                    control.speed = req.has_param("speed") ? std::stoi(req.get_param_value("speed")) : config::DEFAULT_MAX_SPEED;
+
+                    this->resultStreamer->serialSender->enqueueControl(control);
+                    res.status=200;
+
+                    res.set_content("toggletrack", "text/plain"); });
+
+        svr.Get(config::httpPrefix + "/configspeed", [this](const httplib::Request &req, httplib::Response &res)
+                { 
+                    SerialControl control{Action::ConfigSpeed}; 
+                    
+                    control.speed= 20;
+
+                    this->resultStreamer->serialSender->enqueueControl(control);
+                    res.status=200;
+
+                    res.set_content("configspeed", "text/plain"); });
+
+        svr.Get(config::httpPrefix + "/lock", [this](const httplib::Request &req, httplib::Response &res)
+                { 
+                    SerialControl control{Action::Lock}; 
+
+                    this->resultStreamer->serialSender->enqueueControl(control);
+                    res.status=200;
+                    res.set_content("lock", "text/plain"); });
+
+        svr.Get(config::httpPrefix + "/ping", [this](const httplib::Request &req, httplib::Response &res)
+                { 
+                    res.status=200;
+                    res.set_content("pong", "text/plain"); });
+
+        svr.Get(config::httpPrefix + "/swap", [this](const httplib::Request &req, httplib::Response &res)
                 { 
                     this->handleSwapCamera();
                     res.status=200;
@@ -913,23 +962,30 @@ int main(int argc, char *argv[])
 
     gst_init(nullptr, nullptr);
 
-    std::cout << "OpenCV version: " << CV_VERSION << std::endl;
-    std::cout << cv::getBuildInformation() << std::endl;
+    // std::cout << "OpenCV version: " << CV_VERSION << std::endl;
+    // std::cout << cv::getBuildInformation() << std::endl;
 
-    serialib serial;
-    auto res = serial.openDevice(config::COMPORT, config::BAUDRATE);
+    std::cout << "starting program\n\n";
+    if (config::comEnabled)
+    {
+        std::cout << "com enabled on port: " << config::COMPORT << nl;
+        std::cout << "baudrate: " << config::BAUDRATE << nl;
+    }
+    else
+    {
+        std::cout << "com disabled" << nl;
+    }
 
-    Logger<DEBUG> log{};
-
-    log.info("res is: " + res);
-
-    log.debug("debug");
-
-    log.warn("warn");
-
-    log.info("info");
-
-    log.error("error");
+    std::cout << nl;
+    if (config::MODEL_FORMAT != config::ModelFormat::NONE)
+    {
+        std::cout << "model format: " << config::MODEL_LABELS[static_cast<size_t>(config::MODEL_FORMAT)] << nl;
+    }
+    else
+    {
+        std::cout << "no model enabled" << nl;
+    }
+    std::cout << nl;
 
     std::string flag1{};
 

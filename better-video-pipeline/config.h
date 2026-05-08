@@ -9,7 +9,7 @@ namespace config
 
     bool clippingEnabled{true};
     std::string clipDirName{"clips"};
-    bool comEnabled{true};
+    bool comEnabled{false};
 
     enum MODE
     {
@@ -22,6 +22,7 @@ namespace config
     };
 
     constexpr int httpServerPort{3333};
+    constexpr std::string httpPrefix{"/cpp"}
 
     constexpr MODE displayMode{MODE::RTP_VP8};
 
@@ -44,6 +45,12 @@ namespace config
         ONNX
     };
 
+    static const std::array<std::string, 3> MODEL_LABELS{
+        "None",
+        "OpenVino",
+        "ONNX",
+    };
+
     constexpr float CONF_THRESH{0.5f};
 
     constexpr std::string_view MODEL_DIR{"models"};
@@ -56,6 +63,12 @@ namespace config
 
     constexpr const char *COMPORT{"COM3"};
     constexpr int BAUDRATE{115200};
+
+    // tracking
+    const int DEFAULT_MAX_SPEED{200};
+    const int HOME_X{0};
+    const int HOME_Y{0};
+
 #ifdef _WIN32
     constexpr auto CAMERA_BACKEND = cv::CAP_MSMF;
     constexpr int CAMERA_INPUT{0};

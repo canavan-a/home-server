@@ -2,6 +2,8 @@
 
 #include <memory>
 #include <thread>
+#include <queue>
+#include <mutex>
 
 #include <serialib.h>
 
@@ -10,6 +12,7 @@
 #include "ringbuffer.h"
 #include "inferenceutil.h"
 #include "logger.h"
+#include "action.h"
 
 template <typename T>
 using Result = std::expected<T, std::string>;
@@ -31,7 +34,39 @@ struct SerialSender
     std::mutex mtx;
     std::condition_variable cv;
 
-    SerialSender() : sendBuffer{std::make_shared<RingBuffer<InferenceObjects::DetectedObject, 4>>()} {};
+    // Controls section
+    serialib serial;
+
+    std::shared_ptr<AtomicQueue<SerialControl>> controlQueue{};
+
+    SerialSender() : sendBuffer{std::make_shared<RingBuffer<InferenceObjects::DetectedObject, 4>>()},
+                     controlQueue{std::make_shared<AtomicQueue<SerialControl>>()}
+    {
+
+        this->openSerial();
+    };
+
+    void openSerial()
+    {
+        this->safeCloseSerial();
+        auto res = serial.openDevice(config::COMPORT, config::BAUDRATE);
+        if (res != 1)
+            logger.error("could not open serial");
+    }
+
+    void safeCloseSerial()
+    {
+        if (serial.isDeviceOpen())
+        {
+            serial.closeDevice();
+        }
+    }
+
+    void enqueueControl(SerialControl control)
+    {
+        controlQueue->push(control);
+        cv.notify_one();
+    }
 
     void gatherObjects(std::vector<InferenceObjects::DetectedObject> &objects)
     {
@@ -53,20 +88,115 @@ struct SerialSender
                         {
                             for (;;)
                             {
+
                                 std::unique_lock<std::mutex> lock(mtx);
-                                cv.wait(lock);
-                                auto value = sendBuffer->peekFront();
-                                if (!value){
+                                cv.wait(lock, [this]{ return !controlQueue->empty() || sendBuffer->hasData(); });
+
+                                std::string msg{};
+
+                                if (auto control = controlQueue->pop())
+                                {
+                                    msg = control->marshall();
+                                }
+                                else if (auto value = sendBuffer->peekFront())
+                                {
+                                    // marshall *value -> msg
+                                    msg = value->marshall();
+                                }
+                                else
+                                {
                                     continue;
                                 }
-                                // use the dereference operator *value
+
+                                // send msg over serial
+                                auto res = this->serial.writeString(msg);
+                                if (res!=1){
+                                    logger.error("could not send data on serial attempting to reopen serial com");
+                                    this->openSerial();
+                                }
 
                             } });
     }
 
     ~SerialSender()
     {
+
         if (t.joinable())
             t.join();
+
+        this->safeCloseSerial();
+    }
+};
+
+template <typename T>
+struct AtomicQueue
+{
+
+    std::queue<T> queue{};
+
+    std::mutex mutex;
+
+    AtomicQueue() = default;
+
+    void push(T item)
+    {
+        std::unique_lock<std::mutex> lock(mutex);
+
+        queue.push(item);
+    }
+
+    Result<T> pop()
+    {
+
+        std::unique_lock<std::mutex> lock(mutex);
+        if (queue.empty())
+            return Err{};
+        T item = queue.front();
+        queue.pop();
+        return item;
+    }
+
+    bool empty()
+    {
+        std::unique_lock<std::mutex> lock(mutex);
+        return queue.empty();
+    }
+};
+
+struct SerialControl
+{
+    Action action;
+
+    int speed{config::DEFAULT_MAX_SPEED};
+
+    int home_x{config::HOME_X};
+
+    int home_y{config::HOME_Y};
+
+    SerialControl(Action myAction) : action{myAction} {};
+
+    std::string marshall()
+    {
+
+        std::string marshalledAction{std::to_string(static_cast<int>(action))};
+
+        switch (action)
+        {
+        case Action::ConfigSpeed:
+            marshalledAction = marshalledAction + " " + std::to_string(speed);
+            break;
+
+        case Action::SetHome:
+            marshalledAction = marshalledAction + " " + std::to_string(home_x) + " " + std::to_string(home_y);
+            break;
+
+        default:
+            break;
+        }
+
+        marshalledAction += "\n";
+
+        // probably a switch statement here to handle different cases
+        return marshalledAction;
     }
 };

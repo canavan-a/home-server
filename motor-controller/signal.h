@@ -1,5 +1,7 @@
 #pragma once
 
+#include "action.h"
+
 struct SignalProcessor
 {
     SignalProcessor() = default;
@@ -15,14 +17,4 @@ struct Signal
     Action action;
 
     Signal() = default;
-};
-
-enum Action
-{
-    None,
-    ManualControl,
-    ObjectDetection,
-    Config,
-    Mode,
-    Lock,
 };

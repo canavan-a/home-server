@@ -116,6 +116,12 @@ struct RingBuffer
         return output;
     }
 
+    bool hasData()
+    {
+        std::lock_guard<std::mutex> lock(this->mtx);
+        return count > 0;
+    }
+
 private:
     bool isEmpty()
     {

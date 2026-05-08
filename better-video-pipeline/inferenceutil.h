@@ -6,6 +6,7 @@
 #include <array>
 #include <ranges>
 #include "coco.h"
+#include "action.h"
 
 namespace InferenceObjects
 {
@@ -14,6 +15,11 @@ namespace InferenceObjects
         COCO type{};
         float x1, x2, y1, y2;
         float confidence{};
+
+        std::string marshall()
+        {
+            return std::to_string(static_cast<int>(Action::ObjectDetection)) + " " + std::to_string(x1) + " " + std::to_string(y1) + " " + std::to_string(x2) + " " + std::to_string(y2) + "\n";
+        }
     };
 
     // inferenceResult is the transposed YOLO output: [N, 4+classes], coords in 640x640 space
@@ -33,22 +39,21 @@ namespace InferenceObjects
             int classId = classIdPoint.x;
             if (confidence < confidenceThreshold)
                 continue;
-            if (!std::ranges::any_of(validClasses, [classId](int v) { return v == classId; }))
+            if (!std::ranges::any_of(validClasses, [classId](int v)
+                                     { return v == classId; }))
                 continue;
 
             float cx = inferenceResult.at<float>(i, 0);
             float cy = inferenceResult.at<float>(i, 1);
-            float w  = inferenceResult.at<float>(i, 2);
-            float h  = inferenceResult.at<float>(i, 3);
+            float w = inferenceResult.at<float>(i, 2);
+            float h = inferenceResult.at<float>(i, 3);
 
-            objs.push_back({
-                static_cast<COCO>(classId),
-                cx - w / 2.0f,
-                cx + w / 2.0f,
-                cy - h / 2.0f,
-                cy + h / 2.0f,
-                static_cast<float>(confidence)
-            });
+            objs.push_back({static_cast<COCO>(classId),
+                            cx - w / 2.0f,
+                            cx + w / 2.0f,
+                            cy - h / 2.0f,
+                            cy + h / 2.0f,
+                            static_cast<float>(confidence)});
         }
 
         return objs;
