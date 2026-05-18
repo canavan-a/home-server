@@ -1,4 +1,4 @@
-{ lib, stdenv, cmake, pkg-config, opencv, gst_all_1, openvino, onnxruntime, cpp-httplib, src }:
+{ lib, stdenv, cmake, pkg-config, opencv, gst_all_1, openvino, onnxruntime, httplib, src }:
 
 stdenv.mkDerivation {
   pname = "streamer";
@@ -13,7 +13,7 @@ stdenv.mkDerivation {
     opencv
     openvino
     onnxruntime
-    cpp-httplib
+    httplib
     gst_all_1.gstreamer
     gst_all_1.gst-plugins-base
   ];
