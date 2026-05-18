@@ -6,7 +6,7 @@ stdenv.mkDerivation {
 
   inherit src;
 
-  sourceRoot = "${src.name or "source"}/better-video-pipeline";
+  setSourceRoot = "sourceRoot=$(echo */better-video-pipeline)";
 
   nativeBuildInputs = [ cmake pkg-config ];
   buildInputs = [
