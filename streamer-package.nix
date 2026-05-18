@@ -4,7 +4,7 @@ stdenv.mkDerivation {
   pname = "streamer";
   version = "0.1.0";
 
-  src = builtins.fetchgit {
+  src = builtins.fetchGit {
     url = "https://github.com/canavan-a/home-server";
     ref = "main";
     fetchSubmodules = true;
