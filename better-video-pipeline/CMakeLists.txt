@@ -12,6 +12,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(OpenCV REQUIRED)
 find_package(httplib CONFIG REQUIRED)
+find_package(OpenVINO REQUIRED)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GST REQUIRED gstreamer-1.0 gstreamer-app-1.0)
@@ -31,7 +32,7 @@ target_link_libraries(main
     httplib::httplib
     ${OpenCV_LIBS}
     stdc++fs
-    openvino
+    openvino::runtime
     onnxruntime
     ${GST_LIBRARIES}
 )
