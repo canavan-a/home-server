@@ -11,7 +11,7 @@ stdenv.mkDerivation {
     fetchSubmodules = true;
   };
 
-  sourceRoot = "source/better-video-pipeline";
+  sourceRoot = "better-video-pipeline";
 
   nativeBuildInputs = [ cmake pkg-config ];
   buildInputs = [
