@@ -11,20 +11,24 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # add_compile_options(-Wall -Wno-unused-variable)
 
 find_package(OpenCV REQUIRED)
+find_package(httplib CONFIG REQUIRED)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GST REQUIRED gstreamer-1.0 gstreamer-app-1.0)
 
-add_executable(main main.cpp libs/serialib/lib/serialib.cpp)
+add_library(serialib STATIC libs/serialib/lib/serialib.cpp)
+target_include_directories(serialib PUBLIC libs/serialib/lib)
+
+add_executable(main main.cpp)
 
 target_include_directories(main PRIVATE
-    libs/serialib/lib
     /usr/local/include
     ${GST_INCLUDE_DIRS}
-    ${CMAKE_SOURCE_DIR}/libs/httplib
 )
 
 target_link_libraries(main
+    serialib
+    httplib::httplib
     ${OpenCV_LIBS}
     stdc++fs
     openvino
