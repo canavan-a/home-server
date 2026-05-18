@@ -7,7 +7,7 @@ stdenv.mkDerivation {
   src = builtins.fetchGit {
     url = "https://github.com/canavan-a/home-server";
     ref = "main";
-    fetchSubmodules = true;
+    submodules = true;
   };
 
   sourceRoot = "better-video-pipeline";
