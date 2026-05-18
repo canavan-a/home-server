@@ -11,7 +11,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # add_compile_options(-Wall -Wno-unused-variable)
 
 find_package(OpenCV REQUIRED)
-find_package(httplib CONFIG REQUIRED)
+find_package(httplib CONFIG QUIET)
+if(NOT httplib_FOUND)
+    find_path(HTTPLIB_INCLUDE_DIR httplib.h REQUIRED)
+    add_library(httplib::httplib INTERFACE IMPORTED)
+    target_include_directories(httplib::httplib INTERFACE ${HTTPLIB_INCLUDE_DIR})
+endif()
 find_package(OpenVINO REQUIRED CONFIG PATH_SUFFIXES runtime/cmake)
 
 find_package(PkgConfig REQUIRED)
