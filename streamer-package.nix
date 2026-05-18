@@ -7,7 +7,7 @@ stdenv.mkDerivation {
   src = fetchgit {
     url = "https://github.com/canavan-a/home-server";
     rev = "814df36870cb243beee146c23f1193ce552fbab7"; # fill in commit hash
-    sha256 = "sha256-8hvAWAszkBR7z1w2rK+MOy/U5dqHou/33DSsLobsuF8="; # leave empty, nix will tell you
+    sha256 = "sha256-PpnVQ+F1p/hPLr2NfJy5+57N0A2oThH0ZGhk/UqToVg="; # leave empty, nix will tell you
     fetchSubmodules = true;
   };
 
