@@ -27,7 +27,6 @@
 #include <onnxruntime_cxx_api.h>
 #include <openvino/openvino.hpp>
 
-#include "constants.h"
 #include "ringbuffer.h"
 #include "config.h"
 #include "logger.h"
