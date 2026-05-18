@@ -7,6 +7,7 @@ stdenv.mkDerivation {
   src = builtins.fetchGit {
     url = "https://github.com/canavan-a/home-server";
     ref = "main";
+    rev = "43db89d5d59f7dc68eeac04427bbbad0f143f8d8";
     submodules = true;
   };
 
