@@ -31,5 +31,10 @@
         Restart = "always";
       };
     };
+
+    services.nginx = {
+        enable = true;
+        configFile = pkgs.writeText "nginx.conf" (builtins.readFile ./nginx.conf);
+    };
   };
 }

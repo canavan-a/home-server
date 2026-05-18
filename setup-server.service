@@ -1,8 +1,0 @@
-[Unit]
-After=network.target
-
-[Service]
-ExecStart=/home/aidan/home-server/setup.sh
-
-[Install]
-WantedBy=multi-user.target
