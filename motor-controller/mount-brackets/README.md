@@ -7,3 +7,5 @@ Dir contains 3 model files (obj and step)
 1. Wall (or window) to Motor mount
 2. Motor (axis 1) to second Motor(axis 2) mount
 3. Motor(axis 2) to Camera
+
+V2 motor to motor mount is offset to push the axis of rotation closet to the camera
