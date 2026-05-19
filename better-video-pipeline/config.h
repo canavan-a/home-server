@@ -8,7 +8,11 @@ namespace config
 {
 
     bool clippingEnabled{true};
+#ifdef _WIN32
     std::string clipDirName{"clips"};
+#else
+    std::string clipDirName{"/var/lib/streamer/clips"};
+#endif
     bool comEnabled{false};
 
     enum MODE
@@ -53,7 +57,11 @@ namespace config
 
     constexpr float CONF_THRESH{0.5f};
 
+#ifdef _WIN32
     constexpr std::string_view MODEL_DIR{"models"};
+#else
+    constexpr std::string_view MODEL_DIR{"/var/lib/streamer/models"};
+#endif
     constexpr ModelFormat MODEL_FORMAT{ModelFormat::VINO};
     constexpr std::string_view MODEL_NAME{"yolo26n"};
 

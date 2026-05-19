@@ -34,10 +34,9 @@ stdenv.mkDerivation {
     cat > $out/bin/streamer <<EOF
     #!/usr/bin/env bash
     export GST_PLUGIN_SYSTEM_PATH_1_0="${gstPluginPath}"
-    DATA_DIR="\$HOME/streamer"
+    DATA_DIR="/var/lib/streamer"
     mkdir -p "\$DATA_DIR"
     ln -sfn "$out/share/streamer/models" "\$DATA_DIR/models"
-    cd "\$DATA_DIR"
     exec "$out/libexec/streamer-unwrapped" "\$@"
     EOF
     chmod +x $out/bin/streamer

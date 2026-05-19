@@ -8,6 +8,7 @@
     systemd.services.server = {
       wantedBy = [ "multi-user.target" ];
       after = [ "network.target" ];
+      environment.WEBM_CLIPHOST = "/var/lib/streamer/clips";
       serviceConfig = {
         ExecStart = "${self.packages.x86_64-linux.server}/bin/server";
         Restart = "always";
