@@ -1,4 +1,4 @@
-{ lib, stdenv, cmake, pkg-config, opencv, gst_all_1, openvino, onnxruntime, httplib, openssl, src }:
+{ lib, stdenv, cmake, pkg-config, makeWrapper, opencv, gst_all_1, openvino, onnxruntime, httplib, openssl, src }:
 
 stdenv.mkDerivation {
   pname = "streamer";
@@ -8,7 +8,7 @@ stdenv.mkDerivation {
 
   setSourceRoot = "sourceRoot=$(echo */better-video-pipeline)";
 
-  nativeBuildInputs = [ cmake pkg-config ];
+  nativeBuildInputs = [ cmake pkg-config makeWrapper ];
   buildInputs = [
     opencv
     openvino
@@ -20,7 +20,18 @@ stdenv.mkDerivation {
   ];
 
   installPhase = ''
-    mkdir -p $out/bin
-    cp main $out/bin/streamer
+    mkdir -p $out/bin $out/libexec $out/share/streamer
+    cp main $out/libexec/streamer-unwrapped
+    cp -r ../models $out/share/streamer/
+
+    cat > $out/bin/streamer <<EOF
+    #!/usr/bin/env bash
+    DATA_DIR="\$HOME/streamer"
+    mkdir -p "\$DATA_DIR"
+    ln -sfn "$out/share/streamer/models" "\$DATA_DIR/models"
+    cd "\$DATA_DIR"
+    exec "$out/libexec/streamer-unwrapped" "\$@"
+    EOF
+    chmod +x $out/bin/streamer
   '';
 }
