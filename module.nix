@@ -15,6 +15,9 @@
         environment.WEBM_CLIPHOST = "/var/lib/streamer/clips";
         serviceConfig = {
           ExecStart = "${self.packages.x86_64-linux.server}/bin/server";
+          # Secrets live in a root-only file on the host, not in the nix store.
+          # Leading "-" makes it optional so a missing file won't fail the unit.
+          EnvironmentFile = "-/var/lib/server/.env";
           Restart = "always";
         };
       };

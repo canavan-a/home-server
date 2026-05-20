@@ -46,10 +46,9 @@ var (
 
 func main() {
 	r := gin.Default()
-	err := godotenv.Load()
-	if err != nil {
-		panic("Error loading .env file")
-	}
+	// .env is optional: load it for local dev, but fall back to the real
+	// environment (e.g. systemd / `nix run`) when it isn't present.
+	_ = godotenv.Load()
 	WebmClipDir = os.Getenv("WEBM_CLIPHOST")
 
 	socketStreamer := sockstreamer.NewSocketStreamer()
