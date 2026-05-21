@@ -959,6 +959,17 @@ struct TestProgram
 int main(int argc, char *argv[])
 {
 
+    std::cout << "testing nix rebuild" << nl;
+    std::cout << "testing nix rebuild" << nl;
+    std::cout << "testing nix rebuild" << nl;
+    std::cout << "testing nix rebuild" << nl;
+    std::cout << "testing nix rebuild" << nl;
+    std::cout << "testing nix rebuild" << nl;
+    std::cout << "testing nix rebuild" << nl;
+    std::cout << "testing nix rebuild" << nl;
+    std::cout << "testing nix rebuild" << nl;
+    std::cout << "testing nix rebuild" << nl;
+
     gst_init(nullptr, nullptr);
 
     // std::cout << "OpenCV version: " << CV_VERSION << std::endl;

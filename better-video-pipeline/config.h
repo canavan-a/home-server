@@ -69,7 +69,7 @@ namespace config
     constexpr size_t CAMERA_FRAME_BUFFER_SIZE{3};
     constexpr LogLevel LOG_LEVEL{DEBUG};
 
-    constexpr const char *COMPORT{"COM3"};
+    constexpr const char *COMPORT{"/dev/pts/2"};
     constexpr int BAUDRATE{115200};
 
     // tracking
