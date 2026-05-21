@@ -18,7 +18,7 @@ namespace InferenceObjects
 
         std::string marshall()
         {
-            return std::to_string(static_cast<int>(Action::Detection)) + " " + std::to_string(x1) + " " + std::to_string(y1) + " " + std::to_string(x2) + " " + std::to_string(y2) + "\n";
+            return std::to_string(static_cast<int>(Action::Detection)) + " " + std::to_string(x1) + " " + std::to_string(y1) + " " + std::to_string(x2) + " " + std::to_string(y2) + "\r\n";
         }
     };
 

@@ -88,7 +88,7 @@ struct SerialControl
             break;
         }
 
-        marshalledAction += "\n";
+        marshalledAction += "\r\n";
 
         return marshalledAction;
     }
@@ -173,7 +173,7 @@ struct SerialSender
                                 {
                                     msg = control->marshall();
                                 }
-                                else if (auto value = sendBuffer->peekFront())
+                                else if (auto value = sendBuffer->pop())
                                 {
                                     // marshall *value -> msg
                                     msg = value->marshall();
