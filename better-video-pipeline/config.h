@@ -13,7 +13,7 @@ namespace config
 #else
     std::string clipDirName{"/var/lib/streamer/clips"};
 #endif
-    bool comEnabled{false};
+    bool comEnabled{true};
 
     enum MODE
     {
