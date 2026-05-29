@@ -19,30 +19,19 @@ export const Garage = () => {
     setPassword(localStorage.getItem("pw"));
   }, []);
 
-  const checkGarageStatus = (currentPreClick) => {
-    axios
-      .get(`https://aidan.house/api/garage/status?doorCode=${password}`)
-      .then((response) => {
-        const newDs = response.data;
+  const pollStatuses = () => {
+    Promise.all([
+      axios.get(`https://aidan.house/api/garage/status?doorCode=${password}`),
+      axios.get(`https://aidan.house/api/garage/status_open?doorCode=${password}`),
+    ])
+      .then(([dsRes, dsoRes]) => {
+        const newDs = dsRes.data;
+        const newDso = dsoRes.data;
         setDoorStatus(newDs);
-        setIsLoading(false);
-        if (currentPreClick && newDs !== currentPreClick.doorStatus) {
-          preClickRef.current = null;
-          clearTimeout(pendingTimeoutRef.current);
-          setIsPending(false);
-        }
-      })
-      .catch(() => {});
-  };
-
-  const checkGarageStatusOpen = (currentPreClick) => {
-    axios
-      .get(`https://aidan.house/api/garage/status_open?doorCode=${password}`)
-      .then((response) => {
-        const newDso = response.data;
         setDoorStatusOpen(newDso);
         setIsLoading(false);
-        if (currentPreClick && newDso !== currentPreClick.doorStatusOpen) {
+        const snap = preClickRef.current;
+        if (snap && (newDs !== snap.doorStatus || newDso !== snap.doorStatusOpen)) {
           preClickRef.current = null;
           clearTimeout(pendingTimeoutRef.current);
           setIsPending(false);

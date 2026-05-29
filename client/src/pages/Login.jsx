@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -11,7 +11,9 @@ export const Login = () => {
   const [password, setPassword] = useState("");
   const [loggedIn, setLoggedIn] = useState(false);
   const [doorState, setDoorState] = useState("unknown");
-  const [isToggling, setIsToggling] = useState(false);
+  const [isPending, setIsPending] = useState(false);
+  const preClickStateRef = useRef(null);
+  const pendingTimeoutRef = useRef(null);
 
   useEffect(() => {
     const pw = localStorage.getItem("pw");
@@ -25,7 +27,13 @@ export const Login = () => {
     axios
       .get(`https://aidan.house/api/door/state?doorCode=${pw}`)
       .then((response) => {
-        setDoorState(response.data.state);
+        const newState = response.data.state;
+        setDoorState(newState);
+        if (preClickStateRef.current !== null && newState !== preClickStateRef.current) {
+          preClickStateRef.current = null;
+          clearTimeout(pendingTimeoutRef.current);
+          setIsPending(false);
+        }
       })
       .catch(() => {});
   };
@@ -39,17 +47,28 @@ export const Login = () => {
   }, [loggedIn, password]);
 
   const doToggle = () => {
+    if (isPending) return;
+
     const endpoint =
       doorState === "open"
         ? "https://aidan.house/api/door/close"
         : "https://aidan.house/api/door/open";
 
-    setIsToggling(true);
+    preClickStateRef.current = doorState;
+    clearTimeout(pendingTimeoutRef.current);
+    pendingTimeoutRef.current = setTimeout(() => {
+      preClickStateRef.current = null;
+      setIsPending(false);
+    }, 15000);
+    setIsPending(true);
+
     axios
       .post(endpoint, { doorCode: password })
-      .then(() => fetchState(password))
-      .catch(() => alert("could not send command"))
-      .finally(() => setIsToggling(false));
+      .catch(() => {
+        alert("could not send command");
+        preClickStateRef.current = null;
+        setIsPending(false);
+      });
   };
 
   const testPassword = () => {
@@ -96,7 +115,7 @@ export const Login = () => {
                 onClick={doToggle}
                 className="text-center w-full flex flex-col items-center justify-center space-y-4"
               >
-                {isToggling ? (
+                {isPending ? (
                   <span className="loading loading-infinity loading-lg"></span>
                 ) : doorState === "open" ? (
                   <svg
