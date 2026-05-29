@@ -30,9 +30,11 @@ export const Login = () => {
   };
 
   useEffect(() => {
-    if (loggedIn && password != "") {
-      fetchState(password);
-    }
+    if (!loggedIn || password === "") return;
+
+    fetchState(password);
+    const interval = setInterval(() => fetchState(password), 1000);
+    return () => clearInterval(interval);
   }, [loggedIn, password]);
 
   const doToggle = () => {
