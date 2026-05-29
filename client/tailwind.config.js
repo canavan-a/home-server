@@ -16,7 +16,8 @@ export default {
       "lemonade",
       "nord",
       "synthwave",
-      "coffee"
+      "coffee",
+      "black"
     ],
   },
 };
