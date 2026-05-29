@@ -11,6 +11,7 @@ export const Login = () => {
   const [password, setPassword] = useState("");
   const [loggedIn, setLoggedIn] = useState(false);
   const [doorState, setDoorState] = useState("unknown");
+  const [isToggling, setIsToggling] = useState(false);
 
   useEffect(() => {
     const pw = localStorage.getItem("pw");
@@ -43,10 +44,12 @@ export const Login = () => {
         ? "https://aidan.house/api/door/close"
         : "https://aidan.house/api/door/open";
 
+    setIsToggling(true);
     axios
       .post(endpoint, { doorCode: password })
       .then(() => fetchState(password))
-      .catch(() => alert("could not send command"));
+      .catch(() => alert("could not send command"))
+      .finally(() => setIsToggling(false));
   };
 
   const testPassword = () => {
@@ -93,7 +96,9 @@ export const Login = () => {
                 onClick={doToggle}
                 className="text-center w-full flex flex-col items-center justify-center space-y-4"
               >
-                {doorState === "open" ? (
+                {isToggling ? (
+                  <span className="loading loading-infinity loading-lg"></span>
+                ) : doorState === "open" ? (
                   <svg
                     width="200"
                     height="200px"
