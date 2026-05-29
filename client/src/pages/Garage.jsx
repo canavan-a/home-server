@@ -6,84 +6,83 @@ import { useNavigate } from "react-router-dom";
 
 export const Garage = () => {
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [password, setPassword] = useState(null);
   const [doorStatus, setDoorStatus] = useState(0);
   const [doorStatusOpen, setDoorStatusOpen] = useState(0);
   const [isPending, setIsPending] = useState(false);
-  const pendingRef = useRef({ doorStatus: null, doorStatusOpen: null, timeout: null });
+  // Stores the status snapshot at the moment the user clicked, so we know when it actually changed
+  const preClickRef = useRef(null);
+  const pendingTimeoutRef = useRef(null);
 
   useEffect(() => {
     setPassword(localStorage.getItem("pw"));
   }, []);
 
-  const checkGarageStatus = () => {
+  const checkGarageStatus = (currentPreClick) => {
     axios
       .get(`https://aidan.house/api/garage/status?doorCode=${password}`)
       .then((response) => {
-        console.log("RES", response);
-        setDoorStatus(response.data);
+        const newDs = response.data;
+        setDoorStatus(newDs);
         setIsLoading(false);
+        if (currentPreClick && newDs !== currentPreClick.doorStatus) {
+          preClickRef.current = null;
+          clearTimeout(pendingTimeoutRef.current);
+          setIsPending(false);
+        }
       })
-      .catch((err) => {});
+      .catch(() => {});
   };
 
-  const checkGarageStatusOpen = () => {
+  const checkGarageStatusOpen = (currentPreClick) => {
     axios
       .get(`https://aidan.house/api/garage/status_open?doorCode=${password}`)
       .then((response) => {
-        console.log("RES", response);
-        setDoorStatusOpen(response.data);
+        const newDso = response.data;
+        setDoorStatusOpen(newDso);
         setIsLoading(false);
+        if (currentPreClick && newDso !== currentPreClick.doorStatusOpen) {
+          preClickRef.current = null;
+          clearTimeout(pendingTimeoutRef.current);
+          setIsPending(false);
+        }
       })
-      .catch((err) => {});
+      .catch(() => {});
   };
 
-  // Clear pending when status actually changes from what it was before the click
-  useEffect(() => {
-    if (!isPending) return;
-    const { doorStatus: prevDs, doorStatusOpen: prevDso } = pendingRef.current;
-    if (doorStatus !== prevDs || doorStatusOpen !== prevDso) {
-      setIsPending(false);
-      clearTimeout(pendingRef.current.timeout);
-    }
-  }, [doorStatus, doorStatusOpen, isPending]);
-
   const doOpen = () => {
-    pendingRef.current.doorStatus = doorStatus;
-    pendingRef.current.doorStatusOpen = doorStatusOpen;
-    clearTimeout(pendingRef.current.timeout);
-    pendingRef.current.timeout = setTimeout(() => setIsPending(false), 10000);
+    preClickRef.current = { doorStatus, doorStatusOpen };
+    clearTimeout(pendingTimeoutRef.current);
+    pendingTimeoutRef.current = setTimeout(() => {
+      preClickRef.current = null;
+      setIsPending(false);
+    }, 15000);
     setIsPending(true);
 
     axios
-      .post(`https://aidan.house/api/garage/trigger`, {
-        doorCode: password,
-      })
-      .then((response) => {})
-      .catch((err) => {
+      .post(`https://aidan.house/api/garage/trigger`, { doorCode: password })
+      .catch(() => {
+        preClickRef.current = null;
         setIsPending(false);
       });
   };
 
   useEffect(() => {
-    setIsLoading(true);
     let interv = undefined;
     if (password) {
-      checkGarageStatus();
-      checkGarageStatusOpen();
+      checkGarageStatus(preClickRef.current);
+      checkGarageStatusOpen(preClickRef.current);
       interv = setInterval(() => {
-        checkGarageStatus();
-        checkGarageStatusOpen();
+        checkGarageStatus(preClickRef.current);
+        checkGarageStatusOpen(preClickRef.current);
       }, 500);
     }
 
-    return () => {
-      clearInterval(interv);
-    };
+    return () => clearInterval(interv);
   }, [password]);
 
-  const renderIcon = () => {
+  const renderStatusIcon = () => {
     if (doorStatus == 0 && doorStatusOpen == 0) return <MovingIcon size={200} />;
     if (doorStatus == 1) return <GarageLockIcon size={200} />;
     if (doorStatusOpen == 1) return <GarageAlertIcon size={200} />;
@@ -94,9 +93,7 @@ export const Garage = () => {
       <div className="absolute top-4 right-4 flex ">
         <button
           className="btn btn-glass mr-2"
-          onClick={() => {
-            navigate("/settings");
-          }}
+          onClick={() => navigate("/settings")}
         >
           <FontAwesomeIcon icon={faArrowLeft} />
           back
@@ -109,16 +106,15 @@ export const Garage = () => {
               <span className="loading loading-infinity loading-lg"></span>
             </div>
           ) : isPending ? (
-            <div className="flex flex-col items-center justify-center space-y-4 opacity-50 animate-pulse">
-              {renderIcon()}
-              <span className="text-sm text-base-content/60">waiting for update...</span>
+            <div className="flex justify-center items-center w-full h-full">
+              <MovingIcon size={200} />
             </div>
           ) : (
             <div
               onClick={doOpen}
-              className="text-center w-full flex flex-col items-center justify-center space-y-4"
+              className="text-center w-full flex flex-col items-center justify-center space-y-4 cursor-pointer"
             >
-              {renderIcon()}
+              {renderStatusIcon()}
             </div>
           )}
         </div>
