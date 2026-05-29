@@ -1,23 +1,21 @@
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export const Garage = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
-  const [open, setOpen] = useState(true);
   const [password, setPassword] = useState(null);
   const [doorStatus, setDoorStatus] = useState(0);
   const [doorStatusOpen, setDoorStatusOpen] = useState(0);
+  const [isPending, setIsPending] = useState(false);
+  const pendingRef = useRef({ doorStatus: null, doorStatusOpen: null, timeout: null });
 
   useEffect(() => {
     setPassword(localStorage.getItem("pw"));
-    if (password != null) {
-      console.log("trigger start action");
-    }
-  }, [password]);
+  }, []);
 
   const checkGarageStatus = () => {
     axios
@@ -27,9 +25,7 @@ export const Garage = () => {
         setDoorStatus(response.data);
         setIsLoading(false);
       })
-      .catch((err) => {
-        // alert("could not get status");
-      });
+      .catch((err) => {});
   };
 
   const checkGarageStatusOpen = () => {
@@ -40,20 +36,33 @@ export const Garage = () => {
         setDoorStatusOpen(response.data);
         setIsLoading(false);
       })
-      .catch((err) => {
-        // alert("could not get status");
-      });
+      .catch((err) => {});
   };
 
+  // Clear pending when status actually changes from what it was before the click
+  useEffect(() => {
+    if (!isPending) return;
+    const { doorStatus: prevDs, doorStatusOpen: prevDso } = pendingRef.current;
+    if (doorStatus !== prevDs || doorStatusOpen !== prevDso) {
+      setIsPending(false);
+      clearTimeout(pendingRef.current.timeout);
+    }
+  }, [doorStatus, doorStatusOpen, isPending]);
+
   const doOpen = () => {
-    setIsLoading(true);
+    pendingRef.current.doorStatus = doorStatus;
+    pendingRef.current.doorStatusOpen = doorStatusOpen;
+    clearTimeout(pendingRef.current.timeout);
+    pendingRef.current.timeout = setTimeout(() => setIsPending(false), 10000);
+    setIsPending(true);
+
     axios
       .post(`https://aidan.house/api/garage/trigger`, {
         doorCode: password,
       })
       .then((response) => {})
       .catch((err) => {
-        // alert("could not get status");
+        setIsPending(false);
       });
   };
 
@@ -74,6 +83,12 @@ export const Garage = () => {
     };
   }, [password]);
 
+  const renderIcon = () => {
+    if (doorStatus == 0 && doorStatusOpen == 0) return <MovingIcon size={200} />;
+    if (doorStatus == 1) return <GarageLockIcon size={200} />;
+    if (doorStatusOpen == 1) return <GarageAlertIcon size={200} />;
+  };
+
   return (
     <div className="w-full h-screen flex items-center justify-center">
       <div className="absolute top-4 right-4 flex ">
@@ -89,24 +104,21 @@ export const Garage = () => {
       </div>
       <div className="w-full max-w-md p-4">
         <div className="grid gap-4">
-          {!isLoading ? (
-            <div
-              onClick={doOpen}
-              className=" text-center w-full flex flex-col items-center justify-center space-y-4"
-            >
-              {doorStatus == 0 && doorStatusOpen == 0 ? (
-                <MovingIcon size={200} />
-              ) : (
-                <>
-                  <>{doorStatus == 1 && <GarageLockIcon size={200} />}</>
-                  <>{doorStatusOpen == 1 && <GarageAlertIcon size={200} />}</>
-                </>
-                // <GarageLockIcon size={200} />
-              )}
-            </div>
-          ) : (
+          {isLoading ? (
             <div className="flex justify-center items-center w-full h-full">
               <span className="loading loading-infinity loading-lg"></span>
+            </div>
+          ) : isPending ? (
+            <div className="flex flex-col items-center justify-center space-y-4 opacity-50 animate-pulse">
+              {renderIcon()}
+              <span className="text-sm text-base-content/60">waiting for update...</span>
+            </div>
+          ) : (
+            <div
+              onClick={doOpen}
+              className="text-center w-full flex flex-col items-center justify-center space-y-4"
+            >
+              {renderIcon()}
             </div>
           )}
         </div>
