@@ -154,6 +154,16 @@ func main() {
 			garageGroup.GET("/status_open", garage.HandleGarageStatusOpen)
 		}
 
+		mqttDoor, err := NewMqttDoor()
+		if err != nil {
+			log.Printf("mqtt door unavailable: %v", err)
+		} else {
+			door := api.Group("/door", MiddlewareAuthenticate)
+			door.GET("/state", mqttDoor.HandleGetState)
+			door.POST("/open", mqttDoor.HandleOpen)
+			door.POST("/close", mqttDoor.HandleClose)
+		}
+
 		//MiddlewareAuthenticate
 		api.POST("/netscan", MiddlewareAuthenticate, handleScanNetworkAddresses)
 
