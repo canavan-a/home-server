@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -12,6 +12,9 @@ export const Login = () => {
   const [loggedIn, setLoggedIn] = useState(false);
   const [doorState, setDoorState] = useState("unknown");
   const [isToggling, setIsToggling] = useState(false);
+  const [isPending, setIsPending] = useState(false);
+  const prevStateRef = useRef(null);
+  const pendingTimeoutRef = useRef(null);
 
   useEffect(() => {
     const pw = localStorage.getItem("pw");
@@ -25,7 +28,13 @@ export const Login = () => {
     axios
       .get(`https://aidan.house/api/door/state?doorCode=${pw}`)
       .then((response) => {
-        setDoorState(response.data.state);
+        const newState = response.data.state;
+        setDoorState(newState);
+        if (prevStateRef.current !== null && newState !== prevStateRef.current) {
+          prevStateRef.current = null;
+          clearTimeout(pendingTimeoutRef.current);
+          setIsPending(false);
+        }
       })
       .catch(() => {});
   };
@@ -46,7 +55,16 @@ export const Login = () => {
     setIsToggling(true);
     axios
       .post(endpoint, { doorCode: password })
-      .then(() => setIsToggling(false))
+      .then(() => {
+        setIsToggling(false);
+        prevStateRef.current = doorState;
+        setIsPending(true);
+        clearTimeout(pendingTimeoutRef.current);
+        pendingTimeoutRef.current = setTimeout(() => {
+          prevStateRef.current = null;
+          setIsPending(false);
+        }, 15000);
+      })
       .catch(() => {
         alert("could not send command");
         setIsToggling(false);
@@ -94,31 +112,34 @@ export const Login = () => {
           <div className="grid gap-4">
             {loggedIn ? (
               <div className="text-center w-full flex flex-col items-center justify-center space-y-6">
-                {isToggling ? (
-                  <span className="loading loading-infinity loading-lg"></span>
-                ) : doorState === "open" ? (
-                  <svg width="200px" height="200px" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
-                    <path fillRule="evenodd" clipRule="evenodd" d="M11.5 2C10.6716 2 10 2.67157 10 3.5V6H13V16H1V6H8V3.5C8 1.567 9.567 0 11.5 0C13.433 0 15 1.567 15 3.5V4H13V3.5C13 2.67157 12.3284 2 11.5 2ZM9 10H5V12H9V10Z" fill={LOCK_COLOR} />
-                  </svg>
-                ) : doorState === "closed" ? (
-                  <svg width="200" height="200px" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
-                    <path fillRule="evenodd" clipRule="evenodd" d="M4 6V4C4 1.79086 5.79086 0 8 0C10.2091 0 12 1.79086 12 4V6H14V16H2V6H4ZM6 4C6 2.89543 6.89543 2 8 2C9.10457 2 10 2.89543 10 4V6H6V4ZM7 13V9H9V13H7Z" fill={LOCK_COLOR} />
-                  </svg>
-                ) : (
-                  <span className="loading loading-infinity loading-lg"></span>
-                )}
+                <div className="relative inline-flex items-center justify-center">
+                  {isPending && (
+                    <span className="absolute inline-flex h-full w-full rounded-full bg-current opacity-20 animate-ping"></span>
+                  )}
+                  {isToggling ? (
+                    <span className="loading loading-infinity loading-lg"></span>
+                  ) : doorState === "open" ? (
+                    <svg width="200px" height="200px" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+                      <path fillRule="evenodd" clipRule="evenodd" d="M11.5 2C10.6716 2 10 2.67157 10 3.5V6H13V16H1V6H8V3.5C8 1.567 9.567 0 11.5 0C13.433 0 15 1.567 15 3.5V4H13V3.5C13 2.67157 12.3284 2 11.5 2ZM9 10H5V12H9V10Z" fill={LOCK_COLOR} />
+                    </svg>
+                  ) : doorState === "closed" ? (
+                    <svg width="200" height="200px" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+                      <path fillRule="evenodd" clipRule="evenodd" d="M4 6V4C4 1.79086 5.79086 0 8 0C10.2091 0 12 1.79086 12 4V6H14V16H2V6H4ZM6 4C6 2.89543 6.89543 2 8 2C9.10457 2 10 2.89543 10 4V6H6V4ZM7 13V9H9V13H7Z" fill={LOCK_COLOR} />
+                    </svg>
+                  ) : (
+                    <span className="loading loading-infinity loading-lg"></span>
+                  )}
+                </div>
                 <div className="flex gap-4 w-full">
                   <button
                     onClick={() => doCommand("open")}
-                    disabled={isToggling || doorState === "open"}
-                    className="btn btn-lg btn-glass flex-1"
+                    className={`btn btn-lg btn-glass flex-1 transition-opacity ${doorState === "closed" ? "opacity-100" : "opacity-30"}`}
                   >
                     Unlock
                   </button>
                   <button
                     onClick={() => doCommand("close")}
-                    disabled={isToggling || doorState === "closed"}
-                    className="btn btn-lg btn-glass flex-1"
+                    className={`btn btn-lg btn-glass flex-1 transition-opacity ${doorState === "open" ? "opacity-100" : "opacity-30"}`}
                   >
                     Lock
                   </button>
