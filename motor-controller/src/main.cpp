@@ -24,15 +24,27 @@ void setup()
 
 unsigned long start = millis();
 
+int homeValue{100};
 void loop()
 {
-	if (millis() - start > 1000){
-		Serial.println("swapping directions");
-		start = millis();
-		yaw.setSpeed(yaw.speed * -1);
-		pitch.setSpeed(pitch.speed * -1);
+	// if (millis() - start > 1000){
+	// 	Serial.println("swapping directions");
+	// 	start = millis();
+	// 	yaw.setSpeed(yaw.speed * -1);
+	// 	pitch.setSpeed(pitch.speed * -1);
+	// }
+	// Serial.println(yaw.stepper.currentPosition());
+	// 
+	// Serial.println(pitch.stepper.currentPosition());
+	// pitch.run();
+	// yaw.run();
+	if (homeValue==100){
+		homeValue=-100;
+	} else{
+		homeValue = 100;
 	}
 
-	pitch.run();
-	yaw.run();		
+	yaw.setHome(homeValue);
+	yaw.goHome();
+	while(yaw.runToPos());
 }

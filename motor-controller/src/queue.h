@@ -20,7 +20,20 @@ struct Queue{
 		return item;
 	}
 
+	T receiveUntil(T& out, TickType_t tickValue){
+		return xQueueReceive(handle, &out, tickValue) == pdTRUE;
+	}
+
 	void clear(){
 		xQueueReset(handle);
+	}
+
+	void mailboxPush(const T& item){
+		static_assert(Size == 1, "mailbox push only works on queues of size 1");
+		xQueueOverwrite(handle, &item);
+	}
+
+	bool empty(){
+		return uxQueueMessagesWaiting(handle) == 0;
 	}
 };

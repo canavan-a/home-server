@@ -18,13 +18,38 @@ struct Stepper{
 
 	int speed{DEFAULT_SPEED};
 
+	int home{0};
+
 	Stepper() = default;
-		
+	
 	Stepper(int step, int dir, int myEnablePin):stepper{AccelStepper(AccelStepper::DRIVER, step, dir)}, enablePin{myEnablePin} {
 		Serial.println("stepper is initialized");
 		pinMode(myEnablePin, OUTPUT);
 		stepper.setMaxSpeed(3000);
+		stepper.setAcceleration(1500);
+		
 		stepper.setSpeed(DEFAULT_SPEED);
+	}
+
+	void setHome(int newHome){
+		home = newHome;
+		goHome();
+	}
+
+	void moveToPosition(int pos){
+		stepper.moveTo(pos);
+	}
+
+	void goHome(){
+		this->moveToPosition(home);
+	}
+
+	bool runToPos(){
+		return stepper.run();
+	}
+
+	int position(){
+		return stepper.currentPosition();
 	}
 
 	void enable(){
