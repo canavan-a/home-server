@@ -52,6 +52,8 @@ struct MotorManager {
 	void taskRunner(){
 		for (;;){
 			// switch on task and tick based on which task in operation
+			// NONE task has a slight delay to restrict spinning
+			// NONE task is only set when home is complete 
 		}
 	}
 
