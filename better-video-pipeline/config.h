@@ -69,8 +69,8 @@ namespace config
     constexpr size_t CAMERA_FRAME_BUFFER_SIZE{3};
     constexpr LogLevel LOG_LEVEL{DEBUG};
 
-    constexpr const char *COMPORT{"/dev/pts/2"};
-    constexpr int BAUDRATE{115200};
+    constexpr const char *COMPORT{"/dev/ttyACM0"};
+    constexpr int BAUDRATE{9600};
 
     // tracking
     const int DEFAULT_MAX_SPEED{200};
@@ -83,9 +83,9 @@ namespace config
     constexpr int CAMERA_INFERENCE_INDEX{0};
     constexpr std::array<int, 1> CAMERA_INPUTS{0};
 #else
-    constexpr std::string_view CAMERA_INPUT{"/dev/video0"};
+    constexpr std::string_view CAMERA_INPUT{"/dev/video2"};
     constexpr auto CAMERA_BACKEND = cv::CAP_V4L2;
     constexpr int CAMERA_INFERENCE_INDEX{0};
-    constexpr std::array<std::string_view, 1> CAMERA_INPUTS{"/dev/video0"};
+    constexpr std::array<std::string_view, 1> CAMERA_INPUTS{"/dev/video2"};
 #endif
 }

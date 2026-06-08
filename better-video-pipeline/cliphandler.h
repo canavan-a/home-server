@@ -157,6 +157,7 @@ struct ClipHandler
 
         auto frames = frameRates.dump();
         auto rate = frames.empty() ? 20.0f : std::accumulate(frames.begin(), frames.end(), 0.0f) / frames.size();
+        logger.info("clip framerate: " + std::to_string(rate));
 
         clipStopped = std::make_shared<std::atomic<bool>>(false);
 

@@ -860,7 +860,7 @@ struct MediaPipeline
 
         svr.Get(config::httpPrefix + "/sethome", [this](const httplib::Request &req, httplib::Response &res)
                 { 
-                    SerialControl control{Action::SetHome}; 
+                    SerialControl control{Action::SET_HOME}; 
                     control.home_x = req.has_param("x") ? std::stoi(req.get_param_value("x")) : 0;
                     control.home_y = req.has_param("y") ? std::stoi(req.get_param_value("y")) : 0;
 
@@ -868,10 +868,30 @@ struct MediaPipeline
                     res.status=200;
 
                     res.set_content("sethome", "text/plain"); });
+                    
+		svr.Get(config::httpPrefix + "/gohome", [this](const httplib::Request &req, httplib::Response &res)
+                { 
+                    SerialControl control{Action::GO_HOME}; 
 
+                    this->resultStreamer->serialSender->enqueueControl(control);
+                    res.status=200;
+
+                    res.set_content("gohome", "text/plain"); });
+                    
+        svr.Get(config::httpPrefix + "/gotoposition", [this](const httplib::Request &req, httplib::Response &res)
+                { 
+                    SerialControl control{Action::GO_TO_POSITION}; 
+                    control.pos_x = req.has_param("x") ? std::stoi(req.get_param_value("x")) : 0;
+                    control.pos_y = req.has_param("y") ? std::stoi(req.get_param_value("y")) : 0;
+
+                    this->resultStreamer->serialSender->enqueueControl(control);
+                    res.status=200;
+
+                    res.set_content("gotoposition", "text/plain"); });
+                    
         svr.Get(config::httpPrefix + "/toggletrack", [this](const httplib::Request &req, httplib::Response &res)
                 { 
-                    SerialControl control{Action::ToggleTrack}; 
+                    SerialControl control{Action::TOGGLE_TRACK}; 
                     control.speed = req.has_param("speed") ? std::stoi(req.get_param_value("speed")) : config::DEFAULT_MAX_SPEED;
 
                     this->resultStreamer->serialSender->enqueueControl(control);
@@ -879,24 +899,24 @@ struct MediaPipeline
 
                     res.set_content("toggletrack", "text/plain"); });
 
-        svr.Get(config::httpPrefix + "/configspeed", [this](const httplib::Request &req, httplib::Response &res)
-                { 
-                    SerialControl control{Action::ConfigSpeed}; 
-                    
-                    control.speed= 20;
+//         svr.Get(config::httpPrefix + "/configspeed", [this](const httplib::Request &req, httplib::Response &res)
+//                 { 
+//                     SerialControl control{Action::NONE}; 
+//                     
+//                     control.speed= 20;
+// 
+//                     this->resultStreamer->serialSender->enqueueControl(control);
+//                     res.status=200;
+// 
+//                     res.set_content("configspeed", "text/plain"); });
 
-                    this->resultStreamer->serialSender->enqueueControl(control);
-                    res.status=200;
-
-                    res.set_content("configspeed", "text/plain"); });
-
-        svr.Get(config::httpPrefix + "/lock", [this](const httplib::Request &req, httplib::Response &res)
-                { 
-                    SerialControl control{Action::Lock}; 
-
-                    this->resultStreamer->serialSender->enqueueControl(control);
-                    res.status=200;
-                    res.set_content("lock", "text/plain"); });
+//         svr.Get(config::httpPrefix + "/lock", [this](const httplib::Request &req, httplib::Response &res)
+//                 { 
+//                     SerialControl control{Action::Lock}; 
+// 
+//                     this->resultStreamer->serialSender->enqueueControl(control);
+//                     res.status=200;
+//                     res.set_content("lock", "text/plain"); });
 
         svr.Get(config::httpPrefix + "/ping", [this](const httplib::Request &req, httplib::Response &res)
                 { 

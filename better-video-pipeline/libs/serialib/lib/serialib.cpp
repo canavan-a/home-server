@@ -243,11 +243,11 @@ char serialib::openDevice(const char *Device, const unsigned int Bauds,
 
 
     // Open device
-    fd = open(Device, O_RDWR | O_NOCTTY | O_NDELAY);
+    fd = open(Device, O_RDWR | O_NOCTTY);
     // If the device is not open, return -2
     if (fd == -1) return -2;
-    // Open the device in nonblocking mode
-    fcntl(fd, F_SETFL, FNDELAY);
+    // Use blocking mode so writes wait for buffer space instead of returning EAGAIN
+    fcntl(fd, F_SETFL, 0);
 
 
     // Get the current options of the port

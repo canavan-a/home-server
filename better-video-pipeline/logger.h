@@ -22,7 +22,7 @@ struct Logger
     template <typename T>
     void debug(T value)
     {
-        if (L >= LogLevel::DEBUG)
+        if (L <= LogLevel::DEBUG)
         {
             std::cout << "DEBUG: " << value << std::endl;
         }

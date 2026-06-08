@@ -20,6 +20,8 @@ struct Stepper{
 
 	int home{0};
 
+	bool PDRunning{false};
+
 	Stepper() = default;
 	
 	Stepper(int step, int dir, int myEnablePin):stepper{AccelStepper(AccelStepper::DRIVER, step, dir)}, enablePin{myEnablePin} {
@@ -31,12 +33,19 @@ struct Stepper{
 		stepper.setSpeed(DEFAULT_SPEED);
 	}
 
+	int getTarget(){
+		return stepper.targetPosition();	
+	}
+
 	void setHome(int newHome){
 		home = newHome;
 		goHome();
 	}
 
 	void moveToPosition(int pos){
+		if (stepper.targetPosition() == pos){
+			return;
+		}
 		stepper.moveTo(pos);
 	}
 
@@ -51,6 +60,10 @@ struct Stepper{
 	int position(){
 		return stepper.currentPosition();
 	}
+
+	// int speed(){
+	// 	return stepper.speed();
+	// }
 
 	void enable(){
 		digitalWrite(enablePin, LOW);
@@ -67,6 +80,27 @@ struct Stepper{
 
 	void run(){
 		stepper.runSpeed();
+	}
+
+	void PDStart(){
+		if(PDRunning){
+			return;
+		} else {
+			// clear out PD control
+			PDRunning = true;
+		}
+	
+		
+	}
+
+	void PDEnd(){
+		
+	}
+	
+	void PDEvent(){
+
+
+		
 	}
 
 };

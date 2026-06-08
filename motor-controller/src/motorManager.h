@@ -4,22 +4,17 @@
 
 #include "constants.h"
 #include "stepper.h"
-#include "queue.h"
+#include "queueWrapper.h"
+#include "action.h"
 
 const int TRACKING_HOME_TIMEOUT_DELAY{3000};
 
-enum Task {
-	NONE,
-	TRACK,
-	HOME,
-	SET_HOME,	
-};
-
 // location values
-struct TrackingMsg {
+struct PositionMsg {
+	Action action;
 	// serial data	
-	int x;
-	int y;
+	int pitch;
+	int yaw;
 };
 
 
@@ -30,16 +25,14 @@ struct MotorManager {
 
 	bool trackingEnabled{true};
 	
-	Task currentTask{NONE};
-
-	Queue<TrackingMsg> trackingQueue;
-	Queue<Task> taskQueue;
+	Action currentAction{EMPTY};
+	
+	Queue<PositionMsg, 1> trackingQueue{}; // incoming 
+	Queue<Action, 10> actionQueue{}; //
 
 	MotorManager(){
-		tackingQueue = Queue(1); // mailbox
-		taskQueue = Queue(10); // regular queue
 		yaw = Stepper{stepper::Yaw::step, stepper::Yaw::dir, stepper::Yaw::enable };
-		pitch = Stepper{stepper::Pitch::stepper, stepper::Pitch::dir, stepper::Pitch::enable };
+		pitch = Stepper{stepper::Pitch::step, stepper::Pitch::dir, stepper::Pitch::enable };
 		yaw.enable();
 		pitch.enable();
 	}
@@ -49,34 +42,74 @@ struct MotorManager {
 		pitch.setHome(pitchHome);
 	}
 
-	void taskRunner(){
-		for (;;){
-			// switch on task and tick based on which task in operation
-			// NONE task has a slight delay to restrict spinning
-			// NONE task is only set when home is complete 
+	void setPosition(int yawPos, int pitchPos){
+		yaw.moveToPosition(yawPos);
+		pitch.moveToPosition(pitchPos);
+	}
+
+	void toggleTracking(){
+		trackingEnabled = !trackingEnabled;
+	}
+
+	void actionRunner(void* param){
+		for (;;){ 
+			// switch on action and tick based on which action in operation
+			// NONE action has a slight delay to restrict spinning
+			// NONE action is only set when home is complete
+
+			if (currentAction == Action::EMPTY){
+				vTaskDelay(500);
+			} else if(currentAction == Action::GO_HOME) {
+				setPosition(yaw.home, pitch.home);
+				if (!yaw.runToPos() &&  !pitch.runToPos()){
+					// back to idle when done
+					setCurrentAction(Action::EMPTY);
+				}
+			} else if(currentAction == Action::DETECTION){
+				// run speed based on control trackerRunner control loop
+				yaw.run();
+				pitch.run();
+			} else if(currentAction == Action::GO_TO_POSITION){
+				// assume position is already set externally
+				if (!yaw.runToPos() &&  !pitch.runToPos()){
+					// back to idle when done
+					setCurrentAction(Action::EMPTY);
+				}
+			}
+			
 		}
 	}
 
-	void setCurrentTask(Task task){
-		// add special home override task condition??? can any task override?
-		currentTask = task;
+	void setCurrentAction(Action action){
+		// add special home override action condition??? can any action override?
+		currentAction = action;
 	}
 
-	void trackRunner(){
+	void updateMotorSpeeds(){
+		
+	}	
+
+	void trackRunner(void* param){
 		
 		
 		for(;;){
-			// delay task to stop wasting cpu time
+			// delay action to stop wasting cpu time
 			if (trackingEnabled) {
 				// do main track runner
-				TrackingMsg tm;
-				valid = trackingQueue.receive(&tm, pdMS_TO_TICKS(TRACKING_HOME_TIMEOUT_DELAY));		
+				PositionMsg pm;
+				bool valid = trackingQueue.receiveUntil(pm, pdMS_TO_TICKS(TRACKING_HOME_TIMEOUT_DELAY));		
 				if (!valid){
-					setCurrentTask(Task::HOME);
+					pitch.PDEnd();
+					yaw.PDEnd();
+					setCurrentAction(Action::GO_HOME);
 					continue;
 				}
-				setCurrentTask(Task::TRACK);
-				
+				setCurrentAction(Action::DETECTION);
+				pitch.PDStart();
+				yaw.PDStart();
+
+				pitch.PDEvent();
+				yaw.PDEvent();
 				
 			} else{
 				vTaskDelay(pdMS_TO_TICKS(500));
@@ -85,3 +118,5 @@ struct MotorManager {
 	}
 	
 };
+
+

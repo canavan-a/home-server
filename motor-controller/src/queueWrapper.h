@@ -1,13 +1,16 @@
 #pragma once
 
 #include <Arduino_FreeRTOS.h>
+#include <queue.h>
 
-template<typename T>
+template<typename T, int N>
 struct Queue{
 	QueueHandle_t handle;
 
-	Queue(int size){
-		handle = xQueueCreate(size, sizeof(T));
+	// Queue() = default;
+	
+	Queue(){
+		handle = xQueueCreate(N, sizeof(T));
 	}
 
 	void send(const T& item){
@@ -20,7 +23,7 @@ struct Queue{
 		return item;
 	}
 
-	T receiveUntil(T& out, TickType_t tickValue){
+	bool receiveUntil(T& out, TickType_t tickValue){
 		return xQueueReceive(handle, &out, tickValue) == pdTRUE;
 	}
 
@@ -29,7 +32,7 @@ struct Queue{
 	}
 
 	void mailboxPush(const T& item){
-		static_assert(Size == 1, "mailbox push only works on queues of size 1");
+		static_assert(N == 1, "mailbox push only works on queues of size 1");
 		xQueueOverwrite(handle, &item);
 	}
 

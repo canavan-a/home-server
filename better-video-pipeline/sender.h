@@ -4,6 +4,9 @@
 #include <thread>
 #include <queue>
 #include <mutex>
+#include <cerrno>
+#include <cstring>
+#include <fcntl.h>
 
 #include <serialib.h>
 
@@ -67,6 +70,10 @@ struct SerialControl
 
     int home_y{config::HOME_Y};
 
+    int pos_x{config::HOME_X};
+
+    int pos_y{config::HOME_Y};
+
     SerialControl(Action myAction) : action{myAction} {};
 
     std::string marshall()
@@ -76,19 +83,22 @@ struct SerialControl
 
         switch (action)
         {
-        case Action::ConfigSpeed:
-            marshalledAction = marshalledAction + " " + std::to_string(speed);
-            break;
+        // case Action::ConfigSpeed:
+        //     marshalledAction = marshalledAction + " " + std::to_string(speed);
+        //     break;
 
-        case Action::SetHome:
+        case Action::SET_HOME:
             marshalledAction = marshalledAction + " " + std::to_string(home_x) + " " + std::to_string(home_y);
             break;
-
+		case Action::GO_TO_POSITION:
+			marshalledAction = marshalledAction + " " + std::to_string(pos_x) + " " + std::to_string(pos_y);
+			break;
         default:
+        	marshalledAction = marshalledAction;
             break;
         }
 
-        marshalledAction += "\r\n";
+        marshalledAction += " \r\n";
 
         return marshalledAction;
     }
@@ -145,14 +155,12 @@ struct SerialSender
 
     void gatherObjects(std::vector<InferenceObjects::DetectedObject> &objects)
     {
-
         for (auto &object : objects)
         {
             if (object.type == detectedClass)
             {
                 sendBuffer->push(object);
                 cv.notify_one();
-                // signal here
             }
         }
     }
@@ -163,9 +171,9 @@ struct SerialSender
                         {
                             for (;;)
                             {
-
                                 std::unique_lock<std::mutex> lock(mtx);
                                 cv.wait(lock, [this]{ return !controlQueue->empty() || sendBuffer->hasData(); });
+                                lock.unlock();
 
                                 std::string msg{};
 
@@ -175,7 +183,6 @@ struct SerialSender
                                 }
                                 else if (auto value = sendBuffer->pop())
                                 {
-                                    // marshall *value -> msg
                                     msg = value->marshall();
                                 }
                                 else
@@ -183,10 +190,9 @@ struct SerialSender
                                     continue;
                                 }
 
-                                // send msg over serial
                                 auto res = this->serial.writeString(msg.c_str());
-                                if (res!=1){
-                                    logger.error("could not send data on serial attempting to reopen serial com");
+                                if (res != 1){
+                                    logger.error("could not send data on serial: " + std::string(strerror(errno)) + " — attempting to reopen serial com");
                                     this->openSerial();
                                 }
 
