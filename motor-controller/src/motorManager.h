@@ -6,16 +6,9 @@
 #include "stepper.h"
 #include "queueWrapper.h"
 #include "action.h"
+#include "positionMsg.h"
 
 const int TRACKING_HOME_TIMEOUT_DELAY{3000};
-
-// location values
-struct PositionMsg {
-	Action action;
-	// serial data	
-	int pitch;
-	int yaw;
-};
 
 
 struct MotorManager {
