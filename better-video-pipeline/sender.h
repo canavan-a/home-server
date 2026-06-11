@@ -190,6 +190,7 @@ struct SerialSender
                                     continue;
                                 }
 
+                                logger.info("serial send: " + msg);
                                 auto res = this->serial.writeString(msg.c_str());
                                 if (res != 1){
                                     logger.error("could not send data on serial: " + std::string(strerror(errno)) + " — attempting to reopen serial com");

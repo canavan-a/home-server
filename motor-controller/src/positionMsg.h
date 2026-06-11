@@ -8,7 +8,7 @@ struct PositionMsg {
 	// serial data	
 	int pitch;
 	int yaw;
-
-	PostitionMsg(int x, int y, Action a): action{a}, yaw{x}, pitch{y}{
+	PositionMsg() = default;
+	PositionMsg(int x, int y, Action a): action{a}, yaw{x}, pitch{y}{
 	}
 };

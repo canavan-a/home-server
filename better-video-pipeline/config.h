@@ -70,7 +70,7 @@ namespace config
     constexpr LogLevel LOG_LEVEL{DEBUG};
 
     constexpr const char *COMPORT{"/dev/ttyACM0"};
-    constexpr int BAUDRATE{9600};
+    constexpr int BAUDRATE{115200};
 
     // tracking
     const int DEFAULT_MAX_SPEED{200};

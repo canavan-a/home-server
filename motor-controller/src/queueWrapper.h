@@ -1,42 +1,23 @@
 #pragma once
 
-#include <Arduino_FreeRTOS.h>
-#include <queue.h>
+#include <stdint.h>
 
 template<typename T, int N>
-struct Queue{
-	QueueHandle_t handle;
-
-	// Queue() = default;
-	
-	Queue(){
-		handle = xQueueCreate(N, sizeof(T));
-	}
+struct Queue {
+	T buffer[N];
+	uint8_t head{0}, tail{0}, count{0};
 
 	void send(const T& item){
-		xQueueSend(handle, &item, portMAX_DELAY);
+		buffer[head] = item;
+		head = (head + 1) % N;
+		if(count < N) count++;
 	}
 
-	T receive(){
-		T item;
-		xQueueReceive(handle, &item, portMAX_DELAY);
-		return item;
-	}
-
-	bool receiveUntil(T& out, TickType_t tickValue){
-		return xQueueReceive(handle, &out, tickValue) == pdTRUE;
-	}
-
-	void clear(){
-		xQueueReset(handle);
-	}
-
-	void mailboxPush(const T& item){
-		static_assert(N == 1, "mailbox push only works on queues of size 1");
-		xQueueOverwrite(handle, &item);
-	}
-
-	bool empty(){
-		return uxQueueMessagesWaiting(handle) == 0;
+	bool receiveNonBlocking(T& out){
+		if(count == 0) return false;
+		out = buffer[tail];
+		tail = (tail + 1) % N;
+		count--;
+		return true;
 	}
 };

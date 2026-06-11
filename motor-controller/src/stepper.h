@@ -25,8 +25,7 @@ struct Stepper{
 	Stepper() = default;
 	
 	Stepper(int step, int dir, int myEnablePin):stepper{AccelStepper(AccelStepper::DRIVER, step, dir)}, enablePin{myEnablePin} {
-		Serial.println("stepper is initialized");
-		pinMode(myEnablePin, OUTPUT);
+pinMode(myEnablePin, OUTPUT);
 		stepper.setMaxSpeed(3000);
 		stepper.setAcceleration(1500);
 		
@@ -97,10 +96,19 @@ struct Stepper{
 		
 	}
 	
-	void PDEvent(){
-
-
+	void PDEvent(int position){
+		
 		
 	}
+
+	void handlePID(int position, bool invert = false){
+		int raw = invert ? -position : position;
+		int output = raw * Kp;
+		stepper.setSpeed(output);
+		Serial.print("[PID] pos="); Serial.print(raw);
+		Serial.print(" out="); Serial.println(output);
+	}
+
+	int Kp{2};
 
 };

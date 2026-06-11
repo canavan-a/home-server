@@ -1,32 +1,45 @@
 #pragma once
 
 #include <Arduino.h>
-
 #include "motorManager.h"
+#include "serialManager.h"
+#include "simulate.h"
 
+const int TRACKING_HOME_TIMEOUT_DELAY{3000};
 
+struct Scheduler {
 
-struct Scheduler{
+	MotorManager mm;
+	SerialManager serial{&mm};
+	// Simulate s;
+	unsigned long lastMsgTime{0};
 
-	MotorManager *mm;
+	Scheduler() {}
 
-	Scheduler(){
-		mm = new MotorManager();
+	void begin(){
+		Serial.begin(115200);
+		// s.begin();
+		lastMsgTime = millis();
 	}
 
-	static void trackingTask(void* param){
-		static_cast<Scheduler*>(param)->mm->trackRunner(param);
-	}
+	void tick(){
+		serial.tick();
+		// s.tick();
 
-	static void actionTask(void* param){
-		static_cast<Scheduler*>(param)->mm->actionRunner(param);
-	}
+		PositionMsg pm;
+		if(mm.trackingQueue.receiveNonBlocking(pm)){
+			lastMsgTime = millis();
+			mm.setCurrentAction(Action::DETECTION);
+			Serial.print("[SCHED] dequeued yaw="); Serial.print(pm.yaw);
+			Serial.print(" pitch="); Serial.println(pm.pitch);
+			mm.yaw.handlePID(pm.yaw);
+			mm.pitch.handlePID(pm.pitch, true);
+		}
 
-	void start(){
-		Serial.println("starting tasks");
-		xTaskCreate(trackingTask, "tracker", 4096, this, 1, NULL);
-		xTaskCreate(actionTask, "action", 4096, this, 1, NULL);
-		
+		if(millis() - lastMsgTime > TRACKING_HOME_TIMEOUT_DELAY){
+			mm.setCurrentAction(Action::GO_HOME);
+		}
+
+		mm.actionStep();
 	}
-	
 };
