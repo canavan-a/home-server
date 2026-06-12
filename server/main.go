@@ -162,6 +162,7 @@ func main() {
 			door.GET("/state", mqttDoor.HandleGetState)
 			door.POST("/open", mqttDoor.HandleOpen)
 			door.POST("/close", mqttDoor.HandleClose)
+			door.GET("/battery", mqttDoor.HandleGetBatteryState)
 		}
 
 		//MiddlewareAuthenticate

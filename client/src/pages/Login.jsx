@@ -13,6 +13,7 @@ export const Login = () => {
   const [doorState, setDoorState] = useState("unknown");
   const [isToggling, setIsToggling] = useState(false);
   const [isPending, setIsPending] = useState(false);
+  const [batteryPercent, setBatteryPercent] = useState(null);
   const prevStateRef = useRef(null);
   const pendingTimeoutRef = useRef(null);
 
@@ -39,11 +40,26 @@ export const Login = () => {
       .catch(() => {});
   };
 
+  const fetchBattery = (pw) => {
+    axios
+      .get(`https://aidan.house/api/door/battery?doorCode=${pw}`)
+      .then((response) => setBatteryPercent(response.data.battery))
+      .catch(() => {});
+  };
+
   useEffect(() => {
     if (!loggedIn || password === "") return;
 
     fetchState(password);
     const interval = setInterval(() => fetchState(password), 1000);
+    return () => clearInterval(interval);
+  }, [loggedIn, password]);
+
+  useEffect(() => {
+    if (!loggedIn || password === "") return;
+
+    fetchBattery(password);
+    const interval = setInterval(() => fetchBattery(password), 5000);
     return () => clearInterval(interval);
   }, [loggedIn, password]);
 
@@ -95,6 +111,24 @@ export const Login = () => {
       });
   };
 
+const BatteryGauge = ({ percent }) => {
+  if (percent === null) return null;
+
+  const isError = percent === 999;
+  const clamped = isError ? 0 : Math.min(100, Math.max(0, percent));
+  const color = isError ? "bg-gray-400" : clamped <= 20 ? "bg-red-500" : clamped <= 50 ? "bg-yellow-400" : "bg-green-500";
+  const label = isError ? "?" : `${clamped}%`;
+
+  return (
+    <div className="flex items-center gap-2 opacity-60">
+      <div className="relative w-20 h-3 rounded-sm border border-current overflow-hidden">
+        <div className={`absolute inset-y-0 left-0 ${color} transition-all duration-500`} style={{ width: `${clamped}%` }} />
+      </div>
+      <span className="text-xs tabular-nums">{label}</span>
+    </div>
+  );
+};
+
   return (
     <>
       <div className="w-full h-screen flex items-center justify-center">
@@ -130,6 +164,7 @@ export const Login = () => {
                     <span className="loading loading-infinity loading-lg"></span>
                   )}
                 </div>
+                <BatteryGauge percent={batteryPercent} />
                 <div className="flex gap-4 w-full">
                   <button
                     onClick={() => doCommand("open")}

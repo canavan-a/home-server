@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	"sync"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -29,16 +30,18 @@ func (s doorState) String() string {
 }
 
 const (
-	mqttBroker     = "tcp://localhost:1883"
-	mqttClientID   = "home-server-door"
-	mqttTopicState = "open-lock-state"
-	mqttTopicCmd   = "open-lock-signal"
+	mqttBroker            = "tcp://localhost:1883"
+	mqttClientID          = "home-server-door"
+	mqttTopicState        = "open-lock-state"
+	mqttTopicBatteryState = "open-lock-battery"
+	mqttTopicCmd          = "open-lock-signal"
 )
 
 type MqttDoor struct {
-	mu     sync.RWMutex
-	state  doorState
-	client mqtt.Client
+	mu             sync.RWMutex
+	state          doorState
+	batteryPercent int
+	client         mqtt.Client
 }
 
 func NewMqttDoor() (*MqttDoor, error) {
@@ -71,6 +74,19 @@ func (d *MqttDoor) onConnect(mc mqtt.Client) {
 		fmt.Println("door state updated:", d.state)
 	})
 
+	mc.Subscribe(mqttTopicBatteryState, 1, func(_ mqtt.Client, msg mqtt.Message) {
+		d.mu.Lock()
+		defer d.mu.Unlock()
+
+		batteryPercent, err := strconv.Atoi(string(msg.Payload()))
+		if err != nil {
+			// 999 signals parse error to the UI
+			batteryPercent = 999
+		}
+
+		d.batteryPercent = batteryPercent
+	})
+
 	d.mu.RLock()
 	needsState := d.state == doorStateUnknown
 	d.mu.RUnlock()
@@ -78,6 +94,7 @@ func (d *MqttDoor) onConnect(mc mqtt.Client) {
 	if needsState {
 		d.client.Publish(mqttTopicCmd, 1, false, "state")
 	}
+	d.client.Publish(mqttTopicCmd, 1, false, "battery")
 }
 
 func (d *MqttDoor) HandleGetState(c *gin.Context) {
@@ -95,4 +112,11 @@ func (d *MqttDoor) HandleOpen(c *gin.Context) {
 func (d *MqttDoor) HandleClose(c *gin.Context) {
 	d.client.Publish(mqttTopicCmd, 1, false, "closed")
 	c.JSON(http.StatusOK, gin.H{"sent": "closed"})
+}
+
+func (d *MqttDoor) HandleGetBatteryState(c *gin.Context) {
+	d.mu.RLock()
+	b := d.batteryPercent
+	d.mu.RUnlock()
+	c.JSON(http.StatusOK, gin.H{"battery": b})
 }
